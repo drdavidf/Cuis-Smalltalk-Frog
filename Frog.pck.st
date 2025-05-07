@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 7 May 2025 at 7:00:34 pm'!
+'From Cuis7.3 [latest update: #7041] on 7 May 2025 at 7:31:45 pm'!
 'Description '!
-!provides: 'Frog' 1 18!
+!provides: 'Frog' 1 20!
 SystemOrganization addCategory: #Frog!
 
 
@@ -55,13 +55,28 @@ TestLine class
 	instanceVariableNames: ''!
 
 
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 19:30:06'!
+deleteFrom: begin to: end
+
+	| aWriteStream |
+	
+	self assert: 1 <= begin.
+	self assert: begin <= end.
+	self assert: end <= text size.
+	
+	aWriteStream := WriteStream on: ''.
+	
+	aWriteStream nextPutAll: (text copyFrom: 1 to: begin - 1) ; nextPutAll: (text copyFrom: end+1 to: text size).
+	
+	text := aWriteStream contents.! !
+
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:42:05'!
 initialize
 
 	text := ''! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 18:47:32'!
-insert: aString at: anIndex width:  numChars
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 19:27:20'!
+insert: aString after: anIndex width:  numChars
 
 	| raw length src dst  token |
 		
@@ -168,27 +183,44 @@ initialize
 
 	pages := Page new! !
 
-!TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 19:00:17'!
+!TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 19:31:34'!
+testDelete
+
+	| aLine tail |
+	
+	aLine := Line new.
+	
+	tail := aLine insert: '12345' after:0 width: 8.
+	
+	self assert: tail isEmpty.
+	
+	self assert: aLine text = '12345'.
+	
+	aLine deleteFrom: 1 to: 5.
+	
+	self assert: aLine text isEmpty.! !
+
+!TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/7/2025 19:27:20'!
 testInsert
 
 	| aLine tail |
 	
 	aLine := Line new.
 	
-	tail := aLine insert: 'abcd' at:0 width: 7.
+	tail := aLine insert: 'abcd' after:0 width: 7.
 	
 	self assert: tail isEmpty.
 	
 	self assert: aLine text = 'abcd'.
 	
-	tail := aLine insert: ' efg' at: 4 width: 7.
+	tail := aLine insert: ' efg' after: 4 width: 7.
 	
 	self assert: tail = 'efg'.
 	
 	self assert: aLine text = 'abcd '.
 
 	tail := aLine insert: 'a
-' at: 5 width: 7.
+' after: 5 width: 7.
 
 	self assert: tail isEmpty.
 	
