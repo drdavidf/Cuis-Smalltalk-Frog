@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 11 May 2025 at 8:08:13 am'!
+'From Cuis7.3 [latest update: #6895] on 11 May 2025 at 9:26:20 am'!
 'Description '!
-!provides: 'Frog' 1 90!
+!provides: 'Frog' 1 91!
 SystemOrganization addCategory: #Frog!
 
 
@@ -235,10 +235,51 @@ pastLastLine
 	
 	! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 14:15:22'!
 eraseAll
@@ -265,7 +306,7 @@ initialize
 
 	text := ''.! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 15:48:23'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 09:23:28'!
 insert: aString after: anIndex width:  numChars
 
 	| raw length src dst  token |
@@ -317,7 +358,15 @@ insert: aString after: anIndex width:  numChars
 		ifTrue:[ 
 			dst nextPutAll:token ]
 		ifFalse:[
-			src skip: 0 - token size ].
+			( length = 0 and: [token size > numChars ] )
+				ifTrue:[
+			"we are trying to insert a token that is longer than the line at the beginning of the line. there is no point in rejecting the token because we will end up with an empty line and have to deal with this token in the next line. thus we break the token and insert the first width characters into this line"
+					
+					dst nextPutAll: (token copyFrom:1 to: numChars).
+					src skip: numChars - token size.
+					]
+				ifFalse:[
+					src skip: 0 - token size ] ].
 
 	self assert: (dst contents , src tail) = raw .
 		
@@ -333,51 +382,10 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
-nextToken: aReadStream
-	
-	| tokenStream cc stop state |
-	
-	tokenStream := WriteStream on: ''.
-	
-	state := #separator.
-	stop := false.
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
 
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:41'!
 initialize
@@ -637,7 +645,7 @@ erase
 	self assert: (self textFrom: self begin to: self end) = (uu , vv).
 	! !
 
-!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/10/2025 22:48:33'!
+!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/11/2025 09:19:22'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -650,16 +658,7 @@ insert: aString
 	
 	[string notEmpty] whileTrue:[
 
-		|  index |
-		
-		index := "(line text copyFrom: 1 to: cursor index - 1) ," string firstIndex:[:eachCharacter | eachCharacter isSeparator].
-		
-		index > width 
-			ifTrue:[ | tail |
-				tail := line insert: (string copyFrom:1 to: width - cursor index + 1) after: cursor index - 1 width: width. 
-				string := tail, (string copyFrom: width+1 to: string size) ]
-			ifFalse:[
-				string := line insert: string after: cursor index - 1 width: width].
+		string := line insert: string after: cursor index - 1 width: width.
 
 		string isEmpty
 			ifTrue:[
@@ -895,7 +894,7 @@ testErase
 	
 	! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 22:16:54'!
+!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 09:26:04'!
 testInsert
 
 	| aWordProcessor aLine |
@@ -933,7 +932,7 @@ a time. There was a frog'.
 
 	aLine := aLine next.
 
-	self assert: aLine text = 'upon,
+	self assert: aLine text = 'upon, 
 '.
 	aLine := aLine next.
 
