@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 11 May 2025 at 9:26:20 am'!
+'From Cuis7.3 [latest update: #7041] on 12 May 2025 at 12:08:18 am'!
 'Description '!
-!provides: 'Frog' 1 91!
+!provides: 'Frog' 1 133!
 SystemOrganization addCategory: #Frog!
 
 
@@ -54,14 +54,14 @@ Object subclass: #WordProcessor
 WordProcessor class
 	instanceVariableNames: ''!
 
-!classDefinition: #WordProcessorModel category: #Frog!
-Object subclass: #WordProcessorModel
-	instanceVariableNames: 'lines cursor beginh endh width pattern endl beginl'
+!classDefinition: #WordProcessorMachine category: #Frog!
+Object subclass: #WordProcessorMachine
+	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
-!classDefinition: 'WordProcessorModel class' category: #Frog!
-WordProcessorModel class
+!classDefinition: 'WordProcessorMachine class' category: #Frog!
+WordProcessorMachine class
 	instanceVariableNames: ''!
 
 !classDefinition: #WPRuler category: #Frog!
@@ -76,7 +76,7 @@ WPRuler class
 
 !classDefinition: #WPTextMorph category: #Frog!
 BorderedBoxMorph subclass: #WPTextMorph
-	instanceVariableNames: 'font'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -94,14 +94,14 @@ TestCase subclass: #TestLine
 TestLine class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestWordProcessorModel category: #Frog!
-TestCase subclass: #TestWordProcessorModel
+!classDefinition: #TestWordProcessorMachine category: #Frog!
+TestCase subclass: #TestWordProcessorMachine
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
-!classDefinition: 'TestWordProcessorModel class' category: #Frog!
-TestWordProcessorModel class
+!classDefinition: 'TestWordProcessorMachine class' category: #Frog!
+TestWordProcessorMachine class
 	instanceVariableNames: ''!
 
 
@@ -133,6 +133,22 @@ TestWordProcessorModel class
 	
 	! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 19:16:04'!
+advanceBy: aNumber
+
+	self assert: aNumber >= 0.
+
+	^index + aNumber <= line text size
+		ifTrue:[
+			Address new line: line; index: index + aNumber ; yourself ]
+		ifFalse:[
+			line next isNil
+				ifTrue:[
+					self assert: index + aNumber = (line text size + 1).
+					Address new line: line; index: line text size + 1 ; yourself ]
+				ifFalse:[
+					Address new line: line next ; index: 1 ; advanceBy: index + aNumber - line text size - 1 ] ]! !
+
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 17:35:43'!
 back
 
@@ -143,6 +159,18 @@ back
 			Address new line: line; index: index - 1 ; yourself ]
 		ifFalse:[
 			Address new line: line prev; index: line prev text size ; yourself ]! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:51:21'!
+backupBy: aNumber
+
+	self assert: aNumber >= 0.
+
+	^ index > aNumber 
+		ifTrue:[
+			Address new line: line; index: index - aNumber ; yourself ]
+		ifFalse:[
+			self assert: line prev notNil.
+			Address new line: line prev; index: line prev text size ; backupBy: aNumber - index ]! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 15:01:50'!
 char
@@ -235,51 +263,26 @@ pastLastLine
 	
 	! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
-nextToken: aReadStream
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
+
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
+distanceFrom: aLine
+
+	| pp ii |
 	
-	| tokenStream cc stop state |
+	self assert: (self precedes: aLine).
 	
-	tokenStream := WriteStream on: ''.
+	pp := self.
+	ii := 0.
 	
-	state := #separator.
-	stop := false.
-
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
+	[pp notNil and: [pp == aLine]] whileFalse:[
+		ii := ii + 1.
+		pp := pp next].
 	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^ii ! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 14:15:22'!
 eraseAll
@@ -300,11 +303,6 @@ eraseFrom: begin to: end
 	aWriteStream nextPutAll: (text copyFrom: 1 to: begin - 1) ; nextPutAll: (text copyFrom: end+1 to: text size).
 	
 	text := aWriteStream contents.! !
-
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 15:52:17'!
-initialize
-
-	text := ''.! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 09:23:28'!
 insert: aString after: anIndex width:  numChars
@@ -382,10 +380,56 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
+
+!Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
+initialize
+
+	text := ''.! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:41'!
 initialize
@@ -397,10 +441,12 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:02:41'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:01:19'!
 open
 
-	| root top text bottom ruler |
+	| machine root top text bottom ruler |
+	
+	machine := WordProcessorMachine new.
 	
 	root := LayoutMorph newColumn.
 
@@ -434,25 +480,74 @@ open
 
 ! !
 
-!WordProcessorModel methodsFor: 'testing' stamp: 'DF 5/8/2025 22:14:28'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:05:49'!
+open: aWordProcessorMachine
+
+	| machine root top text bottom ruler |
+	
+	machine := WordProcessorMachine new.
+	
+	root := LayoutMorph newColumn.
+
+	root morphExtent: 2160@1620.
+
+	top := LayoutMorph newRow.
+
+	top padding: 5*24@12.
+
+	text := WPTextMorph new.
+
+	text morphExtent: 80*24 @ (1620 - 168).
+	
+	text machine: aWordProcessorMachine.
+
+	top addMorph: text.
+
+	bottom := LayoutMorph newColumn.
+
+	bottom morphExtent: 2160@168.
+	
+	ruler := WPRuler new.
+	
+	ruler morphExtent: 80*24 @ 84.
+	
+	bottom padding: 5*24 @ 0.
+	
+	bottom addMorph: ruler.
+
+	root addMorph: top; addMorph: bottom.
+
+	root scaleBy: 0.5 :: openInWorld.
+
+! !
+
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/8/2025 22:14:28'!
 invariant
 
 	beginh line notNil and: [endh line notNil] and: [beginh <= endh] and: [ lines allSatisfy: [:eachLine | eachLine invariant] ]
 	
 	! !
 
-!WordProcessorModel methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:06'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:06'!
 isNarrowCursor
 	^ beginh = endh and: [ endh = cursor]! !
 
-!WordProcessorModel methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:23'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:23'!
 isWideCursor
 	^ beginh = endh and: [ endh forward = cursor]! !
 
-!WordProcessorModel methodsFor: 'leaping' stamp: 'DF 5/9/2025 20:00:57'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/11/2025 15:37:21'!
+highlight
+
+	beginh := leftl min: rightl.
+	endh := leftl max: rightl.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/12/2025 00:00:59'!
 leapLeft
 
 	| p |
+	
+	pattern ifEmpty:[^self].
 	
 	p := cursor isFirst 
 			ifTrue:[cursor] 
@@ -466,9 +561,7 @@ leapLeft
 	(p isFirst) 
 		ifFalse:[
 			cursor := p - (pattern size - 1).
-			beginl := cursor.
-			beginh := cursor.
-			endh := cursor.
+			leftl := cursor.
 			^self].
 		
 	" we did not find it going back towards the beginning. now start from the end 
@@ -482,19 +575,19 @@ leapLeft
 	(p = cursor)
 		ifFalse:[
 			cursor := p - (pattern size - 1).
-			beginl := cursor.
-			beginh := cursor.
-			endh := cursor.
+			leftl := cursor.
 			^self].
 		
 	self assert: self isNarrowCursor = true
 			
 ! !
 
-!WordProcessorModel methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:53:08'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/12/2025 00:01:04'!
 leapRight
 
 	| p |
+
+	pattern ifEmpty:[^self].
 	
 	p := cursor isPastLast 
 			ifTrue:[cursor] 
@@ -507,10 +600,8 @@ leapRight
 
 	(p isPastLast) 
 		ifFalse:[
-			endl := p.
 			cursor := p.
-			beginh := p.
-			endh := p.
+			rightl := p.
 			^self].
 		
 	" we did not find it going forward towards the end. Now start from the beginning
@@ -523,16 +614,14 @@ leapRight
 	
 	(p = cursor)
 		ifFalse:[
-			endl := p.
 			cursor := p.
-			beginh := p.
-			endh := p.
+			rightl := p.
 			^self].
 			
 	self assert: self isNarrowCursor = true
 ! !
 
-!WordProcessorModel methodsFor: 'leaping' stamp: 'DF 5/9/2025 15:22:46'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/9/2025 15:22:46'!
 matchBackFrom: anAddress
 
 	| p ii |
@@ -548,7 +637,7 @@ matchBackFrom: anAddress
 	^ ii = 0
 ! !
 
-!WordProcessorModel methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:30:31'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:30:31'!
 matchForwardFrom: anAddress
 
 	| p ii |
@@ -564,19 +653,30 @@ matchForwardFrom: anAddress
 	^ ii = (pattern size + 1)
 ! !
 
-!WordProcessorModel methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:17:27'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:17:27'!
 pattern: aString
 	pattern := aString! !
 
-!WordProcessorModel methodsFor: 'accessing' stamp: 'DF 5/9/2025 19:21:22'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/11/2025 23:55:41'!
+patternPut: anInteger
+	pattern := pattern , (Character codePoint: anInteger) asString! !
+
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/9/2025 19:21:22'!
 cursor
 	^cursor! !
 
-!WordProcessorModel methodsFor: 'accessing' stamp: 'DF 5/8/2025 17:04:36'!
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/8/2025 17:04:36'!
 lines
 	^lines! !
 
-!WordProcessorModel methodsFor: 'initialization' stamp: 'DF 5/9/2025 17:39:01'!
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/11/2025 16:06:39'!
+width: anInteger
+
+	self assert: anInteger > 0.
+	
+	width := anInteger! !
+
+!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/9/2025 17:39:01'!
 initialize
 
 	width := 8. "maximum number of characters in a line"
@@ -590,7 +690,7 @@ initialize
 	
 	cursor line: lines ; index: 1.! !
 
-!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/9/2025 18:18:55'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/9/2025 18:18:55'!
 erase
 
 	| aWriteStream p uu vv bb |
@@ -645,13 +745,15 @@ erase
 	self assert: (self textFrom: self begin to: self end) = (uu , vv).
 	! !
 
-!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/11/2025 09:19:22'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/11/2025 19:15:29'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
 	
-	| line string |
-		
+	| line string pp |
+	
+	pp := cursor copy.
+	
 	line := cursor line.
 	
 	string := aString.
@@ -673,19 +775,20 @@ insert: aString
 		
 				line := cursor line ] ].
 	
-		beginh := cursor. endh := beginh.
+		cursor := pp advanceBy: aString size.
+		
+		beginh := cursor back. endh := beginh.
+! !
 
-		cursor := cursor forward.! !
-
-!WordProcessorModel methodsFor: 'private' stamp: 'DF 5/9/2025 17:39:33'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:39:33'!
 begin
 	^Address new line: lines ; index:1 ; yourself! !
 
-!WordProcessorModel methodsFor: 'private' stamp: 'DF 5/9/2025 17:40:02'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:40:02'!
 end
 	^self begin pastLastLine ! !
 
-!WordProcessorModel methodsFor: 'private' stamp: 'DF 5/8/2025 15:55:05'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/8/2025 15:55:05'!
 insert: aNewLine after: aLine
 
 	"we assume that aNewLine is not already in the list"
@@ -707,7 +810,7 @@ insert: aNewLine after: aLine
 	self assert: aNewLine invariant
 	! !
 
-!WordProcessorModel methodsFor: 'private' stamp: 'DF 5/9/2025 15:25:57'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 15:25:57'!
 lastLine
 	
 	| pp |
@@ -721,7 +824,7 @@ lastLine
 	
 	! !
 
-!WordProcessorModel methodsFor: 'private' stamp: 'DF 5/9/2025 17:25:39'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:25:39'!
 textFrom: bAddress to: eAddress
 
 	| pp aWriteStream |
@@ -773,35 +876,165 @@ initialize
 	
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 18.	! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 14:15:30'!
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 16:49:47'!
+onBlinkCursor
+	
+	"Blink the cursor"
+	
+	showCursor := showCursor not.
+	
+	textCursorRect ifNotNil:[:r | self invalidateLocalRect: r].! !
+
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 16:49:05'!
+startBlinking
+	
+	showCursor := true.
+	
+	self startStepping: #onBlinkCursor stepTime: 500! !
+
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 17:20:55'!
+stopBlinking
+	"And do not show cursor anymore."
+	self stopStepping: #onBlinkCursor.
+	
+	"Hide cursor right now if needed"
+	showCursor ifTrue: [
+		showCursor := false.
+		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
+
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 18:10:48'!
+drawCursorOn: aCanvas
+
+	| xcursor ycursor |
+	
+	ycursor := dy * (wbegin distanceFrom: machine cursor line).
+	xcursor := dx * (machine cursor index) - dx.
+	
+	textCursorRect := xcursor@ycursor extent: dx@dy.
+
+	aCanvas fillRectangle: textCursorRect  color: cursorColor.
+	machine isWideCursor
+		ifTrue:[ self drawHighlightOn: aCanvas ] 
+! !
+
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 18:11:13'!
+drawHighlightOn: aCanvas
+
+	| ycursor cc wycursor wxcursor |
+	
+	ycursor := dy * (wbegin distanceFrom: machine cursor line).
+	
+	cc := machine cursor back.
+	wycursor := ycursor - (dy * (cc line distanceFrom: machine cursor line)).
+	wxcursor := dx * (cc index) - dx.
+	aCanvas fillRectangle: (wxcursor @ wycursor extent: dx@dy) color: Color black.
+	aCanvas drawString: cc char asString at: wxcursor@wycursor  font: font  color: Color white
+! !
+
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 17:52:27'!
 drawOn: aCanvas
 
-	| yy ii dy |
+	| yy ii line |
+	
+	self assert: machine notNil.
 	
 	super drawOn: aCanvas.
 
-	aCanvas drawString: ('12345678901234567890123456789012345678901234567890123456789012345678901234567890') at: 0@ 0 font: font color: Color black.	
-	
+	ii := 0.
 	yy := 0.
-	dy := font lineSpacing.
-	ii := 2.
-
-	yy := dy.
 	
-	[ yy + dy < self morphHeight ] whileTrue:[
-		aCanvas drawString: ('{1}. Once upon a time.' format:{ii}) at: 0@ yy font: font color: Color black.
+	line := wbegin.
+	
+	[ line notNil and: [yy + dy < self morphHeight] ] whileTrue:[
+		aCanvas drawString: line text at: 0@ yy font: font color: Color black.
+		ii := ii + 1.
 		yy := ii * dy.
-		ii := ii + 1].
-	! !
+		line := line next ].
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:16:12'!
+	showCursor 
+		ifTrue:[self drawCursorOn: aCanvas ]! !
+
+!WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/11/2025 18:37:20'!
 initialize
 
 	super initialize. 
 	
 	color := Color white.
 	
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 28.! !
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 28.
+	
+	dy := font lineSpacing.
+	
+	dx := font widthOf:$M.
+	
+	wsize := 24.
+	
+	showCursor := true.
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+	
+	! !
+
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:07:41'!
+keyDown: aMorphicEvent
+
+	aMorphicEvent commandAltKeyPressed
+		ifTrue:[ | keyv |
+			keyv := aMorphicEvent keyValue.
+			keyv = 152 or: [keyv = 136] ::
+				ifTrue:[
+					machine pattern: '' ]
+				ifFalse:[
+					machine patternPut: aMorphicEvent keyValue] ].
+			
+	Transcript show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
+
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:08:13'!
+keyUp: aMorphicEvent
+
+	aMorphicEvent keyValue = 152
+		ifTrue:[
+			machine leapLeft.
+			].
+		
+	aMorphicEvent keyValue = 136
+		ifTrue:[
+			machine leapRight.
+			].
+		
+	self redrawNeeded 
+! !
+
+!WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/11/2025 19:27:43'!
+handlesKeyboard
+	^true! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:38:32'!
+machine: aWPMachine
+
+	machine := aWPMachine.
+	
+	self scrollToCursor ! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:03:06'!
+scrollToCursor
+
+	| ii pp |
+	
+	pp := machine cursor line.
+	
+	ii := 0.
+	
+
+	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + 1. ].
+	
+	" pp prev isNil and pp notNil and ii = distance[pp,line] and pp prev isNil or ii = wsize "
+	
+	" pp notNil and ii = distance[pp,line] and ii <= wsize "
+	
+	"pp notNil and distance[pp,line] <= wsize"
+	
+	wbegin := pp.! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
@@ -866,12 +1099,63 @@ testInsertLongString
 	self assert: tail = '12345678d'.
 ! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 14:58:02'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 19:09:21'!
+testAddress
+
+	| aWordProcessor aLine pp |
+	
+	aWordProcessor := WordProcessorMachine new.
+	
+	aWordProcessor insert:'abc 123 7654 a b w x'.
+	
+	aLine := aWordProcessor lines.
+
+	self assert: aLine text = 'abc 123 '.
+	
+	aLine := aLine next.
+	
+	self assert: aLine text = '7654 a b'.
+	
+	aLine := aLine next.
+	
+	self assert: aLine text = ' w x'.
+
+	aLine := aLine next.
+	
+	self assert: aLine isNil.
+	
+	pp := Address new line: aWordProcessor lines ; index:1 ; yourself.
+	
+	pp := pp advanceBy: 8.
+	
+	self assert: pp line text = '7654 a b'.
+	
+	self assert: pp index = 1.
+	
+	pp := pp advanceBy: 1.
+	
+	self assert: pp line text = '7654 a b'.
+	
+	self assert: pp index = 2.
+	
+	pp := pp backupBy: 1.
+
+	self assert: pp line text = '7654 a b'.
+	
+	self assert: pp index = 1.
+
+	pp := pp backupBy: 1.
+	
+	self assert: pp line text = 'abc 123 '.
+	
+	self assert: pp index = 8.! !
+
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testErase
 
 	| aWordProcessor aLine |
 	
-	aWordProcessor := WordProcessorModel new.
+	aWordProcessor := WordProcessorMachine new.
 	
 	aWordProcessor insert:'abc 123'.
 	
@@ -894,12 +1178,12 @@ testErase
 	
 	! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 09:26:04'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testInsert
 
 	| aWordProcessor aLine |
 	
-	aWordProcessor := WordProcessorModel new.
+	aWordProcessor := WordProcessorMachine new.
 	
 	aWordProcessor insert:'abc 12345678abcdefghABCDEFGH12345678'.
 	
@@ -951,12 +1235,12 @@ a time. There was a frog'.
 	self assert: aLine text = 'frog'.
 	! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 20:01:16'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testLeapLeft
 
 	| aWordProcessor |
 	
-	aWordProcessor := WordProcessorModel new.
+	aWordProcessor := WordProcessorMachine new.
 	
 	aWordProcessor insert:'abc 123 uvw 812 aha bbc'.
 	
@@ -972,12 +1256,12 @@ testLeapLeft
 	
 	self assert: aWordProcessor cursor = (Address new line: aWordProcessor lines ; index: 5 ; yourself).	! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:42:43'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testLeapRight
 
 	| aWordProcessor |
 	
-	aWordProcessor := WordProcessorModel new.
+	aWordProcessor := WordProcessorMachine new.
 	
 	aWordProcessor insert:'abc 123 uvw 812 aha bbc'.
 	
@@ -992,6 +1276,29 @@ testLeapRight
 	aWordProcessor leapRight.
 	
 	self assert: aWordProcessor cursor = (Address new line: aWordProcessor lines next ; index: 5 ; yourself).	! !
+
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:37:48'!
+testMorph
+
+	| text machine |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
+
+Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	machine := WordProcessorMachine new.
+	
+	machine width: 12.
+	
+	machine insert: text.
+	
+	machine pattern: 'golden'.
+	
+	machine leapLeft.
+	
+	machine insert:'Z'.
+	
+	WordProcessor open: machine.! !
 
 !SequenceableCollection methodsFor: '*Frog-enumerating' stamp: 'DF 5/8/2025 16:50:50'!
 firstIndex: aBlock
