@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 9 May 2025 at 8:01:27 pm'!
+'From Cuis7.3 [latest update: #7041] on 11 May 2025 at 8:08:13 am'!
 'Description '!
-!provides: 'Frog' 1 79!
+!provides: 'Frog' 1 90!
 SystemOrganization addCategory: #Frog!
 
 
@@ -44,6 +44,16 @@ Object subclass: #Paragraph
 Paragraph class
 	instanceVariableNames: ''!
 
+!classDefinition: #WordProcessor category: #Frog!
+Object subclass: #WordProcessor
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'WordProcessor class' category: #Frog!
+WordProcessor class
+	instanceVariableNames: ''!
+
 !classDefinition: #WordProcessorModel category: #Frog!
 Object subclass: #WordProcessorModel
 	instanceVariableNames: 'lines cursor beginh endh width pattern endl beginl'
@@ -52,6 +62,26 @@ Object subclass: #WordProcessorModel
 	category: 'Frog'!
 !classDefinition: 'WordProcessorModel class' category: #Frog!
 WordProcessorModel class
+	instanceVariableNames: ''!
+
+!classDefinition: #WPRuler category: #Frog!
+BorderedBoxMorph subclass: #WPRuler
+	instanceVariableNames: 'font'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'WPRuler class' category: #Frog!
+WPRuler class
+	instanceVariableNames: ''!
+
+!classDefinition: #WPTextMorph category: #Frog!
+BorderedBoxMorph subclass: #WPTextMorph
+	instanceVariableNames: 'font'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'WPTextMorph class' category: #Frog!
+WPTextMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestLine category: #Frog!
@@ -359,6 +389,43 @@ initialize
 
 	lines := Line new! !
 
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:02:41'!
+open
+
+	| root top text bottom ruler |
+	
+	root := LayoutMorph newColumn.
+
+	root morphExtent: 2160@1620.
+
+	top := LayoutMorph newRow.
+
+	top padding: 5*24@12.
+
+	text := WPTextMorph new.
+
+	text morphExtent: 80*24 @ (1620 - 168).
+
+	top addMorph: text.
+
+	bottom := LayoutMorph newColumn.
+
+	bottom morphExtent: 2160@168.
+	
+	ruler := WPRuler new.
+	
+	ruler morphExtent: 80*24 @ 84.
+	
+	bottom padding: 5*24 @ 0.
+	
+	bottom addMorph: ruler.
+
+	root addMorph: top; addMorph: bottom.
+
+	root scaleBy: 0.5 :: openInWorld.
+
+! !
+
 !WordProcessorModel methodsFor: 'testing' stamp: 'DF 5/8/2025 22:14:28'!
 invariant
 
@@ -570,7 +637,7 @@ erase
 	self assert: (self textFrom: self begin to: self end) = (uu , vv).
 	! !
 
-!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/9/2025 18:21:21'!
+!WordProcessorModel methodsFor: 'editing' stamp: 'DF 5/10/2025 22:48:33'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -585,11 +652,11 @@ insert: aString
 
 		|  index |
 		
-		index := string firstIndex:[:eachCharacter | eachCharacter isSeparator].
+		index := "(line text copyFrom: 1 to: cursor index - 1) ," string firstIndex:[:eachCharacter | eachCharacter isSeparator].
 		
 		index > width 
 			ifTrue:[ | tail |
-				tail := line insert: (string copyFrom:1 to: width) after: cursor index - 1 width: width. 
+				tail := line insert: (string copyFrom:1 to: width - cursor index + 1) after: cursor index - 1 width: width. 
 				string := tail, (string copyFrom: width+1 to: string size) ]
 			ifFalse:[
 				string := line insert: string after: cursor index - 1 width: width].
@@ -672,6 +739,70 @@ textFrom: bAddress to: eAddress
 			pp := pp forward].
 	
 	^aWriteStream contents! !
+
+!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:11:22'!
+drawOn: aCanvas
+	
+	| xx dx wc |
+	
+	super drawOn: aCanvas.
+	
+	wc := (font widthOf: $8) / 2.
+	
+	dx := 24.
+	
+	0 to:79 do:[:ii |
+		xx := dx * ii.
+		aCanvas line: xx@0 to: xx@12 width:1 color: Color white ].
+	
+	1 to:8 do:[:ii |
+		xx := dx * 10 * ii.
+		aCanvas 
+			line: xx@0 to: xx@24 width:1 color: Color white ;
+			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].! !
+
+!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:08:13'!
+font: aFont
+	font := aFont! !
+
+!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:10:03'!
+initialize
+
+	super initialize .
+	
+	color := Color black.
+	
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 18.	! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 14:15:30'!
+drawOn: aCanvas
+
+	| yy ii dy |
+	
+	super drawOn: aCanvas.
+
+	aCanvas drawString: ('12345678901234567890123456789012345678901234567890123456789012345678901234567890') at: 0@ 0 font: font color: Color black.	
+	
+	yy := 0.
+	dy := font lineSpacing.
+	ii := 2.
+
+	yy := dy.
+	
+	[ yy + dy < self morphHeight ] whileTrue:[
+		aCanvas drawString: ('{1}. Once upon a time.' format:{ii}) at: 0@ yy font: font color: Color black.
+		yy := ii * dy.
+		ii := ii + 1].
+	! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:16:12'!
+initialize
+
+	super initialize. 
+	
+	color := Color white.
+	
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 28.! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
@@ -764,7 +895,7 @@ testErase
 	
 	! !
 
-!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 21:31:25'!
+!TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 22:16:54'!
 testInsert
 
 	| aWordProcessor aLine |
@@ -792,6 +923,33 @@ testInsert
 	aLine := aLine next.
 	
 	self assert: aLine text = '12345678'.
+	
+	aWordProcessor insert: 'Once upon, 
+a time. There was a frog'.
+
+	aLine := aLine next.
+
+	self assert: aLine text = 'Once '.
+
+	aLine := aLine next.
+
+	self assert: aLine text = 'upon,
+'.
+	aLine := aLine next.
+
+	self assert: aLine text = 'a time. '.
+
+	aLine := aLine next.
+
+	self assert: aLine text = 'There '.
+
+	aLine := aLine next.
+
+	self assert: aLine text = 'was a '.
+
+	aLine := aLine next.
+
+	self assert: aLine text = 'frog'.
 	! !
 
 !TestWordProcessorModel methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 20:01:16'!
