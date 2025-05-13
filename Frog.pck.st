@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 May 2025 at 12:08:18 am'!
+'From Cuis7.3 [latest update: #6895] on 13 May 2025 at 4:19:07 pm'!
 'Description '!
-!provides: 'Frog' 1 133!
+!provides: 'Frog' 1 135!
 SystemOrganization addCategory: #Frog!
 
 
@@ -12,6 +12,16 @@ Object subclass: #Address
 	category: 'Frog'!
 !classDefinition: 'Address class' category: #Frog!
 Address class
+	instanceVariableNames: ''!
+
+!classDefinition: #AddressRange category: #Frog!
+Object subclass: #AddressRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'AddressRange class' category: #Frog!
+AddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #Line category: #Frog!
@@ -263,10 +273,93 @@ pastLastLine
 	
 	! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:00'!
+begin: anAddress
+	begin := anAddress! !
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:09'!
+end: anAddress
+	end := anAddress! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:01:57'!
+intersect: anAddressRange
+
+	| pp |
+	
+	"
+	no intersection: 
+			pp will reach self end before other begin or other end
+			qq will reach other end before self begin or self end
+			
+	{ } [ ]	answer an empty range
+	[ ] { }	answer an empty range
+	
+	inclusion:  
+	[ { } ]	pp will reach self end before other begin or other end. qq will reach other begin before self end
+				answer self
+	{ [ ] }	vise versa
+				answer other
+	
+	intersection
+	[ { ] }	answer self begin to: other end
+	{ [ } ]	answer other begin to self end
+	
+	"
+	pp := begin.
+	
+	[pp == end or:[pp == anAddressRange begin] or: [pp == anAddressRange end] ] whileFalse:[
+		pp := pp next ].
+! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:59'!
+invariant
+	^ begin notNil and: [end notNil] and: [begin precedes: end]! !
+
+!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
+
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
 distanceFrom: aLine
@@ -380,51 +473,10 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
-nextToken: aReadStream
-	
-	| tokenStream cc stop state |
-	
-	tokenStream := WriteStream on: ''.
-	
-	state := #separator.
-	stop := false.
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
 
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
 initialize
@@ -441,46 +493,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:01:19'!
-open
-
-	| machine root top text bottom ruler |
-	
-	machine := WordProcessorMachine new.
-	
-	root := LayoutMorph newColumn.
-
-	root morphExtent: 2160@1620.
-
-	top := LayoutMorph newRow.
-
-	top padding: 5*24@12.
-
-	text := WPTextMorph new.
-
-	text morphExtent: 80*24 @ (1620 - 168).
-
-	top addMorph: text.
-
-	bottom := LayoutMorph newColumn.
-
-	bottom morphExtent: 2160@168.
-	
-	ruler := WPRuler new.
-	
-	ruler morphExtent: 80*24 @ 84.
-	
-	bottom padding: 5*24 @ 0.
-	
-	bottom addMorph: ruler.
-
-	root addMorph: top; addMorph: bottom.
-
-	root scaleBy: 0.5 :: openInWorld.
-
-! !
-
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:05:49'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:25:49'!
 open: aWordProcessorMachine
 
 	| machine root top text bottom ruler |
@@ -493,11 +506,11 @@ open: aWordProcessorMachine
 
 	top := LayoutMorph newRow.
 
-	top padding: 5*24@12.
+	top padding: 17*24@12.
 
 	text := WPTextMorph new.
 
-	text morphExtent: 80*24 @ (1620 - 168).
+	text morphExtent: 66*24 @ (1620 - 168).
 	
 	text machine: aWordProcessorMachine.
 
@@ -842,7 +855,7 @@ textFrom: bAddress to: eAddress
 	
 	^aWriteStream contents! !
 
-!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:11:22'!
+!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:33:42'!
 drawOn: aCanvas
 	
 	| xx dx wc |
@@ -861,7 +874,9 @@ drawOn: aCanvas
 		xx := dx * 10 * ii.
 		aCanvas 
 			line: xx@0 to: xx@24 width:1 color: Color white ;
-			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].! !
+			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].
+		
+	aCanvas frameRectangle: (7 * 24 - 12 @ 0 extent: (66 * 24 + 24  @ 60) ) borderWidth: 1 color: Color white.! !
 
 !WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:08:13'!
 font: aFont
@@ -917,7 +932,7 @@ drawCursorOn: aCanvas
 		ifTrue:[ self drawHighlightOn: aCanvas ] 
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 18:11:13'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:18:27'!
 drawHighlightOn: aCanvas
 
 	| ycursor cc wycursor wxcursor |
@@ -927,11 +942,13 @@ drawHighlightOn: aCanvas
 	cc := machine cursor back.
 	wycursor := ycursor - (dy * (cc line distanceFrom: machine cursor line)).
 	wxcursor := dx * (cc index) - dx.
+	
 	aCanvas fillRectangle: (wxcursor @ wycursor extent: dx@dy) color: Color black.
 	aCanvas drawString: cc char asString at: wxcursor@wycursor  font: font  color: Color white
+	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 17:52:27'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:16:48'!
 drawOn: aCanvas
 
 	| yy ii line |
@@ -952,7 +969,8 @@ drawOn: aCanvas
 		line := line next ].
 
 	showCursor 
-		ifTrue:[self drawCursorOn: aCanvas ]! !
+		ifTrue:[self drawCursorOn: aCanvas ]
+		! !
 
 !WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/11/2025 18:37:20'!
 initialize
@@ -975,7 +993,7 @@ initialize
 	
 	! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:07:41'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:30:18'!
 keyDown: aMorphicEvent
 
 	aMorphicEvent commandAltKeyPressed
@@ -987,10 +1005,12 @@ keyDown: aMorphicEvent
 				ifFalse:[
 					machine patternPut: aMorphicEvent keyValue] ].
 			
-	Transcript show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
+	Transcript show: 'keyDown: ' ; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:08:13'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:31:13'!
 keyUp: aMorphicEvent
+
+	Transcript show: 'keyUp: ' ; show: aMorphicEvent keyValue; cr.
 
 	aMorphicEvent keyValue = 152
 		ifTrue:[
@@ -1009,15 +1029,28 @@ keyUp: aMorphicEvent
 handlesKeyboard
 	^true! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:38:32'!
+!WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 20:26:18'!
+handlesMouseDown: aMouseButtonEvent
+	^ true! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
 machine: aWPMachine
 
 	machine := aWPMachine.
 	
+	wbegin := machine begin line.
+	
 	self scrollToCursor ! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:03:06'!
-scrollToCursor
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:46'!
+scrollBackwardToCursor
+
+	[ wbegin = machine cursor line ] whileFalse:[wbegin := wbegin prev ].
+	
+! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:42:13'!
+scrollForwardToCursor
 
 	| ii pp |
 	
@@ -1035,6 +1068,30 @@ scrollToCursor
 	"pp notNil and distance[pp,line] <= wsize"
 	
 	wbegin := pp.! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 16:00:53'!
+scrollToCursor
+
+	self wend precedes: machine cursor line ::
+		ifTrue:[
+			^self scrollForwardToCursor ].
+		
+	machine cursor line precedes: wbegin ::
+		ifTrue:[
+			^self scrollBackwardToCursor ].
+		
+		! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:58:16'!
+wend
+
+	| pp |
+	
+	pp := wbegin.
+	
+	wsize timesRepeat: [ pp := pp next].
+	
+	^pp! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
