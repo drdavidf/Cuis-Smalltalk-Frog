@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 14 May 2025 at 2:01:13 pm'!
+'From Cuis7.3 [latest update: #7041] on 14 May 2025 at 2:40:36 pm'!
 'Description '!
-!provides: 'Frog' 1 148!
+!provides: 'Frog' 1 149!
 SystemOrganization addCategory: #Frog!
 
 
@@ -895,7 +895,7 @@ textFrom: bAddress to: eAddress
 	
 	^aWriteStream contents! !
 
-!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:11:22'!
+!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:33:42'!
 drawOn: aCanvas
 	
 	| xx dx wc |
@@ -914,7 +914,9 @@ drawOn: aCanvas
 		xx := dx * 10 * ii.
 		aCanvas 
 			line: xx@0 to: xx@24 width:1 color: Color white ;
-			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].! !
+			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].
+		
+	aCanvas frameRectangle: (7 * 24 - 12 @ 0 extent: (66 * 24 + 24  @ 60) ) borderWidth: 1 color: Color white.! !
 
 !WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:08:13'!
 font: aFont
@@ -971,7 +973,7 @@ drawCursorOn: aCanvas
 		ifTrue:[ self drawHighlightOn: aCanvas ] 
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 18:11:13'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:18:27'!
 drawHighlightOn: aCanvas
 
 	| ycursor cc wycursor wxcursor |
@@ -981,11 +983,13 @@ drawHighlightOn: aCanvas
 	cc := machine cursor back.
 	wycursor := ycursor - (dy * (cc line distanceFrom: machine cursor line)).
 	wxcursor := dx * (cc index) - dx.
+	
 	aCanvas fillRectangle: (wxcursor @ wycursor extent: dx@dy) color: Color black.
 	aCanvas drawString: cc char asString at: wxcursor@wycursor  font: font  color: Color white
+	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/12/2025 23:46:06'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:16:48'!
 drawOn: aCanvas
 
 	| yy ii line |
@@ -1004,9 +1008,10 @@ drawOn: aCanvas
 		ii := ii + 1.
 		yy := ii * dy.
 		line := line next ].
-"
+
 	showCursor 
-		ifTrue:[self drawCursorOn: aCanvas ]"! !
+		ifTrue:[self drawCursorOn: aCanvas ]
+		! !
 
 !WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/11/2025 18:37:20'!
 initialize
@@ -1043,13 +1048,13 @@ keyDown: aMorphicEvent
 			
 	Transcript show: 'keyDown:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 23:52:35'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/14/2025 14:39:39'!
 keyUp: aMorphicEvent
 
 	Transcript show: 'keyUp:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr.
 	
 	aMorphicEvent keyValue = 152
-		ifTrue:[ 
+		ifTrue:[
 			machine leapLeft.
 			].
 		
@@ -1074,15 +1079,24 @@ handlesKeyboard
 handlesMouseDown: aMouseButtonEvent
 	^true! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:38:32'!
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
 machine: aWPMachine
 
 	machine := aWPMachine.
 	
+	wbegin := machine begin line.
+	
 	self scrollToCursor ! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:03:06'!
-scrollToCursor
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:46'!
+scrollBackwardToCursor
+
+	[ wbegin = machine cursor line ] whileFalse:[wbegin := wbegin prev ].
+	
+! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:42:13'!
+scrollForwardToCursor
 
 	| ii pp |
 	
@@ -1100,6 +1114,30 @@ scrollToCursor
 	"pp notNil and distance[pp,line] <= wsize"
 	
 	wbegin := pp.! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 16:00:53'!
+scrollToCursor
+
+	self wend precedes: machine cursor line ::
+		ifTrue:[
+			^self scrollForwardToCursor ].
+		
+	machine cursor line precedes: wbegin ::
+		ifTrue:[
+			^self scrollBackwardToCursor ].
+		
+		! !
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:58:16'!
+wend
+
+	| pp |
+	
+	pp := wbegin.
+	
+	wsize timesRepeat: [ pp := pp next].
+	
+	^pp! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
