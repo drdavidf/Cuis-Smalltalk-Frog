@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 'From Cuis7.3 [latest update: #7041] on 14 May 2025 at 2:40:36 pm'!
 'Description '!
 !provides: 'Frog' 1 149!
+=======
+'From Cuis7.3 [latest update: #6895] on 13 May 2025 at 4:19:07 pm'!
+'Description '!
+!provides: 'Frog' 1 135!
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 SystemOrganization addCategory: #Frog!
 
 
@@ -12,6 +18,16 @@ Object subclass: #Address
 	category: 'Frog'!
 !classDefinition: 'Address class' category: #Frog!
 Address class
+	instanceVariableNames: ''!
+
+!classDefinition: #AddressRange category: #Frog!
+Object subclass: #AddressRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'AddressRange class' category: #Frog!
+AddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #Line category: #Frog!
@@ -273,10 +289,93 @@ pastLastLine
 	
 	! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:00'!
+begin: anAddress
+	begin := anAddress! !
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:09'!
+end: anAddress
+	end := anAddress! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:01:57'!
+intersect: anAddressRange
+
+	| pp |
+	
+	"
+	no intersection: 
+			pp will reach self end before other begin or other end
+			qq will reach other end before self begin or self end
+			
+	{ } [ ]	answer an empty range
+	[ ] { }	answer an empty range
+	
+	inclusion:  
+	[ { } ]	pp will reach self end before other begin or other end. qq will reach other begin before self end
+				answer self
+	{ [ ] }	vise versa
+				answer other
+	
+	intersection
+	[ { ] }	answer self begin to: other end
+	{ [ } ]	answer other begin to self end
+	
+	"
+	pp := begin.
+	
+	[pp == end or:[pp == anAddressRange begin] or: [pp == anAddressRange end] ] whileFalse:[
+		pp := pp next ].
+! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:59'!
+invariant
+	^ begin notNil and: [end notNil] and: [begin precedes: end]! !
+
+!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
+
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
 distanceFrom: aLine
@@ -390,6 +489,7 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
+<<<<<<< HEAD
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:06:17'!
 to: aLine
 
@@ -406,42 +506,12 @@ nextToken: aReadStream
 	
 	state := #separator.
 	stop := false.
+=======
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
 initialize
@@ -530,7 +600,11 @@ initialize
 
 	lines := Line new! !
 
+<<<<<<< HEAD
 !WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:26:54'!
+=======
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:25:49'!
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 open: aWordProcessorMachine
 
 	| machine root top text bottom ruler |
@@ -543,11 +617,11 @@ open: aWordProcessorMachine
 
 	top := LayoutMorph newRow.
 
-	top padding: 5*24@12.
+	top padding: 17*24@12.
 
 	text := WPTextMorph new.
 
-	text morphExtent: 80*24 @ (1620 - 168).
+	text morphExtent: 66*24 @ (1620 - 168).
 	
 	text machine: aWordProcessorMachine.
 
@@ -1034,7 +1108,11 @@ initialize
 	
 	! !
 
+<<<<<<< HEAD
 !WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 21:43:15'!
+=======
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:30:18'!
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 keyDown: aMorphicEvent
 
 	aMorphicEvent commandAltKeyPressed
@@ -1046,6 +1124,7 @@ keyDown: aMorphicEvent
 				ifFalse:[
 					machine patternPut: aMorphicEvent keyValue] ].
 			
+<<<<<<< HEAD
 	Transcript show: 'keyDown:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
 
 !WPTextMorph methodsFor: 'events' stamp: 'DF 5/14/2025 14:39:39'!
@@ -1053,6 +1132,15 @@ keyUp: aMorphicEvent
 
 	Transcript show: 'keyUp:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr.
 	
+=======
+	Transcript show: 'keyDown: ' ; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
+
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:31:13'!
+keyUp: aMorphicEvent
+
+	Transcript show: 'keyUp: ' ; show: aMorphicEvent keyValue; cr.
+
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 	aMorphicEvent keyValue = 152
 		ifTrue:[
 			machine leapLeft.
@@ -1075,9 +1163,15 @@ mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 handlesKeyboard
 	^true! !
 
+<<<<<<< HEAD
 !WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
 handlesMouseDown: aMouseButtonEvent
 	^true! !
+=======
+!WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 20:26:18'!
+handlesMouseDown: aMouseButtonEvent
+	^ true! !
+>>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
 machine: aWPMachine
