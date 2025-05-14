@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 May 2025 at 12:08:18 am'!
+'From Cuis7.3 [latest update: #7041] on 14 May 2025 at 2:01:13 pm'!
 'Description '!
-!provides: 'Frog' 1 133!
+!provides: 'Frog' 1 148!
 SystemOrganization addCategory: #Frog!
 
 
@@ -22,6 +22,16 @@ Object subclass: #Line
 	category: 'Frog'!
 !classDefinition: 'Line class' category: #Frog!
 Line class
+	instanceVariableNames: ''!
+
+!classDefinition: #LineRange category: #Frog!
+Object subclass: #LineRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'LineRange class' category: #Frog!
+LineRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #Page category: #Frog!
@@ -380,6 +390,13 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:06:17'!
+to: aLine
+
+	self assert: (self precedes: aLine).
+	
+	^LineRange new begin: self ; end: aLine ; yourself! !
+
 !Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
 nextToken: aReadStream
 	
@@ -431,6 +448,78 @@ initialize
 
 	text := ''.! !
 
+!LineRange methodsFor: 'testing' stamp: 'DF 5/12/2025 23:08:25'!
+= aLineRange
+
+	self class == aLineRange class 
+		ifFalse:[^false].
+		
+	^begin = aLineRange begin and:[end = aLineRange end]
+	
+	! !
+
+!LineRange methodsFor: 'testing' stamp: 'DF 5/12/2025 23:06:38'!
+isEmpty
+	^begin isNil and:[ end isNil ]! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:47:11'!
+begin
+	^begin! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:09'!
+begin: aLine
+	begin := aLine ! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:47:14'!
+end
+	^end! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:19'!
+end: aLine
+	end := aLine! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:08:54'!
+hash
+	"Hash is reimplemented because = is implemented."
+
+	^(begin hash hashMultiply + end hash) hashMultiply! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:04:03'!
+intersect: aLineRange
+
+	| b e p q |
+	
+	p := self begin.
+	
+	[p = self end]
+		whileFalse:[
+			p = aLineRange begin
+				ifTrue:[
+					b := p].
+			p = aLineRange end
+				ifTrue:[
+					e := p].
+			p := p next ].
+	
+	q := aLineRange begin.
+
+	[q = aLineRange end]
+		whileFalse:[
+			q = self begin
+				ifTrue:[
+					b := q].
+			q = self end
+				ifTrue:[
+					e := q].
+			q := q next ].
+	
+	^LineRange new begin: b ; end: e ; yourself! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:40'!
+invariant
+
+	^ (begin isNil and: end isNil) or:[begin <= end]! !
+
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:41'!
 initialize
 
@@ -441,46 +530,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:01:19'!
-open
-
-	| machine root top text bottom ruler |
-	
-	machine := WordProcessorMachine new.
-	
-	root := LayoutMorph newColumn.
-
-	root morphExtent: 2160@1620.
-
-	top := LayoutMorph newRow.
-
-	top padding: 5*24@12.
-
-	text := WPTextMorph new.
-
-	text morphExtent: 80*24 @ (1620 - 168).
-
-	top addMorph: text.
-
-	bottom := LayoutMorph newColumn.
-
-	bottom morphExtent: 2160@168.
-	
-	ruler := WPRuler new.
-	
-	ruler morphExtent: 80*24 @ 84.
-	
-	bottom padding: 5*24 @ 0.
-	
-	bottom addMorph: ruler.
-
-	root addMorph: top; addMorph: bottom.
-
-	root scaleBy: 0.5 :: openInWorld.
-
-! !
-
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:05:49'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:26:54'!
 open: aWordProcessorMachine
 
 	| machine root top text bottom ruler |
@@ -518,6 +568,9 @@ open: aWordProcessorMachine
 	root addMorph: top; addMorph: bottom.
 
 	root scaleBy: 0.5 :: openInWorld.
+	
+	
+	
 
 ! !
 
@@ -876,14 +929,15 @@ initialize
 	
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 18.	! !
 
-!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 16:49:47'!
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/12/2025 23:25:48'!
 onBlinkCursor
 	
 	"Blink the cursor"
 	
 	showCursor := showCursor not.
 	
-	textCursorRect ifNotNil:[:r | self invalidateLocalRect: r].! !
+	textCursorRect ifNotNil:[:r | self invalidateLocalRect: r].
+! !
 
 !WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 16:49:05'!
 startBlinking
@@ -931,7 +985,7 @@ drawHighlightOn: aCanvas
 	aCanvas drawString: cc char asString at: wxcursor@wycursor  font: font  color: Color white
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 17:52:27'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/12/2025 23:46:06'!
 drawOn: aCanvas
 
 	| yy ii line |
@@ -950,9 +1004,9 @@ drawOn: aCanvas
 		ii := ii + 1.
 		yy := ii * dy.
 		line := line next ].
-
+"
 	showCursor 
-		ifTrue:[self drawCursorOn: aCanvas ]! !
+		ifTrue:[self drawCursorOn: aCanvas ]"! !
 
 !WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/11/2025 18:37:20'!
 initialize
@@ -975,7 +1029,7 @@ initialize
 	
 	! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:07:41'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 21:43:15'!
 keyDown: aMorphicEvent
 
 	aMorphicEvent commandAltKeyPressed
@@ -987,13 +1041,15 @@ keyDown: aMorphicEvent
 				ifFalse:[
 					machine patternPut: aMorphicEvent keyValue] ].
 			
-	Transcript show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
+	Transcript show: 'keyDown:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 00:08:13'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 23:52:35'!
 keyUp: aMorphicEvent
 
+	Transcript show: 'keyUp:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr.
+	
 	aMorphicEvent keyValue = 152
-		ifTrue:[
+		ifTrue:[ 
 			machine leapLeft.
 			].
 		
@@ -1005,8 +1061,17 @@ keyUp: aMorphicEvent
 	self redrawNeeded 
 ! !
 
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 22:54:27'!
+mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
+
+	self world activeHand newKeyboardFocus: self! !
+
 !WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/11/2025 19:27:43'!
 handlesKeyboard
+	^true! !
+
+!WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
+handlesMouseDown: aMouseButtonEvent
 	^true! !
 
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 16:38:32'!
@@ -1150,6 +1215,33 @@ testAddress
 	
 	self assert: pp index = 8.! !
 
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 22:57:26'!
+testAddressRange
+
+	| machine text xb xe yb ye rr zz  |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
+
+Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	machine := WordProcessorMachine new.
+	
+	machine width: 12.
+	
+	machine insert: text.
+
+	xb := machine begin.
+	xe := xb advanceBy: 3.
+	
+	yb := xe advanceBy: 1.
+	ye := yb advanceBy:2.
+	
+	rr := xb to: xe.
+	zz := yb to: ye.
+	
+	self assert: (rr intersect: zz) isEmpty.
+	! !
+
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testErase
 
@@ -1276,6 +1368,45 @@ testLeapRight
 	aWordProcessor leapRight.
 	
 	self assert: aWordProcessor cursor = (Address new line: aWordProcessor lines next ; index: 5 ; yourself).	! !
+
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:16:11'!
+testLineRange
+
+	| machine text xb xe yb ye rr zz  |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
+
+Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	machine := WordProcessorMachine new.
+	
+	machine width: 12.
+	
+	machine insert: text.
+
+	xb := machine begin line.
+	xe := xb next next next.
+	
+	yb := xe next.
+	ye := yb next next.
+	
+	rr := xb to: xe.
+	zz := yb to: ye.
+	
+	self assert: (rr intersect: zz) isEmpty.
+	
+	xe := ye next.
+
+	rr := xb to: xe.
+
+	self assert: (rr intersect: zz) = zz.
+	
+	ye := xe next next.
+	
+	zz := yb to: ye.
+	
+	self assert: (rr intersect:zz) = (yb to: xe).
+	! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:37:48'!
 testMorph
