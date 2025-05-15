@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 9:38:48 am'!
+'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 5:53:52 pm'!
 'Description '!
-!provides: 'Frog' 1 169!
+!provides: 'Frog' 1 174!
 SystemOrganization addCategory: #Frog!
 
 
@@ -66,7 +66,7 @@ WordProcessor class
 
 !classDefinition: #WordProcessorMachine category: #Frog!
 Object subclass: #WordProcessorMachine
-	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl pindex'
+	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl pindex pcursor pbeginh pendh'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -86,7 +86,7 @@ WPRuler class
 
 !classDefinition: #WPTextMorph category: #Frog!
 BorderedBoxMorph subclass: #WPTextMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match ccursor'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -239,6 +239,13 @@ index: aNumber
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:53:50'!
 isFirst
 	^ line prev isNil and: [index = 1]! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 17:52:49'!
+isInvalidOffset: aNumber
+
+	self assert: aNumber >= 0.
+	
+	^line next isNil and:[index + aNumber > (line text size)]! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:26:08'!
 isPastLast
@@ -616,7 +623,7 @@ highlight
 	beginh := leftl min: rightl.
 	endh := leftl max: rightl.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:37:43'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:50:56'!
 leapLeft
 
 	| p |
@@ -628,6 +635,9 @@ leapLeft
 			ifFalse:[cursor back].".
 
 	" leap back "
+	
+	[p isFirst not and: [p isInvalidOffset: pattern size - 1]] whileTrue:[
+		p := p back].
 	
 	[ p isFirst or: [ self matchBackFrom: (p advanceBy: (pattern size - 1))  ] ] whileFalse:[
 		p := p back ].
@@ -730,23 +740,28 @@ matchForwardFrom: anAddress
 pattern: aString
 	pattern := aString! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:59:04'!
-patternAdvance
-
-	self assert: pindex <= pattern size.
-	
-	pindex := pindex + 1.! !
-
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:57:53'!
 patternPut: anInteger
 
 	pattern := pattern , (Character codePoint: anInteger) asString.
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:58:27'!
-patternRestart
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:25:33'!
+popCursor
 
-	pindex := 1.! !
+	self assert: pcursor notNil.
+	self assert: pbeginh notNil.
+	self assert: pendh notNil.
+	
+	cursor := pcursor.
+	beginh := pbeginh.
+	endh := pendh.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:23:59'!
+pushCursor
+	pcursor := cursor.
+	pbeginh := beginh.
+	pendh := endh.! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/14/2025 15:27:10'!
 setNarrowCursorTo: anAddress
@@ -1091,7 +1106,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 09:21:42'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 17:25:02'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1119,16 +1134,27 @@ keyDown: aMorphicEvent
 		ifTrue:[
 			machine clearPattern.
 			match := true.
+			machine pushCursor.
 			state := #building ].
 	
 	state = #init and: [ ctrlDown ] ::
 		ifTrue:[
-			machine patternRestart. self leap].
+			rightAltDown
+				ifTrue:[
+					machine creepRight]
+				ifFalse:[
+					leftAltDown
+						ifTrue:[
+							machine creepLeft] ].
+			self leap].
 		
 	state = #building and:[keyv < 128] and:[match] ::
 		ifTrue:[
 			machine patternPut: keyv.
-			match := self leap].
+			match := self leap.
+			match 
+				ifFalse:[
+					machine popCursor ] ].
 			
 	Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr
 	! !
