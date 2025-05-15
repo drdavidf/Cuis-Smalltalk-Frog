@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-'From Cuis7.3 [latest update: #7041] on 14 May 2025 at 2:40:36 pm'!
+'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 9:38:48 am'!
 'Description '!
-!provides: 'Frog' 1 149!
-=======
-'From Cuis7.3 [latest update: #6895] on 13 May 2025 at 4:19:07 pm'!
-'Description '!
-!provides: 'Frog' 1 135!
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
+!provides: 'Frog' 1 169!
 SystemOrganization addCategory: #Frog!
 
 
@@ -18,16 +12,6 @@ Object subclass: #Address
 	category: 'Frog'!
 !classDefinition: 'Address class' category: #Frog!
 Address class
-	instanceVariableNames: ''!
-
-!classDefinition: #AddressRange category: #Frog!
-Object subclass: #AddressRange
-	instanceVariableNames: 'begin end'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Frog'!
-!classDefinition: 'AddressRange class' category: #Frog!
-AddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #Line category: #Frog!
@@ -82,7 +66,7 @@ WordProcessor class
 
 !classDefinition: #WordProcessorMachine category: #Frog!
 Object subclass: #WordProcessorMachine
-	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl'
+	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl pindex'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -102,7 +86,7 @@ WPRuler class
 
 !classDefinition: #WPTextMorph category: #Frog!
 BorderedBoxMorph subclass: #WPTextMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -131,10 +115,10 @@ TestWordProcessorMachine class
 	instanceVariableNames: ''!
 
 
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:59:02'!
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 09:34:27'!
 + anInteger
 
-	self assert: index + anInteger <= line text size + 1.
+	self assert: index + anInteger <= (line text size + 1).
 	
 	^Address new line: line ; index: index + anInteger ;yourself! !
 
@@ -289,93 +273,10 @@ pastLastLine
 	
 	! !
 
-!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:00'!
-begin: anAddress
-	begin := anAddress! !
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
 
-!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:09'!
-end: anAddress
-	end := anAddress! !
-
-!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:01:57'!
-intersect: anAddressRange
-
-	| pp |
-	
-	"
-	no intersection: 
-			pp will reach self end before other begin or other end
-			qq will reach other end before self begin or self end
-			
-	{ } [ ]	answer an empty range
-	[ ] { }	answer an empty range
-	
-	inclusion:  
-	[ { } ]	pp will reach self end before other begin or other end. qq will reach other begin before self end
-				answer self
-	{ [ ] }	vise versa
-				answer other
-	
-	intersection
-	[ { ] }	answer self begin to: other end
-	{ [ } ]	answer other begin to self end
-	
-	"
-	pp := begin.
-	
-	[pp == end or:[pp == anAddressRange begin] or: [pp == anAddressRange end] ] whileFalse:[
-		pp := pp next ].
-! !
-
-!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 20:47:59'!
-invariant
-	^ begin notNil and: [end notNil] and: [begin precedes: end]! !
-
-!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
-nextToken: aReadStream
-	
-	| tokenStream cc stop state |
-	
-	tokenStream := WriteStream on: ''.
-	
-	state := #separator.
-	stop := false.
-
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
 distanceFrom: aLine
@@ -489,7 +390,6 @@ invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
 
-<<<<<<< HEAD
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:06:17'!
 to: aLine
 
@@ -506,12 +406,42 @@ nextToken: aReadStream
 	
 	state := #separator.
 	stop := false.
-=======
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
 initialize
@@ -600,11 +530,7 @@ initialize
 
 	lines := Line new! !
 
-<<<<<<< HEAD
 !WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:26:54'!
-=======
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:25:49'!
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
 open: aWordProcessorMachine
 
 	| machine root top text bottom ruler |
@@ -617,11 +543,11 @@ open: aWordProcessorMachine
 
 	top := LayoutMorph newRow.
 
-	top padding: 17*24@12.
+	top padding: 5*24@12.
 
 	text := WPTextMorph new.
 
-	text morphExtent: 66*24 @ (1620 - 168).
+	text morphExtent: 80*24 @ (1620 - 168).
 	
 	text machine: aWordProcessorMachine.
 
@@ -663,33 +589,54 @@ isNarrowCursor
 isWideCursor
 	^ beginh = endh and: [ endh forward = cursor]! !
 
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:49:27'!
+clearPattern
+
+	pattern := ''.
+	
+	pindex := 1.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:10:34'!
+creepLeft
+
+	self assert: cursor isFirst = false.
+	
+	cursor := cursor back.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:10:42'!
+creepRight
+
+	self assert: cursor isPastLast = false.
+	
+	cursor := cursor forward.! !
+
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/11/2025 15:37:21'!
 highlight
 
 	beginh := leftl min: rightl.
 	endh := leftl max: rightl.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/12/2025 00:00:59'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:37:43'!
 leapLeft
 
 	| p |
 	
-	pattern ifEmpty:[^self].
+	pindex > pattern size ifTrue:[^false].
 	
-	p := cursor isFirst 
+	p := cursor "isFirst 
 			ifTrue:[cursor] 
-			ifFalse:[cursor back].
+			ifFalse:[cursor back].".
 
 	" leap back "
 	
-	[ p isFirst or: [ self matchBackFrom: p  ] ] whileFalse:[
+	[ p isFirst or: [ self matchBackFrom: (p advanceBy: (pattern size - 1))  ] ] whileFalse:[
 		p := p back ].
 
 	(p isFirst) 
 		ifFalse:[
-			cursor := p - (pattern size - 1).
+			self setNarrowCursorTo: p.
 			leftl := cursor.
-			^self].
+			^true].
 		
 	" we did not find it going back towards the beginning. now start from the end 
 	and stop when reaching cursor"
@@ -701,24 +648,22 @@ leapLeft
 	
 	(p = cursor)
 		ifFalse:[
-			cursor := p - (pattern size - 1).
+			self setNarrowCursorTo: p - (pattern size - 1).
 			leftl := cursor.
-			^self].
-		
-	self assert: self isNarrowCursor = true
-			
-! !
+			^true].
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/12/2025 00:01:04'!
+	^false! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:28:29'!
 leapRight
 
 	| p |
 
-	pattern ifEmpty:[^self].
+	pindex > pattern size ifTrue:[^false].
 	
-	p := cursor isPastLast 
+	p := cursor" isPastLast 
 			ifTrue:[cursor] 
-			ifFalse:[cursor forward].
+			ifFalse:[cursor forward]".
 
 	" leap forward "
 			
@@ -727,9 +672,9 @@ leapRight
 
 	(p isPastLast) 
 		ifFalse:[
-			cursor := p.
+			self setNarrowCursorTo: p.
 			rightl := p.
-			^self].
+			^true].
 		
 	" we did not find it going forward towards the end. Now start from the beginning
 	and stop when reaching cursor"
@@ -741,14 +686,15 @@ leapRight
 	
 	(p = cursor)
 		ifFalse:[
-			cursor := p.
+			self setNarrowCursorTo: p.
 			rightl := p.
-			^self].
+			^true].
+		
+	^false
 			
-	self assert: self isNarrowCursor = true
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/9/2025 15:22:46'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:50:58'!
 matchBackFrom: anAddress
 
 	| p ii |
@@ -757,21 +703,21 @@ matchBackFrom: anAddress
 
 	ii := pattern size.
 		
-	[ ii  = 0 or: [ p isFirst ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
+	[ ii  = (pindex - 1) or: [ p isFirst ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
 		ii := ii - 1.
 		p := p back ].
 	
 	^ ii = 0
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/9/2025 19:30:31'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:49:37'!
 matchForwardFrom: anAddress
 
 	| p ii |
-	
+
 	p := anAddress.
 
-	ii := 1.
+	ii := pindex.
 		
 	[ ii  = (pattern size + 1) or: [ p isPastLast ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
 		ii := ii + 1.
@@ -784,9 +730,33 @@ matchForwardFrom: anAddress
 pattern: aString
 	pattern := aString! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/11/2025 23:55:41'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:59:04'!
+patternAdvance
+
+	self assert: pindex <= pattern size.
+	
+	pindex := pindex + 1.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:57:53'!
 patternPut: anInteger
-	pattern := pattern , (Character codePoint: anInteger) asString! !
+
+	pattern := pattern , (Character codePoint: anInteger) asString.
+! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:58:27'!
+patternRestart
+
+	pindex := 1.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/14/2025 15:27:10'!
+setNarrowCursorTo: anAddress
+
+	cursor := anAddress.
+	beginh := cursor.
+	endh := cursor.
+	
+	self assert: self isNarrowCursor = true
+! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/9/2025 19:21:22'!
 cursor
@@ -803,7 +773,7 @@ width: anInteger
 	
 	width := anInteger! !
 
-!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/9/2025 17:39:01'!
+!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/15/2025 07:48:42'!
 initialize
 
 	width := 8. "maximum number of characters in a line"
@@ -815,7 +785,9 @@ initialize
 	beginh := cursor.
 	endh := cursor.
 	
-	cursor line: lines ; index: 1.! !
+	cursor line: lines ; index: 1.
+	
+	pindex := 1.! !
 
 !WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/9/2025 18:18:55'!
 erase
@@ -1063,11 +1035,12 @@ drawHighlightOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:16:48'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/14/2025 14:49:28'!
 drawOn: aCanvas
 
 	| yy ii line |
 	
+	[
 	self assert: machine notNil.
 	
 	super drawOn: aCanvas.
@@ -1085,9 +1058,11 @@ drawOn: aCanvas
 
 	showCursor 
 		ifTrue:[self drawCursorOn: aCanvas ]
-		! !
+	]
+	on: AssertionFailure do:[:ex | self drawingFails. ex explore].
+	! !
 
-!WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/11/2025 18:37:20'!
+!WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/15/2025 08:13:29'!
 initialize
 
 	super initialize. 
@@ -1106,50 +1081,81 @@ initialize
 	
 	cursorColor := Color fromHexString: '#AAAAAA'.
 	
-	! !
+	leftAltDown := false.
 
-<<<<<<< HEAD
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 21:43:15'!
-=======
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:30:18'!
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
+	rightAltDown := false.
+
+	ctrlDown := false.
+
+	state := #editing.
+
+	match := true.! !
+
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 09:21:42'!
 keyDown: aMorphicEvent
 
-	aMorphicEvent commandAltKeyPressed
-		ifTrue:[ | keyv |
-			keyv := aMorphicEvent keyValue.
-			keyv = 152 or: [keyv = 136] ::
-				ifTrue:[
-					machine pattern: '' ]
-				ifFalse:[
-					machine patternPut: aMorphicEvent keyValue] ].
-			
-<<<<<<< HEAD
-	Transcript show: 'keyDown:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
-
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/14/2025 14:39:39'!
-keyUp: aMorphicEvent
-
-	Transcript show: 'keyUp:'; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr.
+	| keyv |
 	
-=======
-	Transcript show: 'keyDown: ' ; show: aMorphicEvent commandAltKeyPressed ; show: ' # '; show: aMorphicEvent keyValue; cr! !
+	keyv := aMorphicEvent keyValue.
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/12/2025 20:31:13'!
+	keyv = WPTextMorph LeftAlt
+		ifTrue:[ leftAltDown := true].
+
+	keyv = WPTextMorph RightAlt
+		ifTrue:[ rightAltDown := true].
+
+	keyv = WPTextMorph RightCtrl or:[keyv = WPTextMorph LeftCtrl] ::
+		ifTrue:[ ctrlDown := true].
+	
+	rightAltDown = false and: [ leftAltDown = false ] ::
+		ifTrue:[
+			state := #editing].
+	
+	state = #editing and: [ rightAltDown or: [ leftAltDown ] ] ::
+		ifTrue:[
+			state := #init].
+		
+	state = #init and: [keyv < 128 ] :: 
+		ifTrue:[
+			machine clearPattern.
+			match := true.
+			state := #building ].
+	
+	state = #init and: [ ctrlDown ] ::
+		ifTrue:[
+			machine patternRestart. self leap].
+		
+	state = #building and:[keyv < 128] and:[match] ::
+		ifTrue:[
+			machine patternPut: keyv.
+			match := self leap].
+			
+	Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr
+	! !
+
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 07:41:03'!
 keyUp: aMorphicEvent
 
-	Transcript show: 'keyUp: ' ; show: aMorphicEvent keyValue; cr.
+	| keyv |
+	
+	keyv := aMorphicEvent keyValue.
+	
+	keyv = WPTextMorph LeftAlt
+		ifTrue:[ leftAltDown := false].
 
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
-	aMorphicEvent keyValue = 152
+	keyv = WPTextMorph RightAlt
+		ifTrue:[ rightAltDown := false].
+
+	keyv = WPTextMorph RightCtrl or:[keyv = WPTextMorph LeftCtrl] ::
+		ifTrue:[ ctrlDown := false].
+
+	rightAltDown = false and: [ leftAltDown = false ] ::
 		ifTrue:[
-			machine leapLeft.
-			].
-		
-	aMorphicEvent keyValue = 136
-		ifTrue:[
-			machine leapRight.
-			].
+			state := #editing].
+			
+	Transcript show: ('key: up. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr.
+	
+	self scrollToCursor.
 		
 	self redrawNeeded 
 ! !
@@ -1163,15 +1169,23 @@ mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 handlesKeyboard
 	^true! !
 
-<<<<<<< HEAD
 !WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
 handlesMouseDown: aMouseButtonEvent
 	^true! !
-=======
-!WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 20:26:18'!
-handlesMouseDown: aMouseButtonEvent
-	^ true! !
->>>>>>> db7309787acf53ae461f6925c5e78a5f72587cc9
+
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 08:06:53'!
+leap
+
+	^leftAltDown 
+		ifTrue:[
+			machine leapLeft]
+		ifFalse:[
+			rightAltDown
+				ifTrue:[
+					machine leapRight]
+				ifFalse:[
+					self assert: false. "we must not leap when both alts are pressed" ] ]
+! !
 
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
 machine: aWPMachine
@@ -1232,6 +1246,22 @@ wend
 	wsize timesRepeat: [ pp := pp next].
 	
 	^pp! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:15'!
+LeftAlt
+	^152! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:51'!
+LeftCtrl
+	^222! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:31'!
+RightAlt
+	^136! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:27:02'!
+RightCtrl
+	^221! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
@@ -1540,14 +1570,12 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	self assert: (rr intersect:zz) = (yb to: xe).
 	! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 18:37:48'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 15:42:25'!
 testMorph
 
 	| text machine |
 	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
-
-Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
 	machine := WordProcessorMachine new.
 	
