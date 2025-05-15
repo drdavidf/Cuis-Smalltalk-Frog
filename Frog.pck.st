@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 5:53:52 pm'!
+'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 11:11:39 pm'!
 'Description '!
-!provides: 'Frog' 1 174!
+!provides: 'Frog' 1 209!
 SystemOrganization addCategory: #Frog!
 
 
@@ -12,6 +12,16 @@ Object subclass: #Address
 	category: 'Frog'!
 !classDefinition: 'Address class' category: #Frog!
 Address class
+	instanceVariableNames: ''!
+
+!classDefinition: #AddressRange category: #Frog!
+Object subclass: #AddressRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'AddressRange class' category: #Frog!
+AddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #Line category: #Frog!
@@ -86,7 +96,7 @@ WPRuler class
 
 !classDefinition: #WPTextMorph category: #Frog!
 BorderedBoxMorph subclass: #WPTextMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match ccursor'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -129,9 +139,13 @@ TestWordProcessorMachine class
 	
 	^Address new line: line ; index: index - anInteger ;yourself! !
 
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:00:59'!
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:16:34'!
+< anAddress
+	^ anAddress > self! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:42:23'!
 <= anAddress
-	^ (line precedes: anAddress line) and: [index <= anAddress index]! !
+	^ (line precedes: anAddress line) and: [line ~= anAddress line or:[index <= anAddress index] ]! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 15:31:04'!
 = anAddress
@@ -142,6 +156,10 @@ TestWordProcessorMachine class
 	^line = anAddress line and:[index = anAddress index]
 	
 	! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:16:16'!
+> anAddress
+	^ (self <= anAddress) not! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 19:16:04'!
 advanceBy: aNumber
@@ -259,6 +277,26 @@ line
 line: aLine
 	line := aLine! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:23:34'!
+max: anAddress
+
+	^self <= anAddress
+		ifTrue:[
+			anAddress]
+		ifFalse:[
+			self]
+		! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:22:24'!
+min: anAddress
+
+	^self <= anAddress
+		ifTrue:[
+			self]
+		ifFalse:[
+			anAddress]
+		! !
+
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 17:34:59'!
 nextLine
 
@@ -280,10 +318,101 @@ pastLastLine
 	
 	! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:34:22'!
+to: anAddress
+
+	self assert: self <= anAddress.
+	
+	^AddressRange new begin: self; end: anAddress; yourself.! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:40'!
+= anAddressRange
+
+	self class == anAddressRange class 
+		ifFalse:[^false].
+		
+	^begin = anAddressRange begin and:[end = anAddressRange end]
+	
+	! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:20:59'!
+begin
+	^begin! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:20:54'!
+begin: anAddress
+	begin := anAddress ! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:01'!
+end
+	^end! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:09'!
+end: anAddress
+	end := anAddress! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:22:05'!
+hash
+	"Hash is reimplemented because = is implemented."
+
+	^(begin hash hashMultiply + end hash) hashMultiply! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:35:16'!
+intersect: anAddressRange
+
+	| commonLines beginIndex endIndex |
+	
+	commonLines :=  self lineRange intersect: anAddressRange lineRange.
+	
+	commonLines begin = begin line and: [commonLines begin = anAddressRange begin line] ::
+		ifTrue:[
+			beginIndex := begin index max: anAddressRange begin index]
+		ifFalse:[
+			commonLines begin = begin line
+				ifTrue:[
+					beginIndex := begin index]
+				ifFalse:[
+					beginIndex := anAddressRange begin index] ].
+
+	commonLines end = end line and: [commonLines end = anAddressRange end line] ::
+		ifTrue:[
+			endIndex := end index min: anAddressRange end index]
+		ifFalse:[
+			commonLines end = end line
+				ifTrue:[
+					endIndex := end index]
+				ifFalse:[
+					endIndex := anAddressRange end index] ].
+	
+	^ AddressRange new begin: (Address new line: commonLines begin ; index: beginIndex ; yourself) ; end: (Address new line: commonLines end; index: endIndex; yourself) ; yourself
+	! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:22:17'!
+invariant
+
+	^ (begin isNil and: end isNil) or:[begin <= end]! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:24:30'!
+lineRange
+	^begin line to: end line! !
+
 !Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
 precedes: aLine
 
 	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:55:54'!
+at: anIndex
+
+	self assert: anIndex <= (text size + 1).
+	self assert: 0 < anIndex.
+	
+	^Address new line: self ; index: anIndex; yourself.! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:39:16'!
+atPastEnd
+	
+	^Address new line: self ; index: text size + 1; yourself.! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
 distanceFrom: aLine
@@ -404,7 +533,7 @@ to: aLine
 	
 	^LineRange new begin: self ; end: aLine ; yourself! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/8/2025 15:48:23'!
+!Line methodsFor: 'private' stamp: 'DF 5/15/2025 21:51:47'!
 nextToken: aReadStream
 	
 	| tokenStream cc stop state |
@@ -491,7 +620,7 @@ hash
 
 	^(begin hash hashMultiply + end hash) hashMultiply! !
 
-!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:04:03'!
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 22:49:38'!
 intersect: aLineRange
 
 	| b e p q |
@@ -520,6 +649,11 @@ intersect: aLineRange
 					e := q].
 			q := q next ].
 	
+	end = aLineRange end
+		ifTrue:[
+			self assert: e isNil.
+			e := end ].
+		
 	^LineRange new begin: b ; end: e ; yourself! !
 
 !LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:40'!
@@ -581,12 +715,31 @@ open: aWordProcessorMachine
 
 ! !
 
-!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/8/2025 22:14:28'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/15/2025 19:29:22'!
 invariant
 
-	beginh line notNil and: [endh line notNil] and: [beginh <= endh] and: [ lines allSatisfy: [:eachLine | eachLine invariant] ]
+	| pp |
+	
+	beginh line isNil
+		ifTrue:[^false].
+		
+	endh line isNil
+		ifTrue:[^false].
+		
+	beginh <= endh
+		ifFalse:[^false].
+	
+	pp := lines.
+	
+	[pp notNil and: [pp invariant] ] whileTrue:[pp := pp next].
+	
+	^pp isNil
 	
 	! !
+
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/15/2025 19:31:18'!
+isExtendedCursor
+	^ beginh < endh and: [ endh forward = cursor]! !
 
 !WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:06'!
 isNarrowCursor
@@ -617,11 +770,17 @@ creepRight
 	
 	cursor := cursor forward.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/11/2025 15:37:21'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 19:25:22'!
 highlight
 
-	beginh := leftl min: rightl.
-	endh := leftl max: rightl.! !
+	self assert: pcursor notNil.
+	
+	beginh := cursor min: pcursor.
+	endh := cursor max: pcursor.
+	
+	cursor := endh forward.
+	
+	self assert: beginh <= endh.! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:50:56'!
 leapLeft
@@ -780,6 +939,15 @@ cursor
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/8/2025 17:04:36'!
 lines
 	^lines! !
+
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/15/2025 21:33:19'!
+selection
+
+	self assert: beginh notNil.
+	
+	self assert: endh notNil.
+	
+	^ beginh to: endh ! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/11/2025 16:06:39'!
 width: anInteger
@@ -1019,7 +1187,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/11/2025 18:10:48'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 20:00:50'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1031,7 +1199,7 @@ drawCursorOn: aCanvas
 
 	aCanvas fillRectangle: textCursorRect  color: cursorColor.
 	machine isWideCursor
-		ifTrue:[ self drawHighlightOn: aCanvas ] 
+		ifTrue:[ self drawHighlightOn: aCanvas ] .
 ! !
 
 !WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:18:27'!
@@ -1050,32 +1218,75 @@ drawHighlightOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/14/2025 14:49:28'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:18:12'!
 drawOn: aCanvas
 
-	| yy ii line |
-	
 	[
 	self assert: machine notNil.
 	
 	super drawOn: aCanvas.
-
-	ii := 0.
-	yy := 0.
 	
-	line := wbegin.
-	
-	[ line notNil and: [yy + dy < self morphHeight] ] whileTrue:[
-		aCanvas drawString: line text at: 0@ yy font: font color: Color black.
-		ii := ii + 1.
-		yy := ii * dy.
-		line := line next ].
+	self drawOn: aCanvas textFrom: (wbegin at:1) to: self wend atPastEnd atHeight: 0 highlight: false color: Color black.
 
 	showCursor 
-		ifTrue:[self drawCursorOn: aCanvas ]
+		ifTrue:[self drawCursorOn: aCanvas ].
+		
+	machine isExtendedCursor 
+		ifTrue:[self drawSelectionOn: aCanvas].
+
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. ex explore].
 	! !
+
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 23:09:33'!
+drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
+
+	| yy ii line |
+
+	yy := hh.	
+	line := addrB line.
+	ii := 0.
+
+	aBoolean ifTrue:[ | dd mid last xb xe |
+
+		dd := addrB line distanceFrom: addrE line.
+		mid := 0 max: dd - 1.
+		last := 0 max: dd .
+
+		xb := dx * (addrB index - 1).
+		xe := last = 0 
+			ifTrue:[
+				dx * addrE index] 
+			ifFalse:[
+				self morphWidth].
+		
+		aCanvas fillRectangle: (xb @ hh corner: xe@ (hh+dy)) color: Color black.
+	
+		mid > 0
+			ifTrue:[
+				aCanvas fillRectangle: (0 @ (hh + dy) extent: self morphWidth@ (dy * mid)) color: Color black].
+	
+		last > 0
+			ifTrue:[
+				aCanvas fillRectangle: (0 @ (hh + (dy*last)) extent: (dx * addrE index) @ dy) color: Color black] ].
+	
+	[ line ~= addrE line next ] whileTrue:[
+		aCanvas drawString: line text at: 0@ yy font: font color: aColor.
+		ii := ii + 1.
+		yy := hh + (ii * dy).
+		line := line next ].
+! !
+
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:30:23'!
+drawSelectionOn: aCanvas
+
+	| range |
+	
+	range := ((wbegin at:1) to: self wend atPastEnd) intersect: machine selection.
+	
+	self drawOn: aCanvas textFrom: range begin to: range end atHeight: dy * (wbegin distanceFrom: range begin line) highlight: true color: Color white.
+	
+! !
 
 !WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/15/2025 08:13:29'!
 initialize
@@ -1106,7 +1317,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 17:25:02'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 23:11:29'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1121,6 +1332,11 @@ keyDown: aMorphicEvent
 
 	keyv = WPTextMorph RightCtrl or:[keyv = WPTextMorph LeftCtrl] ::
 		ifTrue:[ ctrlDown := true].
+
+	rightAltDown and: [ leftAltDown ] ::
+		ifTrue:[
+			machine highlight.
+			self redrawNeeded ].
 	
 	rightAltDown = false and: [ leftAltDown = false ] ::
 		ifTrue:[
@@ -1262,14 +1478,18 @@ scrollToCursor
 		
 		! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:58:16'!
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:56:54'!
 wend
 
-	| pp |
+	| pp ii |
 	
 	pp := wbegin.
 	
-	wsize timesRepeat: [ pp := pp next].
+	ii := 0.
+	
+	[ii < wsize and:[pp next notNil] ] whileTrue:[
+		ii := ii + 1.
+		pp := pp next].
 	
 	^pp! !
 
@@ -1403,10 +1623,10 @@ testAddress
 	
 	self assert: pp index = 8.! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 22:57:26'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:36:08'!
 testAddressRange
 
-	| machine text xb xe yb ye rr zz  |
+	| machine text selection window common |
 		
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
 
@@ -1418,16 +1638,32 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	
 	machine insert: text.
 
-	xb := machine begin.
-	xe := xb advanceBy: 3.
+	machine pattern:  'olden'.
 	
-	yb := xe advanceBy: 1.
-	ye := yb advanceBy:2.
+	machine leapRight.
 	
-	rr := xb to: xe.
-	zz := yb to: ye.
+	self assert: machine cursor = (Address new line: machine lines ; index: 4 ; yourself).	
 	
-	self assert: (rr intersect: zz) isEmpty.
+	machine pushCursor.
+
+	machine pattern:  'have'.
+	
+	machine leapRight.
+	
+	self assert: machine cursor = (Address new line: machine lines next next next ; index: 4 ; yourself).	
+	
+	machine highlight.
+	
+	selection := machine selection.
+	
+	window := AddressRange new begin: (Address new line: machine lines next ; index:1; yourself) ; end: (Address new line: machine lines next next next next next next ; index: 11; yourself) ; yourself.
+	
+	common := selection intersect: window.
+	
+	self assert: common begin = window begin.
+	
+	self assert: common end = selection end.
+	
 	! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
@@ -1457,6 +1693,32 @@ testErase
 	self assert: aLine next text = '12345'.
 	
 	! !
+
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:26:27'!
+testHighlight
+
+	| machine text |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
+
+Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	machine := WordProcessorMachine new.
+	
+	machine width: 12.
+	
+	machine insert: text.
+
+	machine pattern:  'the'.
+	
+	machine leapLeft.
+	
+	machine pushCursor ; creepLeft; leapLeft.
+	
+	machine highlight.
+	
+	self assert: machine invariant.
+! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
 testInsert
