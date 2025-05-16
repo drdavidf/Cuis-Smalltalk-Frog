@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 5:48:00 pm'!
+'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 7:13:20 pm'!
 'Description '!
-!provides: 'Frog' 1 241!
+!provides: 'Frog' 1 251!
 SystemOrganization addCategory: #Frog!
 
 
@@ -757,9 +757,9 @@ isExtendedCursor
 isNarrowCursor
 	^ beginh = endh and: [ endh = cursor]! !
 
-!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:23'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/16/2025 17:55:07'!
 isWideCursor
-	^ beginh = endh and: [ endh forward = cursor]! !
+	^ beginh = endh and: [endh isPastLast not] and: [ endh forward = cursor]! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:46:02'!
 clearPattern
@@ -996,7 +996,7 @@ initialize
 	endh := cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 15:18:23'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 18:23:24'!
 erase
 
 	| aWriteStream p uu vv bb |
@@ -1016,7 +1016,7 @@ erase
 	
 	p := endh line next.
 	
-	[p isNil or: [p text last isLineSeparator ] ] whileFalse:[
+	[p isNil or: [ p text notEmpty and: [p text last isLineSeparator ] ] ] whileFalse:[
 		aWriteStream nextPutAll: p text.
 		p := p next].
 	
@@ -1248,7 +1248,7 @@ machine: aWordProcessorMachine
 	
 	machine when: #cursor send: #redrawNeeded to: self.! !
 
-!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:33:47'!
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 18:51:34'!
 onBlinkCursor
 	
 	"Blink the cursor"
@@ -1276,7 +1276,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:47:13'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:52:09'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1289,11 +1289,9 @@ drawCursorOn: aCanvas
 
 	aCanvas fillRectangle: textCursorRect  color: cursorColor.
 	
-	machine isWideCursor
-		ifTrue:[ self drawHighlightOn: aCanvas ] .
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/13/2025 16:18:27'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:36:40'!
 drawHighlightOn: aCanvas
 
 	| ycursor cc wycursor wxcursor |
@@ -1309,7 +1307,7 @@ drawHighlightOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:49:13'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:52:55'!
 drawOn: aCanvas
 
 	[
@@ -1321,7 +1319,10 @@ drawOn: aCanvas
 
 	showCursor 
 		ifTrue:[self drawCursorOn: aCanvas ].
-		
+	
+	machine isWideCursor
+		ifTrue:[self drawHighlightOn: aCanvas ] .
+	
 	machine isExtendedCursor 
 		ifTrue:[self drawSelectionOn: aCanvas].
 
@@ -1329,7 +1330,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 11:16:41'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:01:23'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
 	| yy ii line |
@@ -1363,7 +1364,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 	
 	addrB line = addrE line
 		ifTrue:[
-			aCanvas drawString: (addrB line text copyFrom: addrB index to: addrE index) at: dx * (addrB -1) index @ yy font: font color: aColor.
+			aCanvas drawString: (addrB line text copyFrom: addrB index to: addrE index - 1) at: dx * (addrB index - 1) @ yy font: font color: aColor.
 		^self ].
 	
 	" there are at least two lines to draw"
@@ -1429,7 +1430,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 17:05:23'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 19:11:15'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1457,6 +1458,20 @@ keyDown: aMorphicEvent
 	state = #editing and: [ rightAltDown or: [ leftAltDown ] ] ::
 		ifTrue:[
 			state := #init].
+	
+	state = #editing and: [keyv < 128 ] ::
+		ifTrue:[
+			keyv = WPTextMorph NewLine
+				ifTrue:[
+					machine insert: String crString].
+			keyv = WPTextMorph Erase
+				ifTrue:[
+					machine erase]
+				ifFalse:[ 
+					keyv > 31
+						ifTrue:[ | cc |
+							cc := Character codePoint: keyv.
+							machine insert: cc asString] ] ].
 		
 	state = #init and: [keyv < 128 ] :: 
 		ifTrue:[
@@ -1474,7 +1489,7 @@ keyDown: aMorphicEvent
 					leftAltDown
 						ifTrue:[
 							machine creepLeft] ].
-			self leap ; scrollToCursor ].
+			self leap ].
 		
 	state = #building and:[keyv < 128] and:[match] ::
 		ifTrue:[
@@ -1482,13 +1497,14 @@ keyDown: aMorphicEvent
 			match := self leap.
 			match 
 				ifFalse:[
-					machine popCursor ].
-			self scrollToCursor ].
+					machine popCursor ]	].
+	
+	self scrollToCursor.
 			
 	Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr
 	! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 07:41:03'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 17:58:36'!
 keyUp: aMorphicEvent
 
 	| keyv |
@@ -1510,7 +1526,7 @@ keyUp: aMorphicEvent
 			
 	Transcript show: ('key: up. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr.
 	
-	self scrollToCursor.
+	"self scrollToCursor."
 		
 	self redrawNeeded 
 ! !
@@ -1527,6 +1543,63 @@ handlesKeyboard
 !WPTextMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
 handlesMouseDown: aMouseButtonEvent
 	^true! !
+
+!WPTextMorph methodsFor: 'scrolling' stamp: 'DF 5/13/2025 15:53:46'!
+scrollBackwardToCursor
+
+	[ wbegin = machine cursor line ] whileFalse:[wbegin := wbegin prev ].
+	
+! !
+
+!WPTextMorph methodsFor: 'scrolling' stamp: 'DF 5/13/2025 15:42:13'!
+scrollForwardToCursor
+
+	| ii pp |
+	
+	pp := machine cursor line.
+	
+	ii := 0.
+	
+
+	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + 1. ].
+	
+	" pp prev isNil and pp notNil and ii = distance[pp,line] and pp prev isNil or ii = wsize "
+	
+	" pp notNil and ii = distance[pp,line] and ii <= wsize "
+	
+	"pp notNil and distance[pp,line] <= wsize"
+	
+	wbegin := pp.! !
+
+!WPTextMorph methodsFor: 'scrolling' stamp: 'DF 5/16/2025 19:12:55'!
+scrollToCursor
+
+	"
+	look for the cursor within the window, if found there is not need to scroll.
+	
+	"
+	
+	| pp ee |
+	
+	pp := wbegin.
+	
+	ee := self wend.
+	
+	[pp ~= ee and: [pp ~= machine cursor line ] ] whileTrue:[ pp := pp next ].
+	
+	pp = machine cursor line ifTrue:[^self].
+	
+	" otherwise, see where to scroll "
+	
+	self wend precedes: machine cursor line ::
+		ifTrue:[
+			^self scrollForwardToCursor ].
+		
+	machine cursor line precedes: wbegin ::
+		ifTrue:[
+			^self scrollBackwardToCursor ].
+		
+		! !
 
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:04:45'!
 leap
@@ -1553,46 +1626,6 @@ machine: aWPMachine
 	
 	self scrollToCursor ! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:46'!
-scrollBackwardToCursor
-
-	[ wbegin = machine cursor line ] whileFalse:[wbegin := wbegin prev ].
-	
-! !
-
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:42:13'!
-scrollForwardToCursor
-
-	| ii pp |
-	
-	pp := machine cursor line.
-	
-	ii := 0.
-	
-
-	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + 1. ].
-	
-	" pp prev isNil and pp notNil and ii = distance[pp,line] and pp prev isNil or ii = wsize "
-	
-	" pp notNil and ii = distance[pp,line] and ii <= wsize "
-	
-	"pp notNil and distance[pp,line] <= wsize"
-	
-	wbegin := pp.! !
-
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 16:00:53'!
-scrollToCursor
-
-	self wend precedes: machine cursor line ::
-		ifTrue:[
-			^self scrollForwardToCursor ].
-		
-	machine cursor line precedes: wbegin ::
-		ifTrue:[
-			^self scrollBackwardToCursor ].
-		
-		! !
-
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:56:54'!
 wend
 
@@ -1608,6 +1641,10 @@ wend
 	
 	^pp! !
 
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 18:14:14'!
+Erase
+	^8! !
+
 !WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:15'!
 LeftAlt
 	^152! !
@@ -1615,6 +1652,10 @@ LeftAlt
 !WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:51'!
 LeftCtrl
 	^222! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 19:10:02'!
+NewLine
+	^13! !
 
 !WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:31'!
 RightAlt
