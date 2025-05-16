@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 5:38:52 pm'!
+'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 5:48:00 pm'!
 'Description '!
-!provides: 'Frog' 1 239!
+!provides: 'Frog' 1 241!
 SystemOrganization addCategory: #Frog!
 
 
@@ -76,7 +76,7 @@ WordProcessor class
 
 !classDefinition: #WordProcessorMachine category: #Frog!
 Object subclass: #WordProcessorMachine
-	instanceVariableNames: 'lines cursor beginh endh width pattern rightl leftl pindex pcursor pbeginh pendh'
+	instanceVariableNames: 'lines cursor beginh endh width pattern pcursor pbeginh pendh'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -761,12 +761,11 @@ isNarrowCursor
 isWideCursor
 	^ beginh = endh and: [ endh forward = cursor]! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:49:27'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:46:02'!
 clearPattern
 
 	pattern := ''.
-	
-	pindex := 1.! !
+! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:32'!
 creepLeft
@@ -800,17 +799,15 @@ highlight
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:50:56'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:32'!
 leapLeft
 
 	| p |
 	
-	pindex > pattern size ifTrue:[^false].
+	pattern ifEmpty:[^false].
 	
-	p := cursor "isFirst 
-			ifTrue:[cursor] 
-			ifFalse:[cursor back].".
-
+	p := cursor.
+	
 	" leap back "
 	
 	[p isFirst not and: [p isInvalidOffset: pattern size - 1]] whileTrue:[
@@ -822,7 +819,6 @@ leapLeft
 	(p isFirst) 
 		ifFalse:[
 			self setNarrowCursorTo: p.
-			leftl := cursor.
 			^true].
 		
 	" we did not find it going back towards the beginning. now start from the end 
@@ -836,21 +832,18 @@ leapLeft
 	(p = cursor)
 		ifFalse:[
 			self setNarrowCursorTo: p - (pattern size - 1).
-			leftl := cursor.
 			^true].
 
 	^false! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:28:29'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:45'!
 leapRight
 
 	| p |
 
-	pindex > pattern size ifTrue:[^false].
+	pattern ifEmpty:[^false].
 	
-	p := cursor" isPastLast 
-			ifTrue:[cursor] 
-			ifFalse:[cursor forward]".
+	p := cursor.
 
 	" leap forward "
 			
@@ -860,7 +853,6 @@ leapRight
 	(p isPastLast) 
 		ifFalse:[
 			self setNarrowCursorTo: p.
-			rightl := p.
 			^true].
 		
 	" we did not find it going forward towards the end. Now start from the beginning
@@ -874,14 +866,13 @@ leapRight
 	(p = cursor)
 		ifFalse:[
 			self setNarrowCursorTo: p.
-			rightl := p.
 			^true].
 		
 	^false
 			
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:50:58'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:54'!
 matchBackFrom: anAddress
 
 	| p ii |
@@ -890,21 +881,21 @@ matchBackFrom: anAddress
 
 	ii := pattern size.
 		
-	[ ii  = (pindex - 1) or: [ p isFirst ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
+	[ ii  = 0 or: [ p isFirst ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
 		ii := ii - 1.
 		p := p back ].
 	
 	^ ii = 0
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 07:49:37'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:57'!
 matchForwardFrom: anAddress
 
 	| p ii |
 
 	p := anAddress.
 
-	ii := pindex.
+	ii := 1.
 		
 	[ ii  = (pattern size + 1) or: [ p isPastLast ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
 		ii := ii + 1.
@@ -992,21 +983,18 @@ width: anInteger
 	
 	width := anInteger! !
 
-!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/15/2025 07:48:42'!
+!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/16/2025 17:47:37'!
 initialize
 
 	width := 8. "maximum number of characters in a line"
 	
 	lines := Line new.
 	
-	cursor := Address new.
+	cursor := lines at:1.
 	
 	beginh := cursor.
 	endh := cursor.
-	
-	cursor line: lines ; index: 1.
-	
-	pindex := 1.! !
+! !
 
 !WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 15:18:23'!
 erase
