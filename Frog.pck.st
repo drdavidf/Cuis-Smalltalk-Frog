@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 7:13:20 pm'!
+'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 9:46:40 pm'!
 'Description '!
-!provides: 'Frog' 1 251!
+!provides: 'Frog' 1 257!
 SystemOrganization addCategory: #Frog!
 
 
@@ -749,9 +749,9 @@ invariant
 	
 	! !
 
-!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/15/2025 19:31:18'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/16/2025 21:38:14'!
 isExtendedCursor
-	^ beginh < endh and: [ endh forward = cursor]! !
+	^ beginh < endh and: [ endh isPastLast not] and:[endh forward = cursor]! !
 
 !WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/9/2025 19:38:06'!
 isNarrowCursor
@@ -799,7 +799,7 @@ highlight
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:32'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 20:47:01'!
 leapLeft
 
 	| p |
@@ -817,6 +817,13 @@ leapLeft
 		p := p back ].
 
 	(p isFirst) 
+		ifTrue:[ 
+			p line text size >= (pattern size -1)
+				ifTrue:
+					[ self matchBackFrom: (p advanceBy: (pattern size - 1)) ::
+						ifTrue:[
+							self setNarrowCursorTo: p. 
+							^true ] ] ]
 		ifFalse:[
 			self setNarrowCursorTo: p.
 			^true].
@@ -824,9 +831,9 @@ leapLeft
 	" we did not find it going back towards the beginning. now start from the end 
 	and stop when reaching cursor"
 	
-	p := p pastLastLine back.
+	p := p pastLastLine.
 	
-	[ p = cursor or: [self matchBackFrom: p  ] ] whileFalse:[
+	[ p = cursor or: [p isPastLast not and: [self matchBackFrom: p ]  ] ] whileFalse:[
 		p := p back ].
 	
 	(p = cursor)
@@ -871,6 +878,20 @@ leapRight
 	^false
 			
 ! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 21:45:32'!
+leapToBeginning
+
+	self setNarrowCursorTo: (lines at:1).
+	
+	^true! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 21:45:37'!
+leapToEnd
+
+	self setNarrowCursorTo: cursor pastLastLine back.
+	
+	^true! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:54'!
 matchBackFrom: anAddress
@@ -967,6 +988,10 @@ cursorLineNumber
 lines
 	^lines! !
 
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/16/2025 21:20:12'!
+pattern
+	^pattern! !
+
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/15/2025 21:33:19'!
 selection
 
@@ -996,7 +1021,7 @@ initialize
 	endh := cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 18:23:24'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 19:37:46'!
 erase
 
 	| aWriteStream p uu vv bb |
@@ -1021,7 +1046,9 @@ erase
 		p := p next].
 	
 	p notNil
-		ifTrue:[aWriteStream nextPutAll: p text].
+		ifTrue:[
+			aWriteStream nextPutAll: p text.
+			p := p next].
 		
 	" clear beginh line and remove all the lines between beginh line next and p "
 	
@@ -1330,7 +1357,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:01:23'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 21:03:20'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
 	| yy ii line |
@@ -1364,7 +1391,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 	
 	addrB line = addrE line
 		ifTrue:[
-			aCanvas drawString: (addrB line text copyFrom: addrB index to: addrE index - 1) at: dx * (addrB index - 1) @ yy font: font color: aColor.
+			aCanvas drawString: (addrB line text copyFrom: addrB index to: (addrE index min: addrE line text size)) at: dx * (addrB index - 1) @ yy font: font color: aColor.
 		^self ].
 	
 	" there are at least two lines to draw"
@@ -1387,7 +1414,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 
 	" draw the text for the last line "
 
-	aCanvas drawString: addrE line text  at: 0 @ yy font: font color: aColor.
+	aCanvas drawString: (addrE line text copyFrom:1 to: (addrE index min: addrE line text size)) at: 0 @ yy font: font color: aColor.
 	! !
 
 !WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:30:23'!
@@ -1430,7 +1457,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 19:11:15'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 21:17:39'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1472,7 +1499,7 @@ keyDown: aMorphicEvent
 						ifTrue:[ | cc |
 							cc := Character codePoint: keyv.
 							machine insert: cc asString] ] ].
-		
+	
 	state = #init and: [keyv < 128 ] :: 
 		ifTrue:[
 			machine clearPattern.
@@ -1601,16 +1628,24 @@ scrollToCursor
 		
 		! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:04:45'!
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 21:36:08'!
 leap
 
 	^leftAltDown 
 		ifTrue:[
-			machine leapLeft]
+			machine pattern first = Character newPage 
+				ifTrue:[
+					machine leapToBeginning ]
+				ifFalse:[
+					machine leapLeft] ]
 		ifFalse:[
 			rightAltDown
 				ifTrue:[
-					machine leapRight]
+					machine pattern first = Character newPage 
+						ifTrue:[
+							machine leapToEnd ]
+						ifFalse:[
+							machine leapRight] ]
 				ifFalse:[
 					self assert: false. "we must not leap when both alts are pressed" ] ].
 			
@@ -1656,6 +1691,10 @@ LeftCtrl
 !WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 19:10:02'!
 NewLine
 	^13! !
+
+!WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 21:13:12'!
+Page
+	^12! !
 
 !WPTextMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:31'!
 RightAlt
@@ -1822,7 +1861,7 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	
 	! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 19:40:54'!
 testErase
 
 	| aWordProcessor aLine |
@@ -1848,6 +1887,17 @@ testErase
 	self assert: aLine text = 'abc '.
 	self assert: aLine next text = '12345'.
 	
+	aWordProcessor insert: 'tr', String crString.
+	
+	aWordProcessor insert:'uq2x'.
+	
+	aWordProcessor pattern: 'abc'.
+	
+	aWordProcessor leapLeft.
+	
+	aWordProcessor erase.
+	
+	self assert: true.
 	! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:26:27'!
