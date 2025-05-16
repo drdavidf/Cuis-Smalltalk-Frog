@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 15 May 2025 at 11:11:39 pm'!
+'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 5:38:52 pm'!
 'Description '!
-!provides: 'Frog' 1 209!
+!provides: 'Frog' 1 239!
 SystemOrganization addCategory: #Frog!
 
 
@@ -86,7 +86,7 @@ WordProcessorMachine class
 
 !classDefinition: #WPRuler category: #Frog!
 BorderedBoxMorph subclass: #WPRuler
-	instanceVariableNames: 'font'
+	instanceVariableNames: 'rulerFont machine dx statusFont rulerCursorRect showCursor'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -96,7 +96,7 @@ WPRuler class
 
 !classDefinition: #WPTextMorph category: #Frog!
 BorderedBoxMorph subclass: #WPTextMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leftAltDown rightAltDown ctrlDown state match rulerCursorRect'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -620,14 +620,18 @@ hash
 
 	^(begin hash hashMultiply + end hash) hashMultiply! !
 
-!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 22:49:38'!
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:00:15'!
 intersect: aLineRange
 
-	| b e p q |
+	| b e p q pastEnd otherPastEnd |
+	
+	pastEnd := self end next.
+	
+	otherPastEnd := aLineRange end next.
 	
 	p := self begin.
 	
-	[p = self end]
+	[p = pastEnd]
 		whileFalse:[
 			p = aLineRange begin
 				ifTrue:[
@@ -639,7 +643,7 @@ intersect: aLineRange
 	
 	q := aLineRange begin.
 
-	[q = aLineRange end]
+	[q = otherPastEnd]
 		whileFalse:[
 			q = self begin
 				ifTrue:[
@@ -649,11 +653,6 @@ intersect: aLineRange
 					e := q].
 			q := q next ].
 	
-	end = aLineRange end
-		ifTrue:[
-			self assert: e isNil.
-			e := end ].
-		
 	^LineRange new begin: b ; end: e ; yourself! !
 
 !LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:40'!
@@ -671,47 +670,60 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:26:54'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:38:49'!
 open: aWordProcessorMachine
 
-	| machine root top text bottom ruler |
+	|  root top text bottom ruler dx dy aFont leftm |
+
+	aFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+
+	dx := aFont widthOf:$M.
 	
-	machine := WordProcessorMachine new.
+	dy := aFont lineSpacing.
+	
+	leftm := 1024 - (80 * dx).
 	
 	root := LayoutMorph newColumn.
 
-	root morphExtent: 2160@1620.
+	root morphExtent: 1024@600.
 
 	top := LayoutMorph newRow.
 
-	top padding: 5*24@12.
+	top padding: (leftm / 2)@0"10.55".
 
+	top color: Color red.
+	
 	text := WPTextMorph new.
 
-	text morphExtent: 80*24 @ (1620 - 168).
+	text morphExtent: 80*dx @ (dy * 18).
 	
 	text machine: aWordProcessorMachine.
 
+	text layoutSpec offAxisEdgeWeight: 1.0.
+		
 	top addMorph: text.
 
 	bottom := LayoutMorph newColumn.
 
-	bottom morphExtent: 2160@168.
+	bottom morphExtent: 1024@60.
 	
 	ruler := WPRuler new.
 	
-	ruler morphExtent: 80*24 @ 84.
+	ruler morphExtent: 80*dx @ 60.
 	
-	bottom padding: 5*24 @ 0.
+	ruler machine: aWordProcessorMachine.
+	
+	bottom padding: (leftm / 2) @ 1.
 	
 	bottom addMorph: ruler.
 
-	root addMorph: top; addMorph: bottom.
+	root addMorph: top fixedHeight:538; addMorph: bottom.
 
-	root scaleBy: 0.5 :: openInWorld.
+	root openInWorld.
 	
+	text addAlarm: #startBlinking after: 3.
 	
-	
+	ruler addAlarm: #startBlinking after: 3.
 
 ! !
 
@@ -756,21 +768,25 @@ clearPattern
 	
 	pindex := 1.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:10:34'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:32'!
 creepLeft
 
 	self assert: cursor isFirst = false.
 	
-	cursor := cursor back.! !
+	cursor := cursor back.
+	
+	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 09:10:42'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:36'!
 creepRight
 
 	self assert: cursor isPastLast = false.
 	
-	cursor := cursor forward.! !
+	cursor := cursor forward.
+	
+	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 19:25:22'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:46'!
 highlight
 
 	self assert: pcursor notNil.
@@ -780,7 +796,9 @@ highlight
 	
 	cursor := endh forward.
 	
-	self assert: beginh <= endh.! !
+	self assert: beginh <= endh.
+	
+	self triggerEvent: #cursor.! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:50:56'!
 leapLeft
@@ -905,7 +923,7 @@ patternPut: anInteger
 	pattern := pattern , (Character codePoint: anInteger) asString.
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:25:33'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:18:26'!
 popCursor
 
 	self assert: pcursor notNil.
@@ -914,7 +932,9 @@ popCursor
 	
 	cursor := pcursor.
 	beginh := pbeginh.
-	endh := pendh.! !
+	endh := pendh.
+	
+	self triggerEvent: #cursor.! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/15/2025 17:23:59'!
 pushCursor
@@ -922,19 +942,35 @@ pushCursor
 	pbeginh := beginh.
 	pendh := endh.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/14/2025 15:27:10'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:18:17'!
 setNarrowCursorTo: anAddress
 
 	cursor := anAddress.
 	beginh := cursor.
 	endh := cursor.
 	
-	self assert: self isNarrowCursor = true
+	self assert: self isNarrowCursor = true.
+	
+	self triggerEvent: #cursor.
 ! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/9/2025 19:21:22'!
 cursor
 	^cursor! !
+
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/16/2025 16:18:41'!
+cursorLineNumber
+
+	| pp ii |
+	
+	pp := lines.
+	ii := 1.
+	
+	[ pp ~= cursor line ] whileTrue:[
+		pp := pp next.
+		ii := ii + 1].
+	
+	^ii! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/8/2025 17:04:36'!
 lines
@@ -972,7 +1008,7 @@ initialize
 	
 	pindex := 1.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/9/2025 18:18:55'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 15:18:23'!
 erase
 
 	| aWriteStream p uu vv bb |
@@ -1025,9 +1061,10 @@ erase
 	cursor := bb.	
 	
 	self assert: (self textFrom: self begin to: self end) = (uu , vv).
-	! !
+	
+	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/11/2025 19:15:29'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 15:18:09'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -1060,6 +1097,8 @@ insert: aString
 		cursor := pp advanceBy: aString size.
 		
 		beginh := cursor back. endh := beginh.
+		
+		self triggerEvent: #cursor.
 ! !
 
 !WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:39:33'!
@@ -1124,43 +1163,104 @@ textFrom: bAddress to: eAddress
 	
 	^aWriteStream contents! !
 
-!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:33:42'!
-drawOn: aCanvas
+!WPRuler methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:36:17'!
+onBlinkCursor
+
+	showCursor := showCursor not.
+
+	rulerCursorRect ifNotNil:[:r | self invalidateLocalRect: r].! !
+
+!WPRuler methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:35:18'!
+startBlinking
 	
-	| xx dx wc |
+	showCursor := true.
+	
+	self startStepping: #onBlinkCursor stepTime: 500.
+	
+	! !
+
+!WPRuler methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:35:56'!
+stopBlinking
+	"And do not show cursor anymore."
+	self stopStepping: #onBlinkCursor.
+	
+	"Hide cursor right now if needed"
+	showCursor ifTrue: [
+		showCursor := false.
+		rulerCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
+
+!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 17:34:27'!
+drawCursorOn: aCanvas
+
+	| xcursor |
+	
+	" draw the cursor indicator in the ruler area"
+	
+	xcursor := (machine cursor index - 0.5) * dx  - 2.
+	
+	rulerCursorRect := xcursor@0 extent: 4@12.
+
+	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
+! !
+
+!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 17:36:51'!
+drawOn: aCanvas
+
+	super drawOn: aCanvas.
+		
+	self drawRulerOn: aCanvas. 
+	
+	showCursor ifTrue:[
+		self drawCursorOn: aCanvas].
+
+	aCanvas drawString: (machine cursorLineNumber printStringBase: 10 length: 2 padded: false) at: dx@30 font: statusFont color: Color white.! !
+
+!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:24:35'!
+drawRulerOn: aCanvas
+	
+	| xx wc |
 	
 	super drawOn: aCanvas.
 	
-	wc := (font widthOf: $8) / 2.
-	
-	dx := 24.
+	wc := (rulerFont widthOf: $8) / 2.
 	
 	0 to:79 do:[:ii |
-		xx := dx * ii.
-		aCanvas line: xx@0 to: xx@12 width:1 color: Color white ].
+		xx := dx / 2 + (dx * ii).
+		aCanvas line: xx@0 to: xx@5 width:1 color: Color white ].
 	
 	1 to:8 do:[:ii |
-		xx := dx * 10 * ii.
+		xx := dx / 2 + (dx * 10 * ii).
 		aCanvas 
-			line: xx@0 to: xx@24 width:1 color: Color white ;
-			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 24  font: font color: Color white ].
+			line: xx@0 to: xx@10 width:1 color: Color white ;
+			drawString: ('{1}' format:{ii}) at: (xx - wc) @ 12  font: rulerFont color: Color white ].
 		
-	aCanvas frameRectangle: (7 * 24 - 12 @ 0 extent: (66 * 24 + 24  @ 60) ) borderWidth: 1 color: Color white.! !
+	aCanvas frameRectangle: (8 * dx @ 0 extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:08:13'!
-font: aFont
-	font := aFont! !
-
-!WPRuler methodsFor: 'as yet unclassified' stamp: 'DF 5/10/2025 21:10:03'!
+!WPRuler methodsFor: 'initialization' stamp: 'DF 5/16/2025 17:37:29'!
 initialize
 
 	super initialize .
 	
 	color := Color black.
 	
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 18.	! !
+	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
+	
+	dx := (FontFamily familyName: 'CMU Typewriter Text' pointSize: 14) widthOf:$M.
+	
+	showCursor := true.! !
 
-!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/12/2025 23:25:48'!
+!WPRuler methodsFor: 'accessing' stamp: 'DF 5/16/2025 15:20:10'!
+machine: aWordProcessorMachine
+
+	self assert: aWordProcessorMachine notNil.
+	
+	machine := aWordProcessorMachine.
+	
+	machine when: #cursor send: #redrawNeeded to: self.! !
+
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:33:47'!
 onBlinkCursor
 	
 	"Blink the cursor"
@@ -1170,12 +1270,13 @@ onBlinkCursor
 	textCursorRect ifNotNil:[:r | self invalidateLocalRect: r].
 ! !
 
-!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 16:49:05'!
+!WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:35:36'!
 startBlinking
 	
 	showCursor := true.
 	
-	self startStepping: #onBlinkCursor stepTime: 500! !
+	self startStepping: #onBlinkCursor stepTime: 500.
+	! !
 
 !WPTextMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 17:20:55'!
 stopBlinking
@@ -1187,17 +1288,19 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 20:00:50'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:47:13'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
 	
 	ycursor := dy * (wbegin distanceFrom: machine cursor line).
+	
 	xcursor := dx * (machine cursor index) - dx.
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
 
 	aCanvas fillRectangle: textCursorRect  color: cursorColor.
+	
 	machine isWideCursor
 		ifTrue:[ self drawHighlightOn: aCanvas ] .
 ! !
@@ -1218,7 +1321,7 @@ drawHighlightOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:18:12'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:49:13'!
 drawOn: aCanvas
 
 	[
@@ -1235,17 +1338,15 @@ drawOn: aCanvas
 		ifTrue:[self drawSelectionOn: aCanvas].
 
 	]
-	on: AssertionFailure do:[:ex | self drawingFails. ex explore].
+	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 23:09:33'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 11:16:41'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
 	| yy ii line |
 
 	yy := hh.	
-	line := addrB line.
-	ii := 0.
 
 	aBoolean ifTrue:[ | dd mid last xb xe |
 
@@ -1270,12 +1371,35 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 			ifTrue:[
 				aCanvas fillRectangle: (0 @ (hh + (dy*last)) extent: (dx * addrE index) @ dy) color: Color black] ].
 	
-	[ line ~= addrE line next ] whileTrue:[
+	" there is just one line to draw"
+	
+	addrB line = addrE line
+		ifTrue:[
+			aCanvas drawString: (addrB line text copyFrom: addrB index to: addrE index) at: dx * (addrB -1) index @ yy font: font color: aColor.
+		^self ].
+	
+	" there are at least two lines to draw"
+	
+	" draw the text for the first line but only from the first index"
+	
+	aCanvas drawString: (addrB line text copyFrom: addrB index to: addrB line text size) at: dx * (addrB index -1) @ yy font: font color: aColor.
+
+	line := addrB line next.
+	yy := hh + dy.
+	ii := 1.
+	
+	" draw the text for the middle lines"
+	
+	[ line ~= addrE line] whileTrue:[
 		aCanvas drawString: line text at: 0@ yy font: font color: aColor.
 		ii := ii + 1.
 		yy := hh + (ii * dy).
 		line := line next ].
-! !
+
+	" draw the text for the last line "
+
+	aCanvas drawString: addrE line text  at: 0 @ yy font: font color: aColor.
+	! !
 
 !WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:30:23'!
 drawSelectionOn: aCanvas
@@ -1288,20 +1412,20 @@ drawSelectionOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/15/2025 08:13:29'!
+!WPTextMorph methodsFor: 'initialization' stamp: 'DF 5/16/2025 14:03:01'!
 initialize
 
 	super initialize. 
 	
 	color := Color white.
 	
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 28.
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
 	
 	dy := font lineSpacing.
 	
 	dx := font widthOf:$M.
 	
-	wsize := 24.
+	wsize := 17.
 	
 	showCursor := true.
 	
@@ -1317,7 +1441,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/15/2025 23:11:29'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 17:05:23'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1362,7 +1486,7 @@ keyDown: aMorphicEvent
 					leftAltDown
 						ifTrue:[
 							machine creepLeft] ].
-			self leap].
+			self leap ; scrollToCursor ].
 		
 	state = #building and:[keyv < 128] and:[match] ::
 		ifTrue:[
@@ -1370,7 +1494,8 @@ keyDown: aMorphicEvent
 			match := self leap.
 			match 
 				ifFalse:[
-					machine popCursor ] ].
+					machine popCursor ].
+			self scrollToCursor ].
 			
 	Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr
 	! !
@@ -1415,7 +1540,7 @@ handlesKeyboard
 handlesMouseDown: aMouseButtonEvent
 	^true! !
 
-!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 08:06:53'!
+!WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:04:45'!
 leap
 
 	^leftAltDown 
@@ -1426,7 +1551,9 @@ leap
 				ifTrue:[
 					machine leapRight]
 				ifFalse:[
-					self assert: false. "we must not leap when both alts are pressed" ] ]
+					self assert: false. "we must not leap when both alts are pressed" ] ].
+			
+	
 ! !
 
 !WPTextMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
