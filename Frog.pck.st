@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 May 2025 at 9:46:40 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 May 2025 at 4:35:20 pm'!
 'Description '!
-!provides: 'Frog' 1 257!
+!provides: 'Frog' 1 275!
 SystemOrganization addCategory: #Frog!
 
 
@@ -254,21 +254,6 @@ index: aNumber
 	
 	index := aNumber! !
 
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:53:50'!
-isFirst
-	^ line prev isNil and: [index = 1]! !
-
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 17:52:49'!
-isInvalidOffset: aNumber
-
-	self assert: aNumber >= 0.
-	
-	^line next isNil and:[index + aNumber > (line text size)]! !
-
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 19:26:08'!
-isPastLast
-	^ line next isNil and:[index = (line text size + 1) ]! !
-
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 10:41:33'!
 line
 	^line! !
@@ -324,6 +309,26 @@ to: anAddress
 	self assert: self <= anAddress.
 	
 	^AddressRange new begin: self; end: anAddress; yourself.! !
+
+!Address methodsFor: 'testing' stamp: 'DF 5/9/2025 19:53:50'!
+isFirst
+	^ line prev isNil and: [index = 1]! !
+
+!Address methodsFor: 'testing' stamp: 'DF 5/17/2025 14:20:03'!
+isIndexPastEndOfLine
+
+	^index = (line text size + 1) ! !
+
+!Address methodsFor: 'testing' stamp: 'DF 5/15/2025 17:52:49'!
+isInvalidOffset: aNumber
+
+	self assert: aNumber >= 0.
+	
+	^line next isNil and:[index + aNumber > (line text size)]! !
+
+!Address methodsFor: 'testing' stamp: 'DF 5/9/2025 19:26:08'!
+isPastLast
+	^ line next isNil and:[index = (line text size + 1) ]! !
 
 !AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:40'!
 = anAddressRange
@@ -670,7 +675,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 17:38:49'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/17/2025 16:25:11'!
 open: aWordProcessorMachine
 
 	|  root top text bottom ruler dx dy aFont leftm |
@@ -785,7 +790,7 @@ creepRight
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:46'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 16:23:15'!
 highlight
 
 	self assert: pcursor notNil.
@@ -793,13 +798,15 @@ highlight
 	beginh := cursor min: pcursor.
 	endh := cursor max: pcursor.
 	
-	cursor := endh forward.
+	cursor := endh isPastLast 
+				ifTrue:[endh]
+				ifFalse:[endh forward].
 	
 	self assert: beginh <= endh.
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 20:47:01'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 12:10:41'!
 leapLeft
 
 	| p |
@@ -893,7 +900,7 @@ leapToEnd
 	
 	^true! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:54'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 12:09:57'!
 matchBackFrom: anAddress
 
 	| p ii |
@@ -906,7 +913,7 @@ matchBackFrom: anAddress
 		ii := ii - 1.
 		p := p back ].
 	
-	^ ii = 0
+	^ ii = 0 or: [p isFirst and:[p char = (pattern at:ii) ] ]
 ! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:57'!
@@ -1021,21 +1028,22 @@ initialize
 	endh := cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 19:37:46'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/17/2025 16:01:09'!
 erase
 
 	| aWriteStream p uu vv bb |
-	
+			
 	uu := self textFrom: self begin to: beginh.
 	
-	vv := self textFrom: endh forward to: self end.
+	vv := endh = self end 
+			ifTrue:['']
+			ifFalse:[
+				self textFrom: endh forward to: self end].
 	
 	aWriteStream := WriteStream on: ''.
 	
 	" copy the parts that we do not erase and then proceed to collect into the stream
 	all the lines until a line that ends with a line separator (or until the last line) "
-	
-	aWriteStream nextPutAll: (beginh line text copyFrom: 1 to: beginh index - 1).
 	
 	aWriteStream nextPutAll: (endh line text copyFrom: endh index + 1 to: endh line text size).
 	
@@ -1052,7 +1060,7 @@ erase
 		
 	" clear beginh line and remove all the lines between beginh line next and p "
 	
-	beginh line eraseAll. 
+	beginh line eraseFrom: beginh index to: beginh line text size.
 	
 	p isNil
 		ifTrue:[
@@ -1063,13 +1071,15 @@ erase
 	
 	" finally insert the text back into place "
 	
-	cursor := Address new line: beginh line ; index: 1 ; yourself.
+	cursor := beginh.
 
 	bb := beginh copy. "remember beginh because self insert: messes with beginh"
-		
+
 	self insert: aWriteStream contents.
 
-	beginh := bb back.
+	beginh := bb isFirst 
+				ifTrue:[bb] 
+				ifFalse:[bb back].
 
 	endh := beginh.
 
@@ -1079,37 +1089,39 @@ erase
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/16/2025 15:18:09'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/17/2025 16:33:44'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
 	
 	| line string pp |
-	
+			
 	pp := cursor copy.
 	
-	line := cursor line.
+	line := pp line.
 	
 	string := aString.
 	
-	[string notEmpty] whileTrue:[
+	[string notEmpty] whileTrue:[ | tail |
 
-		string := line insert: string after: cursor index - 1 width: width.
+		tail := line insert: string after: pp index - 1 width: width.
 
-		string isEmpty
+		tail isEmpty
 			ifTrue:[
-				cursor index: line text size]
+				pp index: pp index + string size]
 			ifFalse:[		
 				line next ifNil:[ | aNewLine |
 					aNewLine := Line new.
 		
 					self insert: aNewLine after: line].
 		
-				cursor := cursor nextLine.
+				pp := pp nextLine.
 		
-				line := cursor line ] ].
+				line := pp line ].
+			
+		string := tail ].
 	
-		cursor := pp advanceBy: aString size.
+		cursor := cursor advanceBy: aString size.
 		
 		beginh := cursor back. endh := beginh.
 		
@@ -1218,7 +1230,7 @@ drawCursorOn: aCanvas
 	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
 ! !
 
-!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 17:36:51'!
+!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 21:49:19'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
@@ -1228,7 +1240,7 @@ drawOn: aCanvas
 	showCursor ifTrue:[
 		self drawCursorOn: aCanvas].
 
-	aCanvas drawString: (machine cursorLineNumber printStringBase: 10 length: 2 padded: false) at: dx@30 font: statusFont color: Color white.! !
+	aCanvas drawString: (machine cursorLineNumber printStringBase: 10 length: 2 padded: false) at: dx * 3 @30 font: statusFont color: Color white.! !
 
 !WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:24:35'!
 drawRulerOn: aCanvas
@@ -1417,13 +1429,13 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 	aCanvas drawString: (addrE line text copyFrom:1 to: (addrE index min: addrE line text size)) at: 0 @ yy font: font color: aColor.
 	! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/15/2025 22:30:23'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 16:17:16'!
 drawSelectionOn: aCanvas
 
 	| range |
 	
 	range := ((wbegin at:1) to: self wend atPastEnd) intersect: machine selection.
-	
+		
 	self drawOn: aCanvas textFrom: range begin to: range end atHeight: dy * (wbegin distanceFrom: range begin line) highlight: true color: Color white.
 	
 ! !
