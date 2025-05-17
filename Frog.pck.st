@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 May 2025 at 4:35:20 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 May 2025 at 5:28:15 pm'!
 'Description '!
-!provides: 'Frog' 1 275!
+!provides: 'Frog' 1 276!
 SystemOrganization addCategory: #Frog!
 
 
@@ -1469,7 +1469,7 @@ initialize
 
 	match := true.! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 21:17:39'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/17/2025 16:36:38'!
 keyDown: aMorphicEvent
 
 	| keyv |
@@ -1540,10 +1540,10 @@ keyDown: aMorphicEvent
 	
 	self scrollToCursor.
 			
-	Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr
+	"Transcript show: ('key: down. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr"
 	! !
 
-!WPTextMorph methodsFor: 'events' stamp: 'DF 5/16/2025 17:58:36'!
+!WPTextMorph methodsFor: 'events' stamp: 'DF 5/17/2025 16:36:55'!
 keyUp: aMorphicEvent
 
 	| keyv |
@@ -1563,10 +1563,8 @@ keyUp: aMorphicEvent
 		ifTrue:[
 			state := #editing].
 			
-	Transcript show: ('key: up. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr.
+	"Transcript show: ('key: up. 	state: {5}. code: {1}. ctrl: {2}. left alt:{3} . right alt:{4} ' format:{ keyv . ctrlDown . leftAltDown . rightAltDown . state }); cr."
 	
-	"self scrollToCursor."
-		
 	self redrawNeeded 
 ! !
 
