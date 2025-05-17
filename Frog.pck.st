@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 May 2025 at 5:28:15 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 May 2025 at 9:49:25 pm'!
 'Description '!
-!provides: 'Frog' 1 276!
+!provides: 'Frog' 1 279!
 SystemOrganization addCategory: #Frog!
 
 
@@ -806,84 +806,48 @@ highlight
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 12:10:41'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 21:49:22'!
 leapLeft
 
-	| p |
+	| match text |
 	
-	pattern ifEmpty:[^false].
-	
-	p := cursor.
-	
-	" leap back "
-	
-	[p isFirst not and: [p isInvalidOffset: pattern size - 1]] whileTrue:[
-		p := p back].
-	
-	[ p isFirst or: [ self matchBackFrom: (p advanceBy: (pattern size - 1))  ] ] whileFalse:[
-		p := p back ].
+	beginh = endh 
+		ifTrue:[
+		^self searchLeft].
 
-	(p isFirst) 
-		ifTrue:[ 
-			p line text size >= (pattern size -1)
-				ifTrue:
-					[ self matchBackFrom: (p advanceBy: (pattern size - 1)) ::
-						ifTrue:[
-							self setNarrowCursorTo: p. 
-							^true ] ] ]
-		ifFalse:[
-			self setNarrowCursorTo: p.
-			^true].
-		
-	" we did not find it going back towards the beginning. now start from the end 
-	and stop when reaching cursor"
-	
-	p := p pastLastLine.
-	
-	[ p = cursor or: [p isPastLast not and: [self matchBackFrom: p ]  ] ] whileFalse:[
-		p := p back ].
-	
-	(p = cursor)
-		ifFalse:[
-			self setNarrowCursorTo: p - (pattern size - 1).
-			^true].
+	text := self textFrom: beginh to: endh forward..
 
-	^false! !
+	self erase.
+	
+	match := self searchLeft.
+	
+	self insert: text.
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:45'!
+	beginh := endh backupBy: text size - 1.
+				
+	^match
+	! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 21:47:26'!
 leapRight
 
-	| p |
+	| match text |
+	
+	beginh = endh 
+		ifTrue:[
+		^self searchRight].
+	
+	text := self textFrom: beginh to: endh forward.
 
-	pattern ifEmpty:[^false].
+	self erase.
 	
-	p := cursor.
-
-	" leap forward "
-			
-	[ p isPastLast or: [ self matchForwardFrom: p  ] ] whileFalse:[
-		p := p forward ].
-
-	(p isPastLast) 
-		ifFalse:[
-			self setNarrowCursorTo: p.
-			^true].
-		
-	" we did not find it going forward towards the end. Now start from the beginning
-	and stop when reaching cursor"
+	match := self searchRight.
 	
-	p := p firstLine.
+	self insert: text.
 	
-	[ p = cursor or: [self matchForwardFrom: p ] ] whileFalse:[
-		p := p forward ].
-	
-	(p = cursor)
-		ifFalse:[
-			self setNarrowCursorTo: p.
-			^true].
-		
-	^false
-			
+	beginh := endh backupBy: text size - 1.
+				
+	^match
 ! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 21:45:32'!
@@ -893,10 +857,10 @@ leapToBeginning
 	
 	^true! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 21:45:37'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 20:14:51'!
 leapToEnd
 
-	self setNarrowCursorTo: cursor pastLastLine back.
+	self setNarrowCursorTo: cursor pastLastLine .
 	
 	^true! !
 
@@ -960,6 +924,86 @@ pushCursor
 	pcursor := cursor.
 	pbeginh := beginh.
 	pendh := endh.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 21:14:54'!
+searchLeft
+
+	| p |
+	
+	pattern ifEmpty:[^false].
+	
+	p := cursor.
+	
+	" leap back "
+	
+	[p isFirst not and: [p isInvalidOffset: pattern size - 1]] whileTrue:[
+		p := p back].
+	
+	[ p isFirst or: [ self matchBackFrom: (p advanceBy: (pattern size - 1))  ] ] whileFalse:[
+		p := p back ].
+
+	(p isFirst) 
+		ifTrue:[ 
+			p line text size >= (pattern size -1)
+				ifTrue:
+					[ self matchBackFrom: (p advanceBy: (pattern size - 1)) ::
+						ifTrue:[
+							self setNarrowCursorTo: p. 
+							^true ] ] ]
+		ifFalse:[
+			self setNarrowCursorTo: p.
+			^true].
+		
+	" we did not find it going back towards the beginning. now start from the end 
+	and stop when reaching cursor"
+	
+	p := p pastLastLine.
+	
+	[ p = cursor or: [p isPastLast not and: [self matchBackFrom: p ]  ] ] whileFalse:[
+		p := p back ].
+	
+	(p = cursor)
+		ifFalse:[
+			self setNarrowCursorTo: p - (pattern size - 1).
+			^true].
+
+	^false! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 21:36:32'!
+searchRight
+
+	| p |
+
+	pattern ifEmpty:[^false].
+	
+	p := cursor.
+
+	" leap forward "
+			
+	[ p isPastLast or: [ self matchForwardFrom: p  ] ] whileFalse:[
+		p := p forward ].
+
+	(p isPastLast) 
+		ifFalse:[
+			self setNarrowCursorTo: p.
+			^true].
+		
+	" we did not find it going forward towards the end. Now start from the beginning
+	and stop when reaching cursor"
+	
+	p := p firstLine.
+	
+	[ p = cursor or: [self matchForwardFrom: p ] ] whileFalse:[
+		p := p forward ].
+	
+	(p = cursor)
+		ifFalse:[
+			self setNarrowCursorTo: p.
+			^true].
+		
+	^false
+			
+! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:18:17'!
 setNarrowCursorTo: anAddress
@@ -1028,11 +1072,13 @@ initialize
 	endh := cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/17/2025 16:01:09'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/17/2025 20:48:01'!
 erase
 
-	| aWriteStream p uu vv bb |
-			
+	| aWriteStream p uu vv bb keepNarrow |
+		
+	keepNarrow := self isNarrowCursor and: [beginh isPastLast not].
+	
 	uu := self textFrom: self begin to: beginh.
 	
 	vv := endh = self end 
@@ -1060,7 +1106,8 @@ erase
 		
 	" clear beginh line and remove all the lines between beginh line next and p "
 	
-	beginh line eraseFrom: beginh index to: beginh line text size.
+	beginh isPastLast
+		ifFalse:[beginh line eraseFrom: beginh index to: beginh line text size].
 	
 	p isNil
 		ifTrue:[
@@ -1079,7 +1126,12 @@ erase
 
 	beginh := bb isFirst 
 				ifTrue:[bb] 
-				ifFalse:[bb back].
+				ifFalse:[
+					keepNarrow
+						ifTrue:[
+							bb] 
+						ifFalse:[
+							bb back] ].
 
 	endh := beginh.
 
@@ -1315,7 +1367,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:52:09'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 20:23:39'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1330,23 +1382,7 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:36:40'!
-drawHighlightOn: aCanvas
-
-	| ycursor cc wycursor wxcursor |
-	
-	ycursor := dy * (wbegin distanceFrom: machine cursor line).
-	
-	cc := machine cursor back.
-	wycursor := ycursor - (dy * (cc line distanceFrom: machine cursor line)).
-	wxcursor := dx * (cc index) - dx.
-	
-	aCanvas fillRectangle: (wxcursor @ wycursor extent: dx@dy) color: Color black.
-	aCanvas drawString: cc char asString at: wxcursor@wycursor  font: font  color: Color white
-	
-! !
-
-!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 18:52:55'!
+!WPTextMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 20:26:46'!
 drawOn: aCanvas
 
 	[
@@ -1356,15 +1392,11 @@ drawOn: aCanvas
 	
 	self drawOn: aCanvas textFrom: (wbegin at:1) to: self wend atPastEnd atHeight: 0 highlight: false color: Color black.
 
-	showCursor 
-		ifTrue:[self drawCursorOn: aCanvas ].
-	
-	machine isWideCursor
-		ifTrue:[self drawHighlightOn: aCanvas ] .
-	
-	machine isExtendedCursor 
-		ifTrue:[self drawSelectionOn: aCanvas].
+	self drawSelectionOn: aCanvas.
 
+	showCursor 
+		ifTrue:[self drawCursorOn: aCanvas ].	
+	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
