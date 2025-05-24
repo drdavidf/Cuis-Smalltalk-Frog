@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 20 May 2025 at 8:59:57 am'!
+'From Cuis7.3 [latest update: #7041] on 24 May 2025 at 7:49:05 pm'!
 'Description '!
-!provides: 'Frog' 1 288!
+!provides: 'Frog' 1 308!
 SystemOrganization addCategory: #Frog!
 
 
@@ -56,7 +56,7 @@ MacOSKeyboardMapper class
 
 !classDefinition: #Line category: #Frog!
 Object subclass: #Line
-	instanceVariableNames: 'text prev next'
+	instanceVariableNames: 'text prev next ppage'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -76,7 +76,7 @@ LineRange class
 
 !classDefinition: #Page category: #Frog!
 Object subclass: #Page
-	instanceVariableNames: 'paragraphs prev next'
+	instanceVariableNames: 'head prev next'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -106,7 +106,7 @@ WordProcessor class
 
 !classDefinition: #WordProcessorMachine category: #Frog!
 Object subclass: #WordProcessorMachine
-	instanceVariableNames: 'lines cursor beginh endh width pattern pcursor pbeginh pendh'
+	instanceVariableNames: 'head cursor beginh endh width pattern pcursor pbeginh pendh page'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -524,51 +524,10 @@ isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/15/2025 21:51:47'!
-nextToken: aReadStream
-	
-	| tokenStream cc stop state |
-	
-	tokenStream := WriteStream on: ''.
-	
-	state := #separator.
-	stop := false.
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
 
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:55:54'!
 at: anIndex
@@ -690,10 +649,10 @@ insert: aString after: anIndex width:  numChars
 	^ src upToEnd.
 	! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 15:54:47'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:29:17'!
 invariant
 
-	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ]! !
+	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ] and: [ ppage isNil or: [ppage head = self ] ]! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:06:17'!
 to: aLine
@@ -702,10 +661,74 @@ to: aLine
 	
 	^LineRange new begin: self ; end: aLine ; yourself! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!Line methodsFor: 'private' stamp: 'DF 5/15/2025 21:51:47'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 18:10:24'!
+page
+
+	| pp |
+	
+	pp := self.
+	
+	[pp notNil and: [pp ppage isNil] ]
+		whileTrue:[pp := pp prev].
+		
+	self assert: pp notNil.
+	
+	^pp ppage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:25:48'!
+ppage
+
+	^ppage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:28:30'!
+ppage: aPage
+	ppage := aPage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
 initialize
@@ -788,10 +811,138 @@ invariant
 
 	^ (begin isNil and: end isNil) or:[begin <= end]! !
 
-!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:41'!
-initialize
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 19:07:03'!
+invariant
 
-	paragraphs := Paragraph new! !
+	^ (prev isNil or:[prev next = self]) and: [next isNil or:[next prev = self] ] and: [self isOverflow not] and: [self isUnderflow not].! !
+
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 17:53:56'!
+isOverflow
+
+	^self lineNo > 5
+	! !
+
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 18:47:46'!
+isUnderflow
+
+	" only the last page can have less than the full number of lines "
+	
+	^next notNil and: [self lineNo < 5]
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:29:25'!
+head
+	^head! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:32:53'!
+head: aLine
+
+	head := aLine.
+	
+	aLine ppage: self.! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:14:06'!
+lineNo
+
+	"answers how many lines in this page"
+	
+	| ii pp |
+	
+	self assert: head notNil.
+	
+	ii := 1.
+	
+	pp := head next.
+	
+	[pp notNil and: [pp ppage isNil] ] 
+		whileTrue:[
+			pp := pp next.
+			ii := ii + 1].
+		
+	^ii! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:35:51'!
+next
+	^next! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:14:40'!
+next: aPage
+	next := aPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:35:55'!
+prev
+	^prev! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:14:45'!
+prev: aPage
+	prev := aPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 19:25:28'!
+shiftLeft
+
+	"move the first line in the next page to this page"
+		
+	self assert: self isUnderflow.
+	
+	self assert: next notNil. "it cannot be the last page because the last page never underflows".
+	
+	self assert: next head notNil. "the next page has at least one line"
+	
+	self assert: next head ppage == next. 
+	
+	next head next 
+		ifNil:["this is the last line in the next page so we have to remove the next page"
+			next head ppage:nil.
+			next := nil.
+			^self].
+	
+	next head next ppage: next.
+	
+	next head ppage: nil.
+	
+	next head: next head next.
+	
+	next isUnderflow ifTrue:[
+		next shiftLeft].
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:07:21'!
+shiftRight
+
+	"move the last line in the page to the next page"
+	
+	| lastLine |
+	
+	self assert: head notNil.
+	
+	"if this is the last page create a new page"
+	
+	next isNil
+		ifTrue:[ | aPage pp | " this is the last page"
+			aPage := Page new.
+			next := aPage. 
+			aPage prev: self.
+			
+			pp := head.
+			[pp next notNil] whileTrue:[pp := pp next].
+			
+			"pp next isNil => pp is the last line"
+			pp ppage: aPage.
+			aPage head: pp.
+			^self].
+			
+	lastLine := next head prev.
+	
+	self assert: next head ppage == next.
+	
+	next head ppage: nil.
+	
+	lastLine ppage: next.
+	next head: lastLine.
+	
+	next isOverflow ifTrue:[
+		next shiftRight].
+	! !
 
 !Paragraph methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:54'!
 initialize
@@ -855,7 +1006,7 @@ open: aWordProcessorMachine
 
 ! !
 
-!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/15/2025 19:29:22'!
+!WordProcessorMachine methodsFor: 'testing' stamp: 'DF 5/24/2025 17:39:08'!
 invariant
 
 	| pp |
@@ -869,8 +1020,15 @@ invariant
 	beginh <= endh
 		ifFalse:[^false].
 	
-	pp := lines.
+	pp := head.
 	
+	[pp notNil and: [pp invariant] ] whileTrue:[pp := pp next].
+	
+	pp isNil
+		ifFalse:[^false].
+		
+	pp := page.
+
 	[pp notNil and: [pp invariant] ] whileTrue:[pp := pp next].
 	
 	^pp isNil
@@ -973,10 +1131,10 @@ leapRight
 	^match
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 21:45:32'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/24/2025 17:31:52'!
 leapToBeginning
 
-	self setNarrowCursorTo: (lines at:1).
+	self setNarrowCursorTo: (head at:1).
 	
 	^true! !
 
@@ -1144,12 +1302,12 @@ setNarrowCursorTo: anAddress
 cursor
 	^cursor! !
 
-!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/16/2025 16:18:41'!
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/24/2025 19:49:03'!
 cursorLineNumber
 
 	| pp ii |
 	
-	pp := lines.
+	pp := cursor line page head.
 	ii := 1.
 	
 	[ pp ~= cursor line ] whileTrue:[
@@ -1158,9 +1316,9 @@ cursorLineNumber
 	
 	^ii! !
 
-!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/8/2025 17:04:36'!
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:31:52'!
 lines
-	^lines! !
+	^head! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/16/2025 21:20:12'!
 pattern
@@ -1182,20 +1340,24 @@ width: anInteger
 	
 	width := anInteger! !
 
-!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/16/2025 17:47:37'!
+!WordProcessorMachine methodsFor: 'initialization' stamp: 'DF 5/24/2025 17:33:49'!
 initialize
 
 	width := 8. "maximum number of characters in a line"
 	
-	lines := Line new.
+	head := Line new.
 	
-	cursor := lines at:1.
+	page := Page new.
+	
+	page head: head.
+	
+	cursor := head at:1.
 	
 	beginh := cursor.
 	endh := cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/20/2025 08:56:04'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/24/2025 19:26:00'!
 erase
 
 	| aWriteStream p uu vv keepNarrow line index |
@@ -1234,10 +1396,21 @@ erase
 	
 	p isNil
 		ifTrue:[
+			"beginh will become the last line. thus its page should be the last page. remove all the pages of following lines "
+			beginh line page next: nil.
 			beginh line next: nil]
 		ifFalse:[
+			
+			beginh line page == p page 
+				ifFalse:[
+					beginh line page next: p page.
+					p page prev: beginh line page].
+			
 			beginh line next: p.
 			p prev: beginh line].
+		
+	beginh line page isUnderflow 
+		ifTrue:[beginh line page shiftLeft].
 	
 	"remember the index of the point at which we start erasing so that we can move
 	the cursor to this point after insertion. "
@@ -1274,7 +1447,7 @@ erase
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/17/2025 16:33:44'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/24/2025 17:52:02'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -1313,15 +1486,15 @@ insert: aString
 		self triggerEvent: #cursor.
 ! !
 
-!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:39:33'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/24/2025 17:31:52'!
 begin
-	^Address new line: lines ; index:1 ; yourself! !
+	^Address new line: head ; index:1 ; yourself! !
 
 !WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 17:40:02'!
 end
 	^self begin pastLastLine ! !
 
-!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/8/2025 15:55:05'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/24/2025 18:20:20'!
 insert: aNewLine after: aLine
 
 	"we assume that aNewLine is not already in the list"
@@ -1340,15 +1513,22 @@ insert: aNewLine after: aLine
 	aLine next: aNewLine.
 	
 	self assert: aLine invariant.
-	self assert: aNewLine invariant
+	self assert: aNewLine invariant.
+	
+	"if the page on which the new line is inserted overflows then shift the last line to the following
+	page, create a new page if this is the last page"
+	
+	aNewLine page isOverflow 
+		ifTrue:[
+			aNewLine page shiftRight]
 	! !
 
-!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/9/2025 15:25:57'!
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/24/2025 17:31:52'!
 lastLine
 	
 	| pp |
 	
-	pp := lines.
+	pp := head.
 	
 	[ pp next isNil ] whileFalse:[
 		pp := pp next].
@@ -1418,7 +1598,7 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 20:26:46'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/24/2025 19:39:46'!
 drawOn: aCanvas
 
 	[
@@ -1430,6 +1610,8 @@ drawOn: aCanvas
 
 	self drawSelectionOn: aCanvas.
 
+	self drawPageMarksOn: aCanvas from: (wbegin at:1) to: self wend atPastEnd atHeight: 0.
+	
 	showCursor 
 		ifTrue:[self drawCursorOn: aCanvas ].	
 	
@@ -1495,6 +1677,23 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 	" draw the text for the last line "
 
 	aCanvas drawString: (addrE line text copyFrom:1 to: (addrE index min: addrE line text size)) at: 0 @ yy font: font color: aColor.
+	! !
+
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/24/2025 19:47:46'!
+drawPageMarksOn: aCanvas from: addrB to: addrE atHeight: hh 
+
+	| yy ii line |
+
+	yy := hh.	
+	ii := 0.
+	line := addrB line.
+	
+	[ line ~= addrE line next] whileTrue:[
+		line ppage notNil 
+			ifTrue:[aCanvas line: 0@yy  to:  self morphWidth@yy width: 4 color: (Color fromHexString:'#BBBBBB') ].
+		ii := ii + 1.
+		yy := hh + (ii * dy).
+		line := line next ].
 	! !
 
 !WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 16:17:16'!
@@ -2042,7 +2241,7 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	
 	! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 19:40:54'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 19:12:20'!
 testErase
 
 	| aWordProcessor aLine |
@@ -2070,7 +2269,18 @@ testErase
 	
 	aWordProcessor insert: 'tr', String crString.
 	
-	aWordProcessor insert:'uq2x'.
+	aWordProcessor insert:'uq2x
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11'.
 	
 	aWordProcessor pattern: 'abc'.
 	
@@ -2107,7 +2317,7 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	self assert: machine invariant.
 ! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 19:05:55'!
 testInsert
 
 	| aWordProcessor aLine |
@@ -2162,6 +2372,7 @@ a time. There was a frog'.
 	aLine := aLine next.
 
 	self assert: aLine text = 'frog'.
+	
 	! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 15:52:48'!
