@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 24 May 2025 at 7:49:05 pm'!
+'From Cuis7.3 [latest update: #7041] on 24 May 2025 at 9:55:57 pm'!
 'Description '!
-!provides: 'Frog' 1 308!
+!provides: 'Frog' 1 311!
 SystemOrganization addCategory: #Frog!
 
 
@@ -436,6 +436,10 @@ invariant
 lineRange
 	^begin line to: end line! !
 
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
+isCopyKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
 !FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
 isEnterKey: aMorphicEvent
 	^self subclassResponsibility ! !
@@ -474,6 +478,10 @@ instance
 		
 		! !
 
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:13'!
+isCopyKey: aMorphicEvent
+	^aMorphicEvent controlKeyPressed and: [aMorphicEvent keyValue = 97]	! !
+
 !LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
 isEnterKey: aMorphicEvent
 	^aMorphicEvent keyValue = 13! !
@@ -498,6 +506,10 @@ isLeapRightKey: aMorphicEvent
 isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown! !
+
+!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:24'!
+isCopyKey: aMorphicEvent
+	^aMorphicEvent controlKeyPressed and: [aMorphicEvent keyValue = 97]! !
 
 !MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
 isEnterKey: aMorphicEvent
@@ -1087,7 +1099,7 @@ highlight
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 21:49:22'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/24/2025 21:32:25'!
 leapLeft
 
 	| match text |
@@ -1096,7 +1108,7 @@ leapLeft
 		ifTrue:[
 		^self searchLeft].
 
-	text := self textFrom: beginh to: endh forward..
+	text := self textFrom: beginh to: endh forward.
 
 	self erase.
 	
@@ -1356,6 +1368,17 @@ initialize
 	beginh := cursor.
 	endh := cursor.
 ! !
+
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/24/2025 21:42:33'!
+copy
+
+	| text |
+	
+	text := self textFrom: beginh to: endh forward.
+
+	self insert: text.
+	
+	beginh := beginh backupBy: text size - 1.! !
 
 !WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/24/2025 19:26:00'!
 erase
@@ -1778,7 +1801,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/18/2025 22:58:40'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/24/2025 21:55:07'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -1789,6 +1812,9 @@ keyStroke: aKeyboardEvent
 
 	state = #editing and: [keyv < 128 ] ::
 		ifTrue:[
+			mapper isCopyKey: aKeyboardEvent ::
+				ifTrue:[
+					^machine copy].	
 			mapper isEnterKey: aKeyboardEvent ::
 				ifTrue:[
 					machine insert: String crString].
