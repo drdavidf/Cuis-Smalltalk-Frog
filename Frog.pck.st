@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 24 May 2025 at 9:55:57 pm'!
+'From Cuis7.3 [latest update: #7041] on 25 May 2025 at 9:42:37 am'!
 'Description '!
-!provides: 'Frog' 1 311!
+!provides: 'Frog' 1 319!
 SystemOrganization addCategory: #Frog!
 
 
@@ -238,6 +238,10 @@ char
 	
 	^line text at: index.! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/25/2025 09:02:54'!
+endOfLine
+	^Address new line: line ; index: line text size ; yourself! !
+
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 17:34:20'!
 firstLine
 
@@ -337,6 +341,10 @@ pastLastLine
 	^ Address new line: pp ; index: pp text size + 1 ; yourself.
 	
 	! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/25/2025 09:05:53'!
+startOfLine
+	^Address new line: line ; index: 1 ; yourself! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:34:22'!
 to: anAddress
@@ -1621,7 +1629,7 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/24/2025 19:39:46'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:40:30'!
 drawOn: aCanvas
 
 	[
@@ -1633,8 +1641,6 @@ drawOn: aCanvas
 
 	self drawSelectionOn: aCanvas.
 
-	self drawPageMarksOn: aCanvas from: (wbegin at:1) to: self wend atPastEnd atHeight: 0.
-	
 	showCursor 
 		ifTrue:[self drawCursorOn: aCanvas ].	
 	
@@ -1642,82 +1648,50 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/16/2025 21:03:20'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:41:57'!
+drawOn: aCanvas at: aNumber color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
+
+	self assert: anAddressB line == anAddressE line.
+	
+	aBoolean
+		ifTrue:[ | xb |
+			xb := dx * (anAddressB index - 1).
+			aCanvas fillRectangle: (xb @ aNumber extent: (dx * (anAddressE index - anAddressB index + 1)) @ dy) color: Color black].
+		
+	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: (anAddressE index min: anAddressE line text size)) at: dx * (anAddressB index - 1) @ aNumber font: font color: aColor.
+
+	anAddressB line ppage notNil 
+		ifTrue:[aCanvas line: 0@aNumber to:  self morphWidth@aNumber width: 4 color: (Color fromHexString:'#BBBBBB') ].
+	
+	^ anAddressB line ppage isNil
+		ifTrue:[
+			aNumber + dy]
+		ifFalse:[
+			aNumber +"1.5*"dy]
+		
+		
+! !
+
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:41:57'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
-	| yy ii line |
+	| yy ii addr |
 
-	yy := hh.	
-
-	aBoolean ifTrue:[ | dd mid last xb xe |
-
-		dd := addrB line distanceFrom: addrE line.
-		mid := 0 max: dd - 1.
-		last := 0 max: dd .
-
-		xb := dx * (addrB index - 1).
-		xe := last = 0 
-			ifTrue:[
-				dx * addrE index] 
-			ifFalse:[
-				self morphWidth].
+	addr := addrB.
+	yy := hh.
+	ii := 0.
+	
+	[ addr line ~= addrE line ] whileTrue:[
 		
-		aCanvas fillRectangle: (xb @ hh corner: xe@ (hh+dy)) color: Color black.
-	
-		mid > 0
-			ifTrue:[
-				aCanvas fillRectangle: (0 @ (hh + dy) extent: self morphWidth@ (dy * mid)) color: Color black].
-	
-		last > 0
-			ifTrue:[
-				aCanvas fillRectangle: (0 @ (hh + (dy*last)) extent: (dx * addrE index) @ dy) color: Color black] ].
-	
-	" there is just one line to draw"
-	
-	addrB line = addrE line
-		ifTrue:[
-			aCanvas drawString: (addrB line text copyFrom: addrB index to: (addrE index min: addrE line text size)) at: dx * (addrB index - 1) @ yy font: font color: aColor.
-		^self ].
-	
-	" there are at least two lines to draw"
-	
-	" draw the text for the first line but only from the first index"
-	
-	aCanvas drawString: (addrB line text copyFrom: addrB index to: addrB line text size) at: dx * (addrB index -1) @ yy font: font color: aColor.
-
-	line := addrB line next.
-	yy := hh + dy.
-	ii := 1.
-	
-	" draw the text for the middle lines"
-	
-	[ line ~= addrE line] whileTrue:[
-		aCanvas drawString: line text at: 0@ yy font: font color: aColor.
+		self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addr endOfLine.		
 		ii := ii + 1.
 		yy := hh + (ii * dy).
-		line := line next ].
+		addr := addr nextLine ].
 
 	" draw the text for the last line "
 
-	aCanvas drawString: (addrE line text copyFrom:1 to: (addrE index min: addrE line text size)) at: 0 @ yy font: font color: aColor.
-	! !
-
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/24/2025 19:47:46'!
-drawPageMarksOn: aCanvas from: addrB to: addrE atHeight: hh 
-
-	| yy ii line |
-
-	yy := hh.	
-	ii := 0.
-	line := addrB line.
-	
-	[ line ~= addrE line next] whileTrue:[
-		line ppage notNil 
-			ifTrue:[aCanvas line: 0@yy  to:  self morphWidth@yy width: 4 color: (Color fromHexString:'#BBBBBB') ].
-		ii := ii + 1.
-		yy := hh + (ii * dy).
-		line := line next ].
-	! !
+	self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
+! !
 
 !WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 16:17:16'!
 drawSelectionOn: aCanvas
