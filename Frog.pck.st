@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 26 May 2025 at 9:54:22 am'!
+'From Cuis7.3 [latest update: #7041] on 26 May 2025 at 10:02:40 am'!
 'Description '!
-!provides: 'Frog' 1 337!
+!provides: 'Frog' 1 338!
 SystemOrganization addCategory: #Frog!
 
 
@@ -1634,13 +1634,19 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 20:23:39'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 10:02:03'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
 	
 	ycursor := dy * (wbegin distanceFrom: machine cursor line).
 	
+	"A line that begins a page occupies two lines, its text is in the bottom line "
+	
+	machine cursor line ppage notNil
+		ifTrue:[
+			ycursor := ycursor + dy].
+		
 	xcursor := dx * (machine cursor index) - dx.
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
