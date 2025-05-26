@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 26 May 2025 at 10:02:40 am'!
+'From Cuis7.3 [latest update: #7041] on 26 May 2025 at 10:12:34 am'!
 'Description '!
-!provides: 'Frog' 1 338!
+!provides: 'Frog' 1 339!
 SystemOrganization addCategory: #Frog!
 
 
@@ -1655,24 +1655,26 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:06:37'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 10:12:23'!
 drawOn: aCanvas
 
-	[ | selection yy |
+	[ | selection yy we |
 		
 	self assert: machine notNil.
 	
 	super drawOn: aCanvas.
 
-	selection := ((wbegin at:1) to: self wend atPastEnd) intersect: machine selection.
+	we := self wend atPastEnd.
+	
+	selection := ((wbegin at:1) to: we) intersect: machine selection.
 	
 	yy := self drawOn: aCanvas textFrom: (wbegin at:1) to: selection begin atHeight: 0 highlight: false color: Color black.
 	
-	selection end isPastLast
+	selection end = we
 		ifTrue:[ 
 			self drawOn: aCanvas textFrom: selection begin to: selection end atHeight: yy highlight: true color: Color white ]
 		ifFalse:[ | ee |
-			ee := selection end incrementIndex. 
+			ee := selection end incrementIndex. 		
 			yy := self drawOn: aCanvas textFrom: selection begin to: ee atHeight: yy highlight: true color: Color white.
 			self drawOn: aCanvas textFrom: ee to: self wend atPastEnd atHeight: yy highlight: false color: Color black ].
 
