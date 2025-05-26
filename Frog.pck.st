@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 25 May 2025 at 9:42:37 am'!
+'From Cuis7.3 [latest update: #7041] on 26 May 2025 at 9:54:22 am'!
 'Description '!
-!provides: 'Frog' 1 319!
+!provides: 'Frog' 1 337!
 SystemOrganization addCategory: #Frog!
 
 
@@ -277,6 +277,14 @@ hash
 
 	^(line hash hashMultiply + index hash) hashMultiply! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 09:05:32'!
+incrementIndex
+
+	self assert: (index <= line text size) .
+		
+	^Address new line: line; index: index + 1 ; yourself 
+! !
+
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 10:41:30'!
 index
 	^index! !
@@ -327,6 +335,10 @@ nextLine
 	self assert: line next notNil.
 	
 	^Address new line: line next ; index:1 ; yourself! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 08:55:06'!
+pastEndOfLine
+	^Address new line: line ; index: line text size + 1; yourself! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 5/9/2025 16:03:24'!
 pastLastLine
@@ -562,7 +574,7 @@ atPastEnd
 	
 	^Address new line: self ; index: text size + 1; yourself.! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/11/2025 17:04:23'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 09:53:56'!
 distanceFrom: aLine
 
 	| pp ii |
@@ -573,7 +585,7 @@ distanceFrom: aLine
 	ii := 0.
 	
 	[pp notNil and: [pp == aLine]] whileFalse:[
-		ii := ii + 1.
+		ii := ii + pp height.
 		pp := pp next].
 	
 	^ii ! !
@@ -706,6 +718,12 @@ nextToken: aReadStream
 				tokenStream nextPut: cc] ].
 	
 	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/26/2025 09:33:12'!
+height
+	^ ppage notNil 
+		ifTrue:[2]
+		ifFalse:[1]! !
 
 !Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
 next
@@ -1478,7 +1496,7 @@ erase
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/24/2025 17:52:02'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/25/2025 22:42:53'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -1512,7 +1530,9 @@ insert: aString
 	
 		cursor := cursor advanceBy: aString size.
 		
-		beginh := cursor back. endh := beginh.
+		beginh := cursor isFirst ifTrue:[cursor] ifFalse:[cursor back]. 
+		
+		endh := beginh.
 		
 		self triggerEvent: #cursor.
 ! !
@@ -1629,17 +1649,26 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:40:30'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:06:37'!
 drawOn: aCanvas
 
-	[
+	[ | selection yy |
+		
 	self assert: machine notNil.
 	
 	super drawOn: aCanvas.
-	
-	self drawOn: aCanvas textFrom: (wbegin at:1) to: self wend atPastEnd atHeight: 0 highlight: false color: Color black.
 
-	self drawSelectionOn: aCanvas.
+	selection := ((wbegin at:1) to: self wend atPastEnd) intersect: machine selection.
+	
+	yy := self drawOn: aCanvas textFrom: (wbegin at:1) to: selection begin atHeight: 0 highlight: false color: Color black.
+	
+	selection end isPastLast
+		ifTrue:[ 
+			self drawOn: aCanvas textFrom: selection begin to: selection end atHeight: yy highlight: true color: Color white ]
+		ifFalse:[ | ee |
+			ee := selection end incrementIndex. 
+			yy := self drawOn: aCanvas textFrom: selection begin to: ee atHeight: yy highlight: true color: Color white.
+			self drawOn: aCanvas textFrom: ee to: self wend atPastEnd atHeight: yy highlight: false color: Color black ].
 
 	showCursor 
 		ifTrue:[self drawCursorOn: aCanvas ].	
@@ -1648,60 +1677,59 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:41:57'!
-drawOn: aCanvas at: aNumber color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:31:07'!
+drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
+	| yy |
+	
 	self assert: anAddressB line == anAddressE line.
 	
+	yy := anAddressB line ppage notNil
+			ifTrue:[aNumberHeight + dy]
+			ifFalse:[aNumberHeight].
+			
 	aBoolean
 		ifTrue:[ | xb |
 			xb := dx * (anAddressB index - 1).
-			aCanvas fillRectangle: (xb @ aNumber extent: (dx * (anAddressE index - anAddressB index + 1)) @ dy) color: Color black].
+			aCanvas fillRectangle: (xb @ yy extent: (dx * (anAddressE index - anAddressB index)) @ dy) color: Color black].
 		
-	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: (anAddressE index min: anAddressE line text size)) at: dx * (anAddressB index - 1) @ aNumber font: font color: aColor.
+	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) @ yy font: font color: aColor.
 
 	anAddressB line ppage notNil 
-		ifTrue:[aCanvas line: 0@aNumber to:  self morphWidth@aNumber width: 4 color: (Color fromHexString:'#BBBBBB') ].
+		ifTrue:[ | hh |
+			hh := aNumberHeight + (0.5*dy).
+			aCanvas line: 0@hh to:  self morphWidth@hh width: 4 color: (Color fromHexString:'#BBBBBB') ].
 	
-	^ anAddressB line ppage isNil
-		ifTrue:[
-			aNumber + dy]
-		ifFalse:[
-			aNumber +"1.5*"dy]
+	^  anAddressE index >= anAddressE line text size
+		ifTrue:[yy + dy]
+		ifFalse:[aNumberHeight]
 		
 		
 ! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/25/2025 09:41:57'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:20:59'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
-	| yy ii addr |
+	| yy addr zz |
 
 	addr := addrB.
 	yy := hh.
-	ii := 0.
 	
 	[ addr line ~= addrE line ] whileTrue:[
 		
-		self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addr endOfLine.		
-		ii := ii + 1.
-		yy := hh + (ii * dy).
+		yy := self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addr pastEndOfLine.		
 		addr := addr nextLine ].
 
-	" draw the text for the last line "
+	" draw the text for the last line but keep the height at the last line unless the last line is full. "
 
-	self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
-! !
-
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/17/2025 16:17:16'!
-drawSelectionOn: aCanvas
-
-	| range |
+	zz :=  self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
 	
-	range := ((wbegin at:1) to: self wend atPastEnd) intersect: machine selection.
-		
-	self drawOn: aCanvas textFrom: range begin to: range end atHeight: dy * (wbegin distanceFrom: range begin line) highlight: true color: Color white.
-	
+	^ addrE isIndexPastEndOfLine 
+		ifTrue:[
+			addrE isPastLast 
+				ifTrue:[yy]
+				ifFalse:[zz] ]
+		ifFalse:[yy]
 ! !
 
 !WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/18/2025 18:48:42'!
@@ -1775,7 +1803,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/24/2025 21:55:07'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/25/2025 22:49:17'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -1794,7 +1822,7 @@ keyStroke: aKeyboardEvent
 					machine insert: String crString].
 			mapper isEraseKey: aKeyboardEvent ::
 				ifTrue:[
-					machine erase]
+					self erase]
 				ifFalse:[ 
 					keyv > 31
 						ifTrue:[ | cc |
@@ -1854,6 +1882,29 @@ handlesKeyboard
 handlesMouseDown: aMouseButtonEvent
 	^true! !
 
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/25/2025 22:57:23'!
+erase
+
+	| selection bb ee |
+	
+	" If the selection we are about to erase includes wbegin we must set wbegin to 
+	the line immediately after the erased lines.
+	"
+	selection := machine selection.
+	
+	bb := selection begin line.
+	ee := selection end line.
+	
+	[ bb ~= wbegin and: [bb ~= ee ] ] 
+		whileTrue:[ bb := bb next ].
+	
+	machine erase.
+	
+	bb == wbegin
+		ifTrue:[
+			wbegin := machine cursor line ].
+! !
+
 !WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:48:30'!
 leap
 
@@ -1887,7 +1938,7 @@ machine: aWPMachine
 	
 	self scrollToCursor ! !
 
-!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:56:54'!
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 09:35:27'!
 wend
 
 	| pp ii |
@@ -1897,7 +1948,7 @@ wend
 	ii := 0.
 	
 	[ii < wsize and:[pp next notNil] ] whileTrue:[
-		ii := ii + 1.
+		ii := ii + pp height.
 		pp := pp next].
 	
 	^pp! !
@@ -1909,7 +1960,7 @@ scrollBackwardToCursor
 	
 ! !
 
-!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/13/2025 15:42:13'!
+!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/26/2025 09:40:52'!
 scrollForwardToCursor
 
 	| ii pp |
@@ -1919,7 +1970,7 @@ scrollForwardToCursor
 	ii := 0.
 	
 
-	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + 1. ].
+	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + pp height. ].
 	
 	" pp prev isNil and pp notNil and ii = distance[pp,line] and pp prev isNil or ii = wsize "
 	
@@ -1929,11 +1980,11 @@ scrollForwardToCursor
 	
 	wbegin := pp.! !
 
-!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/16/2025 19:12:55'!
+!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/25/2025 22:46:57'!
 scrollToCursor
 
 	"
-	look for the cursor within the window, if found there is not need to scroll.
+	look for the cursor within the window, if found there is no need to scroll.
 	
 	"
 	
@@ -2290,6 +2341,26 @@ testErase
 	
 	self assert: true.
 	! !
+
+!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/25/2025 22:40:52'!
+testEraseAll
+
+	| text machine |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	machine := WordProcessorMachine new.
+	
+	machine width: 12.
+		
+	machine insert: text.
+	
+	machine leapToBeginning; pushCursor; leapToEnd; highlight.
+	
+	machine erase.
+	
+	self assert: machine invariant.
+! !
 
 !TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 19:26:27'!
 testHighlight
