@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 26 May 2025 at 2:31:10 pm'!
+'From Cuis7.3 [latest update: #7041] on 27 May 2025 at 2:53:52 pm'!
 'Description '!
-!provides: 'Frog' 1 341!
+!provides: 'Frog' 1 344!
 SystemOrganization addCategory: #Frog!
 
 
@@ -116,7 +116,7 @@ WordProcessorMachine class
 
 !classDefinition: #WPEditorMorph category: #Frog!
 BorderedBoxMorph subclass: #WPEditorMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -385,15 +385,6 @@ isInvalidOffset: aNumber
 isPastLast
 	^ line next isNil and:[index = (line text size + 1) ]! !
 
-!AddressRange methodsFor: 'testing' stamp: 'DF 5/26/2025 13:48:17'!
-invariant
-
-	^ (self isEmpty) or:[begin <= end]! !
-
-!AddressRange methodsFor: 'testing' stamp: 'DF 5/26/2025 13:47:59'!
-isEmpty
-	^begin isNil and:[end isNil]! !
-
 !AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:40'!
 = anAddressRange
 
@@ -465,6 +456,15 @@ intersect: anAddressRange
 !AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:24:30'!
 lineRange
 	^begin line to: end line! !
+
+!AddressRange methodsFor: 'testing' stamp: 'DF 5/26/2025 13:48:17'!
+invariant
+
+	^ (self isEmpty) or:[begin <= end]! !
+
+!AddressRange methodsFor: 'testing' stamp: 'DF 5/26/2025 13:47:59'!
+isEmpty
+	^begin isNil and:[end isNil]! !
 
 !FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
 isCopyKey: aMorphicEvent
@@ -566,80 +566,10 @@ isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown! !
 
-!Line methodsFor: 'private' stamp: 'DF 5/15/2025 21:51:47'!
-nextToken: aReadStream
-	
-	| tokenStream cc stop state |
-	
-	tokenStream := WriteStream on: ''.
-	
-	state := #separator.
-	stop := false.
+!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
+precedes: aLine
 
-	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
-		cc := aReadStream next.
-		cc isSeparator 
-			ifTrue:[
-				state = #separator 
-					ifTrue:[
-						tokenStream nextPut: cc]
-					ifFalse:[
-						aReadStream back].
-				stop := true]
-			ifFalse:[
-				state := #word.
-				tokenStream nextPut: cc] ].
-	
-	^tokenStream contents.! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/26/2025 09:33:12'!
-height
-	^ ppage notNil 
-		ifTrue:[2]
-		ifFalse:[1]! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
-next
-	^next! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
-next: aLine
-	next := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 18:10:24'!
-page
-
-	| pp |
-	
-	pp := self.
-	
-	[pp notNil and: [pp ppage isNil] ]
-		whileTrue:[pp := pp prev].
-		
-	self assert: pp notNil.
-	
-	^pp ppage! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:25:48'!
-ppage
-
-	^ppage! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:28:30'!
-ppage: aPage
-	ppage := aPage! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
-prev
-	^prev! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
-prev: aLine
-	prev := aLine! !
-
-!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
-text
-	^text! !
+	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:55:54'!
 at: anIndex
@@ -773,10 +703,80 @@ to: aLine
 	
 	^LineRange new begin: self ; end: aLine ; yourself! !
 
-!Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
-precedes: aLine
+!Line methodsFor: 'private' stamp: 'DF 5/15/2025 21:51:47'!
+nextToken: aReadStream
+	
+	| tokenStream cc stop state |
+	
+	tokenStream := WriteStream on: ''.
+	
+	state := #separator.
+	stop := false.
 
-	^self == aLine or: [self next notNil and: [self next precedes: aLine] ]! !
+	[ (aReadStream atEnd) or:[stop] ] whileFalse:[
+		cc := aReadStream next.
+		cc isSeparator 
+			ifTrue:[
+				state = #separator 
+					ifTrue:[
+						tokenStream nextPut: cc]
+					ifFalse:[
+						aReadStream back].
+				stop := true]
+			ifFalse:[
+				state := #word.
+				tokenStream nextPut: cc] ].
+	
+	^tokenStream contents.! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/26/2025 09:33:12'!
+height
+	^ ppage notNil 
+		ifTrue:[2]
+		ifFalse:[1]! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:52'!
+next
+	^next! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:09'!
+next: aLine
+	next := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 18:10:24'!
+page
+
+	| pp |
+	
+	pp := self.
+	
+	[pp notNil and: [pp ppage isNil] ]
+		whileTrue:[pp := pp prev].
+		
+	self assert: pp notNil.
+	
+	^pp ppage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:25:48'!
+ppage
+
+	^ppage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:28:30'!
+ppage: aPage
+	ppage := aPage! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:47:59'!
+prev
+	^prev! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/8/2025 15:49:15'!
+prev: aLine
+	prev := aLine! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 5/7/2025 18:50:03'!
+text
+	^text! !
 
 !Line methodsFor: 'initialization' stamp: 'DF 5/8/2025 15:52:17'!
 initialize
@@ -859,6 +859,25 @@ invariant
 
 	^ (begin isNil and: end isNil) or:[begin <= end]! !
 
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 19:07:03'!
+invariant
+
+	^ (prev isNil or:[prev next = self]) and: [next isNil or:[next prev = self] ] and: [self isOverflow not] and: [self isUnderflow not].! !
+
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 17:53:56'!
+isOverflow
+
+	^self lineNo > 5
+	! !
+
+!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 18:47:46'!
+isUnderflow
+
+	" only the last page can have less than the full number of lines "
+	
+	^next notNil and: [self lineNo < 5]
+	! !
+
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:29:25'!
 head
 	^head! !
@@ -897,6 +916,21 @@ next
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:14:40'!
 next: aPage
 	next := aPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 5/27/2025 14:49:20'!
+pageNumber
+
+	| ii pp |
+	
+	ii := 0.
+	
+	pp := self.
+	
+	[pp prev notNil ] whileTrue:[
+		ii := ii + 1.
+		pp := pp prev ].
+	
+	^ii! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:35:55'!
 prev
@@ -971,25 +1005,6 @@ shiftRight
 	
 	next isOverflow ifTrue:[
 		next shiftRight].
-	! !
-
-!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 19:07:03'!
-invariant
-
-	^ (prev isNil or:[prev next = self]) and: [next isNil or:[next prev = self] ] and: [self isOverflow not] and: [self isUnderflow not].! !
-
-!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 17:53:56'!
-isOverflow
-
-	^self lineNo > 5
-	! !
-
-!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 18:47:46'!
-isUnderflow
-
-	" only the last page can have less than the full number of lines "
-	
-	^next notNil and: [self lineNo < 5]
 	! !
 
 !Paragraph methodsFor: 'as yet unclassified' stamp: 'DF 5/6/2025 21:41:54'!
@@ -1698,7 +1713,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:31:07'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/27/2025 14:44:18'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy |
@@ -1717,15 +1732,24 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) @ yy font: font color: aColor.
 
 	anAddressB line ppage notNil 
-		ifTrue:[ | hh |
-			hh := aNumberHeight + (0.5*dy).
-			aCanvas line: 0@hh to:  self morphWidth@hh width: 4 color: (Color fromHexString:'#BBBBBB') ].
+		ifTrue:[ self drawOn: aCanvas page: anAddressB line ppage breakAt: aNumberHeight. ].
 	
 	^  anAddressE index >= anAddressE line text size
 		ifTrue:[yy + dy]
 		ifFalse:[aNumberHeight]
 		
 		
+! !
+
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/27/2025 14:53:33'!
+drawOn: aCanvas page: aPage breakAt: aNumberHeight
+
+	| hh |
+	
+	hh := aNumberHeight + (0.25*dy).
+	aCanvas fillRectangle: (0@hh extent: self morphWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+	
+	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ hh) font: pageNumberFont color: Color black.
 ! !
 
 !WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 09:20:59'!
@@ -1753,7 +1777,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 		ifFalse:[yy]
 ! !
 
-!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/18/2025 18:48:42'!
+!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/27/2025 14:52:35'!
 initialize
 
 	super initialize. 
@@ -1763,6 +1787,8 @@ initialize
 	color := Color white.
 	
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
 	
 	dy := font lineSpacing.
 	
