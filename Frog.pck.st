@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 27 May 2025 at 2:53:52 pm'!
+'From Cuis7.3 [latest update: #7041] on 30 May 2025 at 11:14:28 pm'!
 'Description '!
-!provides: 'Frog' 1 344!
+!provides: 'Frog' 1 352!
 SystemOrganization addCategory: #Frog!
 
 
@@ -42,6 +42,16 @@ FrogKeyboardMapper subclass: #LinuxKeyboardMapper
 	category: 'Frog'!
 !classDefinition: 'LinuxKeyboardMapper class' category: #Frog!
 LinuxKeyboardMapper class
+	instanceVariableNames: ''!
+
+!classDefinition: #LinuxRaspiKeyboardMapper category: #Frog!
+LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'LinuxRaspiKeyboardMapper class' category: #Frog!
+LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
 !classDefinition: #MacOSKeyboardMapper category: #Frog!
@@ -115,7 +125,7 @@ WordProcessorMachine class
 	instanceVariableNames: ''!
 
 !classDefinition: #WPEditorMorph category: #Frog!
-BorderedBoxMorph subclass: #WPEditorMorph
+ColoredBoxMorph subclass: #WPEditorMorph
 	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont'
 	classVariableNames: ''
 	poolDictionaries: ''
@@ -125,7 +135,7 @@ WPEditorMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #WPRuler category: #Frog!
-BorderedBoxMorph subclass: #WPRuler
+ColoredBoxMorph subclass: #WPRuler
 	instanceVariableNames: 'rulerFont machine dx statusFont rulerCursorRect showCursor'
 	classVariableNames: ''
 	poolDictionaries: ''
@@ -478,31 +488,45 @@ isEnterKey: aMorphicEvent
 isEraseKey: aMorphicEvent
 	^self subclassResponsibility ! !
 
-!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:32'!
-isLeapAgainKey: aMorphicEvent
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
 	^self subclassResponsibility ! !
 
-!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:42'!
-isLeapLeftKey: aMorphicEvent
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:16'!
+isLeapAgainKeyUp: aMorphicEvent
 	^self subclassResponsibility ! !
 
-!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:52'!
-isLeapRightKey: aMorphicEvent
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:23'!
+isLeapLeftKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:32'!
+isLeapRightKeyUp: aMorphicEvent
 	^self subclassResponsibility ! !
 
 !FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
 isPageKey: aMorphicEvent
 	^self subclassResponsibility ! !
 
-!FrogKeyboardMapper class methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:40:54'!
+!FrogKeyboardMapper class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:38'!
 instance
 
 	| aMapperClass |
 	
 	aMapperClass := Smalltalk platformName caseOf: {
 		['Mac OS'] 	-> [MacOSKeyboardMapper] .
-		['unix'] 		-> [LinuxKeyboardMapper] 
-	}.
+		['unix'] 		-> [Smalltalk platformSubtype = 'aarch64' 
+							and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
+								ifTrue:[LinuxRaspiKeyboardMapper ] 
+								ifFalse:[LinuxKeyboardMapper] ] }.
 						
 	^aMapperClass new
 		
@@ -520,22 +544,58 @@ isEnterKey: aMorphicEvent
 isEraseKey: aMorphicEvent
 	^aMorphicEvent keyValue = 8! !
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:32'!
-isLeapAgainKey: aMorphicEvent
-	^aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]! !
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and: [aMorphicEvent isKeyDown]! !
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:42'!
-isLeapLeftKey: aMorphicEvent
-	^aMorphicEvent keyValue = 152! !
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:39:59'!
+isLeapAgainKeyUp: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and:[aMorphicEvent isKeyUp]! !
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:53'!
-isLeapRightKey: aMorphicEvent
-	^aMorphicEvent keyValue = 136 ! !
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:18'!
+isLeapLeftKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:42'!
+isLeapLeftKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:13'!
+isLeapRightKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:59'!
+isLeapRightKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and:[aMorphicEvent isKeyUp]! !
 
 !LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
 isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^aMorphicEvent controlKeyPressed ! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
+isLeapAgainKeyUp: aMorphicEvent
+	^aMorphicEvent controlKeyPressed not! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
+isLeapLeftKeyUp: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 128! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
+isLeapRightKeyUp: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 0! !
 
 !MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:24'!
 isCopyKey: aMorphicEvent
@@ -549,16 +609,16 @@ isEnterKey: aMorphicEvent
 isEraseKey: aMorphicEvent
 	^aMorphicEvent isBackspace! !
 
-!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:32'!
-isLeapAgainKey: aMorphicEvent
+!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
 	^aMorphicEvent controlKeyPressed ! !
 
-!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 22:36:20'!
-isLeapLeftKey: aMorphicEvent
+!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
 	^aMorphicEvent keyValue = 55! !
 
-!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 22:36:13'!
-isLeapRightKey: aMorphicEvent
+!MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
 	^aMorphicEvent keyValue = 54! !
 
 !MacOSKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
@@ -1012,7 +1072,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 17:25:39'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:48:48'!
 open: aWordProcessorMachine
 
 	|  root top text bottom ruler dx dy aFont leftm |
@@ -1027,13 +1087,15 @@ open: aWordProcessorMachine
 	
 	root := LayoutMorph newColumn.
 
+	root color: Color black.
+	
 	root morphExtent: 1024@600.
 
 	top := LayoutMorph newRow.
 
 	top padding: (leftm / 2)@0"10.55".
 
-	top color: Color red.
+	top color: Color black.
 	
 	text := WPEditorMorph new.
 
@@ -1047,6 +1109,8 @@ open: aWordProcessorMachine
 
 	bottom := LayoutMorph newColumn.
 
+	bottom color: Color black.
+	
 	bottom morphExtent: 1024@60.
 	
 	ruler := WPRuler new.
@@ -1810,16 +1874,16 @@ initialize
 
 	match := true.! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/26/2025 12:50:43'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:58:53'!
 keyDown: aMorphicEvent
 
-	mapper isLeapLeftKey: aMorphicEvent ::
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
 		ifTrue:[ leapLeftDown := true].
 
-	mapper isLeapRightKey: aMorphicEvent ::
+	mapper isLeapRightKeyDown: aMorphicEvent ::
 		ifTrue:[ leapRightDown := true].
 
-	mapper isLeapAgainKey: aMorphicEvent ::
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
 		ifTrue:[ leapAgainDown := true].
 
 	leapRightDown and: [ leapLeftDown ] ::
@@ -1840,7 +1904,8 @@ keyDown: aMorphicEvent
 					leapLeftDown
 						ifTrue:[
 							machine creepLeft] ].
-			self leap ].
+			self leap. 
+			self scrollToCursor ].
 	
 	state = #editing and: [ leapRightDown or: [ leapLeftDown ] ] ::
 		ifTrue:[
@@ -1850,14 +1915,12 @@ keyDown: aMorphicEvent
 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/26/2025 12:53:45'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:53:24'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
 	
 	keyv := aKeyboardEvent keyValue.
-
-	Transcript show: ('key: stroke: {1}' format:{ keyv }); cr.
 
 	state = #editing and: [keyv < 128 ] ::
 		ifTrue:[
@@ -1895,16 +1958,16 @@ keyStroke: aKeyboardEvent
 			
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/20/2025 08:57:17'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:43:06'!
 keyUp: aMorphicEvent
 
-	mapper isLeapLeftKey: aMorphicEvent ::
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
 		ifTrue:[ leapLeftDown := false].
 
-	mapper isLeapRightKey: aMorphicEvent ::
+	mapper isLeapRightKeyUp: aMorphicEvent ::
 		ifTrue:[ leapRightDown := false].
 
-	mapper isLeapAgainKey: aMorphicEvent ::
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[ leapAgainDown := false].
 
 	leapRightDown = false and: [ leapLeftDown = false ] ::
@@ -2007,14 +2070,14 @@ scrollBackwardToCursor
 	
 ! !
 
-!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/26/2025 09:40:52'!
+!WPEditorMorph methodsFor: 'scrolling' stamp: 'DF 5/30/2025 23:14:20'!
 scrollForwardToCursor
 
 	| ii pp |
 	
 	pp := machine cursor line.
 	
-	ii := 0.
+	ii := pp height - 1.
 	
 
 	[ pp prev notNil and:[ii < wsize]  ] whileTrue:[pp := pp prev. ii := ii + pp height. ].
