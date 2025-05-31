@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 30 May 2025 at 11:14:28 pm'!
+'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 12:33:18 pm'!
 'Description '!
-!provides: 'Frog' 1 352!
+!provides: 'Frog' 1 357!
 SystemOrganization addCategory: #Frog!
 
 
@@ -126,7 +126,7 @@ WordProcessorMachine class
 
 !classDefinition: #WPEditorMorph category: #Frog!
 ColoredBoxMorph subclass: #WPEditorMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont leftMargin rightMargin pageWidth'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -1723,7 +1723,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/26/2025 10:02:03'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 12:00:58'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1736,7 +1736,7 @@ drawCursorOn: aCanvas
 		ifTrue:[
 			ycursor := ycursor + dy].
 		
-	xcursor := dx * (machine cursor index) - dx.
+	xcursor := dx * (machine cursor index) - dx + (dx * leftMargin).
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
 
@@ -1777,7 +1777,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/27/2025 14:44:18'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 11:59:12'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy |
@@ -1790,10 +1790,10 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 			
 	aBoolean
 		ifTrue:[ | xb |
-			xb := dx * (anAddressB index - 1).
+			xb := dx * (anAddressB index - 1) + (dx * leftMargin).
 			aCanvas fillRectangle: (xb @ yy extent: (dx * (anAddressE index - anAddressB index)) @ dy) color: Color black].
 		
-	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) @ yy font: font color: aColor.
+	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) + (dx * leftMargin) @ yy font: font color: aColor.
 
 	anAddressB line ppage notNil 
 		ifTrue:[ self drawOn: aCanvas page: anAddressB line ppage breakAt: aNumberHeight. ].
@@ -1841,7 +1841,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 		ifFalse:[yy]
 ! !
 
-!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/27/2025 14:52:35'!
+!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/31/2025 12:00:41'!
 initialize
 
 	super initialize. 
@@ -1857,6 +1857,12 @@ initialize
 	dy := font lineSpacing.
 	
 	dx := font widthOf:$M.
+	
+	leftMargin := 8.
+	
+	rightMargin := 7.
+	
+	pageWidth := 80 - (leftMargin + rightMargin).
 	
 	wsize := 17.
 	
@@ -1874,7 +1880,7 @@ initialize
 
 	match := true.! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:58:53'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:11'!
 keyDown: aMorphicEvent
 
 	mapper isLeapLeftKeyDown: aMorphicEvent ::
@@ -1911,7 +1917,7 @@ keyDown: aMorphicEvent
 		ifTrue:[
 			state := #init].
 	
-	Transcript show: ('key: down. state: {1}. code: {5} . leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown . aMorphicEvent keyValue }); cr.
+	"Transcript show: ('key: down. state: {1}. code: {5} . leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown . aMorphicEvent keyValue }); cr."
 
 ! !
 
@@ -1958,7 +1964,7 @@ keyStroke: aKeyboardEvent
 			
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:43:06'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:56'!
 keyUp: aMorphicEvent
 
 	mapper isLeapLeftKeyUp: aMorphicEvent ::
@@ -1974,8 +1980,8 @@ keyUp: aMorphicEvent
 		ifTrue:[
 			state := #editing].
 
-	"Transcript show: ('key: up. state: {1}. leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown  }); cr.
-		"		
+	"Transcript show: ('key: up. state: {1}. leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown  }); cr."
+		
 	self redrawNeeded 
 ! !
 
@@ -2039,10 +2045,12 @@ leap
 	
 ! !
 
-!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/13/2025 15:53:35'!
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 11:56:21'!
 machine: aWPMachine
 
 	machine := aWPMachine.
+	
+	machine width: pageWidth.
 	
 	wbegin := machine begin line.
 	
