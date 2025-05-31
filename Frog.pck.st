@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 2:29:31 pm'!
+'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 3:10:26 pm'!
 'Description '!
-!provides: 'Frog' 1 358!
+!provides: 'Frog' 1 359!
 SystemOrganization addCategory: #Frog!
 
 
@@ -126,7 +126,7 @@ WordProcessorMachine class
 
 !classDefinition: #WPEditorMorph category: #Frog!
 ColoredBoxMorph subclass: #WPEditorMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont leftMargin rightMargin pageWidth'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont pageWidth'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Frog'!
@@ -1443,6 +1443,10 @@ cursorLineNumber
 	
 	^ii! !
 
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/31/2025 15:07:09'!
+leftMargin
+	^8! !
+
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/24/2025 17:31:52'!
 lines
 	^head! !
@@ -1450,6 +1454,10 @@ lines
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/16/2025 21:20:12'!
 pattern
 	^pattern! !
+
+!WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/31/2025 15:07:13'!
+rightMargin
+	^7! !
 
 !WordProcessorMachine methodsFor: 'accessing' stamp: 'DF 5/15/2025 21:33:19'!
 selection
@@ -1727,7 +1735,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 12:00:58'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 15:07:32'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1740,7 +1748,7 @@ drawCursorOn: aCanvas
 		ifTrue:[
 			ycursor := ycursor + dy].
 		
-	xcursor := dx * (machine cursor index) - dx + (dx * leftMargin).
+	xcursor := dx * (machine cursor index) - dx + (dx * machine leftMargin).
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
 
@@ -1781,7 +1789,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 11:59:12'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 15:07:42'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy |
@@ -1794,10 +1802,10 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 			
 	aBoolean
 		ifTrue:[ | xb |
-			xb := dx * (anAddressB index - 1) + (dx * leftMargin).
+			xb := dx * (anAddressB index - 1) + (dx * machine leftMargin).
 			aCanvas fillRectangle: (xb @ yy extent: (dx * (anAddressE index - anAddressB index)) @ dy) color: Color black].
 		
-	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) + (dx * leftMargin) @ yy font: font color: aColor.
+	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) + (dx * machine leftMargin) @ yy font: font color: aColor.
 
 	anAddressB line ppage notNil 
 		ifTrue:[ self drawOn: aCanvas page: anAddressB line ppage breakAt: aNumberHeight. ].
@@ -1845,7 +1853,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 		ifFalse:[yy]
 ! !
 
-!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/31/2025 12:00:41'!
+!WPEditorMorph methodsFor: 'initialization' stamp: 'DF 5/31/2025 15:09:18'!
 initialize
 
 	super initialize. 
@@ -1861,12 +1869,6 @@ initialize
 	dy := font lineSpacing.
 	
 	dx := font widthOf:$M.
-	
-	leftMargin := 8.
-	
-	rightMargin := 7.
-	
-	pageWidth := 80 - (leftMargin + rightMargin).
 	
 	wsize := 17.
 	
@@ -2049,13 +2051,15 @@ leap
 	
 ! !
 
-!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 11:56:21'!
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 15:10:06'!
 machine: aWPMachine
 
 	machine := aWPMachine.
+
+	pageWidth := 80 - (machine leftMargin + machine rightMargin).
 	
 	machine width: pageWidth.
-	
+		
 	wbegin := machine begin line.
 	
 	self scrollToCursor ! !
@@ -2186,14 +2190,14 @@ stopBlinking
 		showCursor := false.
 		rulerCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 17:34:27'!
+!WPRuler methodsFor: 'drawing' stamp: 'DF 5/31/2025 15:08:48'!
 drawCursorOn: aCanvas
 
 	| xcursor |
 	
 	" draw the cursor indicator in the ruler area"
 	
-	xcursor := (machine cursor index - 0.5) * dx  - 2.
+	xcursor := (machine cursor index - 0.5) * dx  - 2 + (dx * machine leftMargin).
 	
 	rulerCursorRect := xcursor@0 extent: 4@12.
 
