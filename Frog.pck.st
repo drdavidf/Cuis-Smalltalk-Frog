@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 12:33:18 pm'!
+'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 2:29:31 pm'!
 'Description '!
-!provides: 'Frog' 1 357!
+!provides: 'Frog' 1 358!
 SystemOrganization addCategory: #Frog!
 
 
@@ -924,18 +924,18 @@ invariant
 
 	^ (prev isNil or:[prev next = self]) and: [next isNil or:[next prev = self] ] and: [self isOverflow not] and: [self isUnderflow not].! !
 
-!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 17:53:56'!
+!Page methodsFor: 'testing' stamp: 'DF 5/31/2025 14:27:14'!
 isOverflow
 
-	^self lineNo > 5
+	^self lineNo > WordProcessorMachine PageSize
 	! !
 
-!Page methodsFor: 'testing' stamp: 'DF 5/24/2025 18:47:46'!
+!Page methodsFor: 'testing' stamp: 'DF 5/31/2025 14:27:25'!
 isUnderflow
 
 	" only the last page can have less than the full number of lines "
 	
-	^next notNil and: [self lineNo < 5]
+	^next notNil and: [self lineNo < WordProcessorMachine PageSize]
 	! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:29:25'!
@@ -1694,6 +1694,10 @@ textFrom: bAddress to: eAddress
 			pp := pp forward].
 	
 	^aWriteStream contents! !
+
+!WordProcessorMachine class methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 14:27:01'!
+PageSize
+	^10! !
 
 !WPEditorMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 18:51:34'!
 onBlinkCursor
