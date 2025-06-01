@@ -1,6 +1,7 @@
-'From Cuis7.3 [latest update: #7041] on 31 May 2025 at 3:10:26 pm'!
+'From Cuis7.3 [latest update: #7041] on 1 June 2025 at 1:26:14 pm'!
 'Description '!
-!provides: 'Frog' 1 359!
+!provides: 'Frog' 1 365!
+!requires: 'OSProcess' 1 36 nil!
 SystemOrganization addCategory: #Frog!
 
 
@@ -142,6 +143,16 @@ ColoredBoxMorph subclass: #WPRuler
 	category: 'Frog'!
 !classDefinition: 'WPRuler class' category: #Frog!
 WPRuler class
+	instanceVariableNames: ''!
+
+!classDefinition: #Frog category: #Frog!
+CodePackage subclass: #Frog
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'Frog class' category: #Frog!
+Frog class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestLine category: #Frog!
@@ -1072,7 +1083,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:48:48'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 22:46:07'!
 open: aWordProcessorMachine
 
 	|  root top text bottom ruler dx dy aFont leftm |
@@ -1130,6 +1141,11 @@ open: aWordProcessorMachine
 	text addAlarm: #startBlinking after: 3.
 	
 	ruler addAlarm: #startBlinking after: 3.
+	
+	UISupervisor activeHand newKeyboardFocus: text.
+	
+	UISupervisor activeHand hideHardwareCursor.
+
 
 ! !
 
@@ -2261,6 +2277,39 @@ machine: aWordProcessorMachine
 	
 	machine when: #cursor send: #redrawNeeded to: self.! !
 
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:21:51'!
+initialize
+
+	"self initialize"
+	
+	Smalltalk addToStartUpList: Frog.! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:39'!
+installSigTermHandler
+
+	[
+		 | sema |
+	
+		sema := OSProcess accessor forwardSigTerm.
+
+		sema wait.
+
+		Smalltalk saveAndQuit.
+
+	] forkNamed: 'SIGTERM handler'
+
+! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:43'!
+postPackageInstall
+! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:58'!
+startUp: aBoolean
+
+	aBoolean ifTrue:[
+		self installSigTermHandler ].! !
+
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
 
@@ -2690,3 +2739,4 @@ tail
 	str := self contents.
 	
 	^ str copyFrom: position + 1 to: str size.! !
+Frog initialize!
