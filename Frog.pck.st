@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 1 June 2025 at 1:26:14 pm'!
+'From Cuis7.3 [latest update: #7041] on 2 June 2025 at 2:15:08 pm'!
 'Description '!
-!provides: 'Frog' 1 365!
+!provides: 'Frog' 1 390!
 !requires: 'OSProcess' 1 36 nil!
 SystemOrganization addCategory: #Frog!
 
@@ -523,6 +523,10 @@ isLeapRightKeyDown: aMorphicEvent
 isLeapRightKeyUp: aMorphicEvent
 	^self subclassResponsibility ! !
 
+!FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:43:40'!
+isPageBreakKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
 !FrogKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
 isPageKey: aMorphicEvent
 	^self subclassResponsibility ! !
@@ -578,6 +582,10 @@ isLeapRightKeyDown: aMorphicEvent
 !LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:59'!
 isLeapRightKeyUp: aMorphicEvent
 	^aMorphicEvent keyValue = 136 and:[aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:44:19'!
+isPageBreakKey: aMorphicEvent
+	^aMorphicEvent isPageDown and: [aMorphicEvent controlKeyPressed ]! !
 
 !LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
 isPageKey: aMorphicEvent
@@ -637,6 +645,11 @@ isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown! !
 
+!Line methodsFor: 'testing' stamp: 'DF 6/2/2025 11:10:11'!
+endsWithPageSeparator
+
+	^text notEmpty and: [text last isPageSeparator ]! !
+
 !Line methodsFor: 'testing' stamp: 'DF 5/9/2025 17:30:16'!
 precedes: aLine
 
@@ -649,6 +662,11 @@ at: anIndex
 	self assert: 0 < anIndex.
 	
 	^Address new line: self ; index: anIndex; yourself.! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:20:05'!
+atEnd
+	
+	^Address new line: self ; index: text size; yourself.! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 21:39:16'!
 atPastEnd
@@ -766,6 +784,20 @@ insert: aString after: anIndex width:  numChars
 invariant
 
 	^(prev isNil or:[prev next == self ]) and:[next isNil or:[next prev == self ] ] and: [ ppage isNil or: [ppage head = self ] ]! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:15:39'!
+lastLine
+
+	| pp |
+	
+	pp := self.
+	
+	[ pp next isNil ] whileFalse:[
+		pp := pp next].
+	
+	^ pp
+	
+	! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:06:17'!
 to: aLine
@@ -941,12 +973,22 @@ isOverflow
 	^self lineNo > WordProcessorMachine PageSize
 	! !
 
-!Page methodsFor: 'testing' stamp: 'DF 5/31/2025 14:27:25'!
+!Page methodsFor: 'testing' stamp: 'DF 6/2/2025 12:47:53'!
+isSoft
+
+	" a page is soft if its last line ends with an explicit page separator"
+	
+	^next notNil and:[next head prev endsWithPageSeparator ]! !
+
+!Page methodsFor: 'testing' stamp: 'DF 6/2/2025 12:49:19'!
 isUnderflow
 
-	" only the last page can have less than the full number of lines "
+	" only the last page can have less than the full number of lines, unless this is a soft page "
 	
-	^next notNil and: [self lineNo < WordProcessorMachine PageSize]
+	self isSoft
+		ifTrue:[^false].
+	
+	^next notNil and: [self lineNo < WordProcessorMachine PageSize] 
 	! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 17:29:25'!
@@ -959,6 +1001,18 @@ head: aLine
 	head := aLine.
 	
 	aLine ppage: self.! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:12:45'!
+lastPage
+
+	| pp |
+	
+	pp := self.
+	
+	[ pp next isNil ] whileFalse:[
+		pp := pp next].
+
+	^pp! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 18:14:06'!
 lineNo
@@ -1196,21 +1250,23 @@ clearPattern
 	pattern := ''.
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:32'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 13:38:25'!
 creepLeft
 
-	self assert: cursor isFirst = false.
-	
-	cursor := cursor back.
+	cursor := cursor isFirst
+		ifTrue:[page lastPage head lastLine atPastEnd ]
+		ifFalse:[cursor back].
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 15:17:36'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 13:36:18'!
 creepRight
 
-	self assert: cursor isPastLast = false.
-	
-	cursor := cursor forward.
+	cursor := cursor isPastLast
+		ifTrue:[
+			head at:1]
+		ifFalse:
+			[cursor forward].
 	
 	self triggerEvent: #cursor.! !
 
@@ -1229,6 +1285,32 @@ highlight
 	self assert: beginh <= endh.
 	
 	self triggerEvent: #cursor.! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 13:06:00'!
+leapBackToPage
+
+	| pp |
+	
+	pp := cursor line page.
+	
+	self setNarrowCursorTo: (pp head at:1).
+
+	^true! !
+
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 13:29:03'!
+leapForwardToPage
+
+	| pp addr |
+	
+	pp := cursor line page.
+	
+	addr := pp next isNil 
+		ifTrue:[pp lastPage head lastLine atPastEnd]
+		ifFalse:[pp next head prev atEnd].
+	
+	self setNarrowCursorTo: addr.
+
+	^true! !
 
 !WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/24/2025 21:32:25'!
 leapLeft
@@ -1609,7 +1691,7 @@ erase
 	
 	self triggerEvent: #cursor.! !
 
-!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 5/25/2025 22:42:53'!
+!WordProcessorMachine methodsFor: 'editing' stamp: 'DF 6/2/2025 13:59:54'!
 insert: aString
 
 	"insert aString right after cursor. Create new lines as needed. Move the cursor to point one character ahead of the inserted string."
@@ -1633,7 +1715,25 @@ insert: aString
 				line next ifNil:[ | aNewLine |
 					aNewLine := Line new.
 		
-					self insert: aNewLine after: line].
+					self insertLine: aNewLine after: line].
+	
+					self assert: line next notNil.
+						
+	"if the line ends with a page break and the next line does not start a new page, 
+	create a new page and make the next line the first in the newly 
+	created page. make the new line the first line in the new page. "
+	
+				line endsWithPageSeparator and:[line next ppage isNil] ::
+					ifTrue:[ | aPage |
+			
+						aPage := Page new.
+	
+						self assert: line next ppage isNil.
+			
+						line next ppage: aPage.
+						aPage head: line next.
+			
+						self insertPage: aPage after: line page ].		
 		
 				pp := pp nextLine.
 		
@@ -1658,8 +1758,8 @@ begin
 end
 	^self begin pastLastLine ! !
 
-!WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/24/2025 18:20:20'!
-insert: aNewLine after: aLine
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 6/2/2025 13:55:11'!
+insertLine: aNewLine after: aLine
 
 	"we assume that aNewLine is not already in the list"
 	
@@ -1684,8 +1784,35 @@ insert: aNewLine after: aLine
 	
 	aNewLine page isOverflow 
 		ifTrue:[
-			aNewLine page shiftRight]
-	! !
+			aNewLine page shiftRight].
+		
+! !
+
+!WordProcessorMachine methodsFor: 'private' stamp: 'DF 6/2/2025 14:11:41'!
+insertPage: aNewPage after: aPage
+
+	"we assume that aNewPage is not already in the list"
+	
+	self assert: aNewPage next isNil.
+	self assert: aNewPage prev isNil.
+	
+	"self assert: aPage invariant."
+	
+	aNewPage prev: aPage.
+	
+	aNewPage next: aPage next.
+	
+	aPage next ifNotNil:[:this | this prev: aNewPage ].
+	
+	aPage next: aNewPage.
+
+	aNewPage isUnderflow 
+		ifTrue:[aNewPage shiftLeft].
+	
+	self assert: aPage invariant.
+	self assert: aNewPage invariant.
+	
+! !
 
 !WordProcessorMachine methodsFor: 'private' stamp: 'DF 5/24/2025 17:31:52'!
 lastLine
@@ -1805,7 +1932,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 5/31/2025 15:07:42'!
+!WPEditorMorph methodsFor: 'drawing' stamp: 'DF 6/2/2025 13:39:38'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy |
@@ -1823,8 +1950,13 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 		
 	aCanvas drawString: (anAddressB line text copyFrom: anAddressB index to: anAddressE index - 1) at: dx * (anAddressB index - 1) + (dx * machine leftMargin) @ yy font: font color: aColor.
 
+	anAddressB line endsWithPageSeparator 
+		ifTrue:[
+			aCanvas drawString: (Character codePoint:182) asString at:dx * (anAddressB line text size - 1) + (dx * machine leftMargin) @ yy font: font color: aColor ].
+
 	anAddressB line ppage notNil 
-		ifTrue:[ self drawOn: aCanvas page: anAddressB line ppage breakAt: aNumberHeight. ].
+		ifTrue:[ 
+			self drawOn: aCanvas page: anAddressB line ppage breakAt: aNumberHeight. ].
 	
 	^  anAddressE index >= anAddressE line text size
 		ifTrue:[yy + dy]
@@ -1943,7 +2075,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/30/2025 22:53:24'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 6/2/2025 13:50:07'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -1958,6 +2090,9 @@ keyStroke: aKeyboardEvent
 			mapper isEnterKey: aKeyboardEvent ::
 				ifTrue:[
 					machine insert: String crString].
+			mapper isPageBreakKey: aKeyboardEvent ::
+				ifTrue:[
+					machine insert: (String with: Character newPage) ].
 			mapper isEraseKey: aKeyboardEvent ::
 				ifTrue:[
 					self erase]
@@ -2043,14 +2178,14 @@ erase
 			wbegin := machine cursor line ].
 ! !
 
-!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:48:30'!
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:06:57'!
 leap
 
 	^leapLeftDown 
 		ifTrue:[
 			machine pattern first = Character newPage 
 				ifTrue:[
-					machine leapToBeginning ]
+					machine leapBackToPage ]
 				ifFalse:[
 					machine leapLeft] ]
 		ifFalse:[
@@ -2058,7 +2193,7 @@ leap
 				ifTrue:[
 					machine pattern first = Character newPage 
 						ifTrue:[
-							machine leapToEnd ]
+							machine leapForwardToPage ]
 						ifFalse:[
 							machine leapRight] ]
 				ifFalse:[
@@ -2702,27 +2837,6 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	self assert: (rr intersect:zz) = (yb to: xe).
 	! !
 
-!TestWordProcessorMachine methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 15:42:25'!
-testMorph
-
-	| text machine |
-	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-
-	machine := WordProcessorMachine new.
-	
-	machine width: 12.
-	
-	machine insert: text.
-	
-	machine pattern: 'golden'.
-	
-	machine leapLeft.
-	
-	machine insert:'Z'.
-	
-	WordProcessor open: machine.! !
-
 !SequenceableCollection methodsFor: '*Frog-enumerating' stamp: 'DF 5/8/2025 16:50:50'!
 firstIndex: aBlock
 
@@ -2739,4 +2853,9 @@ tail
 	str := self contents.
 	
 	^ str copyFrom: position + 1 to: str size.! !
+
+!Character methodsFor: '*Frog-testing' stamp: 'DF 6/2/2025 11:06:04'!
+isPageSeparator
+
+	^self codePoint = 12 "form feed"! !
 Frog initialize!
