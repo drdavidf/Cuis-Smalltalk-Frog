@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 2 June 2025 at 2:15:08 pm'!
+'From Cuis7.3 [latest update: #7041] on 2 June 2025 at 6:55:08 pm'!
 'Description '!
-!provides: 'Frog' 1 390!
+!provides: 'Frog' 1 399!
 !requires: 'OSProcess' 1 36 nil!
 SystemOrganization addCategory: #Frog!
 
@@ -153,7 +153,7 @@ CodePackage subclass: #Frog
 	category: 'Frog'!
 !classDefinition: 'Frog class' category: #Frog!
 Frog class
-	instanceVariableNames: ''!
+	instanceVariableNames: 'mutex'!
 
 !classDefinition: #TestLine category: #Frog!
 TestCase subclass: #TestLine
@@ -1370,7 +1370,7 @@ leapToEnd
 	
 	^true! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/17/2025 12:09:57'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 17:07:35'!
 matchBackFrom: anAddress
 
 	| p ii |
@@ -1379,14 +1379,14 @@ matchBackFrom: anAddress
 
 	ii := pattern size.
 		
-	[ ii  = 0 or: [ p isFirst ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
+	[ ii  = 0 or: [ p isFirst ] or: [ (pattern at: ii) frogNotEq: p char ] ] whileFalse:[
 		ii := ii - 1.
 		p := p back ].
 	
-	^ ii = 0 or: [p isFirst and:[p char = (pattern at:ii) ] ]
+	^ ii = 0 or: [p isFirst and:[(pattern at:ii) frogEq: p char ] ]
 ! !
 
-!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 5/16/2025 17:45:57'!
+!WordProcessorMachine methodsFor: 'leaping' stamp: 'DF 6/2/2025 17:07:22'!
 matchForwardFrom: anAddress
 
 	| p ii |
@@ -1395,7 +1395,7 @@ matchForwardFrom: anAddress
 
 	ii := 1.
 		
-	[ ii  = (pattern size + 1) or: [ p isPastLast ] or: [ p char ~= (pattern at: ii) ] ] whileFalse:[
+	[ ii  = (pattern size + 1) or: [ p isPastLast ] or: [ (pattern at: ii) frogNotEq: p char ] ] whileFalse:[
 		ii := ii + 1.
 		p := p forward ].
 	
@@ -2075,7 +2075,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 6/2/2025 13:50:07'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 6/2/2025 17:29:45'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -2118,7 +2118,10 @@ keyStroke: aKeyboardEvent
 					machine popCursor ]	].
 	
 	self scrollToCursor.
-			
+	
+	self removeAlarm: #autoSave.
+	
+	self addAlarm: #autoSave after: 3*60*1000. "3 min. in millisec"
 ! !
 
 !WPEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:56'!
@@ -2154,6 +2157,13 @@ handlesKeyboard
 !WPEditorMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
 handlesMouseDown: aMouseButtonEvent
 	^true! !
+
+!WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 18:55:03'!
+autoSave
+
+	Frog mutex critical:[
+		Smalltalk saveImage.
+	]! !
 
 !WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 5/25/2025 22:57:23'!
 erase
@@ -2355,7 +2365,7 @@ drawCursorOn: aCanvas
 	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
 ! !
 
-!WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 21:49:19'!
+!WPRuler methodsFor: 'drawing' stamp: 'DF 6/2/2025 16:17:04'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
@@ -2365,6 +2375,8 @@ drawOn: aCanvas
 	showCursor ifTrue:[
 		self drawCursorOn: aCanvas].
 
+	aCanvas image: self class pageNumberIcon at: dx * 1.0 @ (30 - 3 ).
+	
 	aCanvas drawString: (machine cursorLineNumber printStringBase: 10 length: 2 padded: false) at: dx * 3 @30 font: statusFont color: Color white.! !
 
 !WPRuler methodsFor: 'drawing' stamp: 'DF 5/16/2025 16:24:35'!
@@ -2412,14 +2424,82 @@ machine: aWordProcessorMachine
 	
 	machine when: #cursor send: #redrawNeeded to: self.! !
 
-!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:21:51'!
+!WPRuler class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 16:09:37'!
+pageNumberIcon
+
+ ^ `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #(
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10101010101010101010101000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r00000000100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00001010100000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r00101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r10101010100000000000000000000000
+ 		2r10000000000000000000001000000010
+ 		2r10101010100000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r10101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00001010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010101010101000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010000000100000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010000010000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010001000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010001000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10101010101010100000000000000000
+ 		2r00000000000000000000000000000000)
+ 	offset: 0@0`
+	! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 17:21:00'!
 initialize
 
 	"self initialize"
 	
+	mutex := Semaphore forMutualExclusion.
+	
 	Smalltalk addToStartUpList: Frog.! !
 
-!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:39'!
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 17:23:00'!
 installSigTermHandler
 
 	[
@@ -2429,11 +2509,17 @@ installSigTermHandler
 
 		sema wait.
 
-		Smalltalk saveAndQuit.
+		mutex critical:[
+			Smalltalk saveAndQuit
+		].
 
 	] forkNamed: 'SIGTERM handler'
 
 ! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 17:21:26'!
+mutex
+	^mutex! !
 
 !Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:43'!
 postPackageInstall
@@ -2853,6 +2939,20 @@ tail
 	str := self contents.
 	
 	^ str copyFrom: position + 1 to: str size.! !
+
+!Character methodsFor: '*Frog-testing' stamp: 'DF 6/2/2025 16:21:58'!
+frogEq: aCharacter
+
+	"if self is lower case do a case insensitive compare, otherwise a case sensitive compare "
+	
+	^self isUppercase ifTrue:[self == aCharacter ] ifFalse:[self == aCharacter asLowercase ]! !
+
+!Character methodsFor: '*Frog-testing' stamp: 'DF 6/2/2025 17:03:17'!
+frogNotEq: aCharacter
+
+	"if self is lower case do a case insensitive compare, otherwise a case sensitive compare "
+	
+	^self isUppercase ifTrue:[self ~= aCharacter ] ifFalse:[self ~= aCharacter asLowercase ]! !
 
 !Character methodsFor: '*Frog-testing' stamp: 'DF 6/2/2025 11:06:04'!
 isPageSeparator
