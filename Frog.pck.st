@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 2 June 2025 at 6:55:08 pm'!
+'From Cuis7.3 [latest update: #7041] on 5 June 2025 at 10:24:10 am'!
 'Description '!
-!provides: 'Frog' 1 399!
+!provides: 'Frog' 1 401!
 !requires: 'OSProcess' 1 36 nil!
 SystemOrganization addCategory: #Frog!
 
@@ -2525,11 +2525,22 @@ mutex
 postPackageInstall
 ! !
 
-!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/1/2025 13:25:58'!
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/5/2025 10:21:26'!
+printMyPID
+
+	| aFile |
+	
+	aFile := 'kill.me' asFileEntry.
+	
+	aFile fileContents: ('kill -s TERM {1}' format:{OSProcess thisOSProcess pid}).
+	
+! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/5/2025 10:24:07'!
 startUp: aBoolean
 
 	aBoolean ifTrue:[
-		self installSigTermHandler ].! !
+		self installSigTermHandler ; printMyPID ].! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
