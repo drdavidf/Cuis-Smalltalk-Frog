@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 5 June 2025 at 10:24:10 am'!
+'From Cuis7.3 [latest update: #7041] on 6 June 2025 at 5:41:01 pm'!
 'Description '!
-!provides: 'Frog' 1 401!
+!provides: 'Frog' 1 409!
 !requires: 'OSProcess' 1 36 nil!
 SystemOrganization addCategory: #Frog!
 
@@ -143,6 +143,16 @@ ColoredBoxMorph subclass: #WPRuler
 	category: 'Frog'!
 !classDefinition: 'WPRuler class' category: #Frog!
 WPRuler class
+	instanceVariableNames: ''!
+
+!classDefinition: #WordProcessorWindow category: #Frog!
+LayoutMorph subclass: #WordProcessorWindow
+	instanceVariableNames: 'textMorph'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Frog'!
+!classDefinition: 'WordProcessorWindow class' category: #Frog!
+WordProcessorWindow class
 	instanceVariableNames: ''!
 
 !classDefinition: #Frog category: #Frog!
@@ -1137,7 +1147,7 @@ initialize
 
 	lines := Line new! !
 
-!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 5/31/2025 22:46:07'!
+!WordProcessor class methodsFor: 'as yet unclassified' stamp: 'DF 6/5/2025 18:33:04'!
 open: aWordProcessorMachine
 
 	|  root top text bottom ruler dx dy aFont leftm |
@@ -1150,7 +1160,7 @@ open: aWordProcessorMachine
 	
 	leftm := 1024 - (80 * dx).
 	
-	root := LayoutMorph newColumn.
+	root := WordProcessorWindow newColumn.
 
 	root color: Color black.
 	
@@ -1190,6 +1200,8 @@ open: aWordProcessorMachine
 
 	root addMorph: top fixedHeight:538; addMorph: bottom.
 
+	root textMorph: text.
+	
 	root openInWorld.
 	
 	text addAlarm: #startBlinking after: 3.
@@ -2145,10 +2157,15 @@ keyUp: aMorphicEvent
 	self redrawNeeded 
 ! !
 
-!WPEditorMorph methodsFor: 'events' stamp: 'DF 5/12/2025 22:54:27'!
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 6/5/2025 18:55:06'!
 mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 
-	self world activeHand newKeyboardFocus: self! !
+	self activeHand newKeyboardFocus: self! !
+
+!WPEditorMorph methodsFor: 'events' stamp: 'DF 6/5/2025 18:55:17'!
+mouseEnter: aMouseButtonEvent
+
+	self activeHand newKeyboardFocus: self! !
 
 !WPEditorMorph methodsFor: 'event handling testing' stamp: 'DF 5/11/2025 19:27:43'!
 handlesKeyboard
@@ -2156,6 +2173,10 @@ handlesKeyboard
 
 !WPEditorMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
 handlesMouseDown: aMouseButtonEvent
+	^true! !
+
+!WPEditorMorph methodsFor: 'event handling testing' stamp: 'DF 6/5/2025 18:54:45'!
+handlesMouseOver:aMouseButtonEvent
 	^true! !
 
 !WPEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 18:55:03'!
@@ -2490,14 +2511,23 @@ pageNumberIcon
  	offset: 0@0`
 	! !
 
-!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 17:21:00'!
+!WordProcessorWindow methodsFor: 'as yet unclassified' stamp: 'DF 6/6/2025 17:39:56'!
+takeFocus
+
+	self activeHand hideHardwareCursor ; newKeyboardFocus: textMorph! !
+
+!WordProcessorWindow methodsFor: 'as yet unclassified' stamp: 'DF 6/5/2025 18:32:02'!
+textMorph: aWPEditorMorph
+	textMorph := aWPEditorMorph ! !
+
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/6/2025 17:32:05'!
 initialize
 
 	"self initialize"
 	
 	mutex := Semaphore forMutualExclusion.
 	
-	Smalltalk addToStartUpList: Frog.! !
+	AppLauncher appGlobalName: #Frog appSelector: #startUp:.! !
 
 !Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 17:23:00'!
 installSigTermHandler
@@ -2536,11 +2566,17 @@ printMyPID
 	
 ! !
 
-!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/5/2025 10:24:07'!
-startUp: aBoolean
+!Frog class methodsFor: 'as yet unclassified' stamp: 'DF 6/6/2025 17:40:47'!
+startUp: args
 
-	aBoolean ifTrue:[
-		self installSigTermHandler ; printMyPID ].! !
+	self installSigTermHandler ; printMyPID.
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+		
+		app := world submorphs detect:[:each | each isKindOf: WordProcessorWindow ] ifNone:[nil].
+		
+		app ifNotNil:[ app takeFocus  ] ].	
+! !
 
 !TestLine methodsFor: 'as yet unclassified' stamp: 'DF 5/8/2025 22:26:04'!
 testErase
