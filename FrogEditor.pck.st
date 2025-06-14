@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 14 June 2025 at 12:54:07 pm'!
+'From Cuis7.3 [latest update: #6895] on 14 June 2025 at 8:34:49 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 35!
+!provides: 'FrogEditor' 1 52!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -229,14 +229,31 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:03:21'!
+!FrogEditor methodsFor: 'private' stamp: 'DF 6/14/2025 20:32:39'!
+repackAfterErase: aLine
+
+	aLine isPacked: width :: 
+		ifFalse:[ aLine shiftLeft:width].
+				
+	aLine isKissing ifTrue:[ 
+		"The line is packed so we cannot shift left, nevertheless we shift left once,
+		this will join the two kissing tokens and will overflow the line. A call to shiftRight
+		will then move the larger token into its correct position."
+		aLine shiftLeftOnce ; shiftRight: width ].
+! !
+
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:33:40'!
 eraseFrom: bAddress to: eAddress
 
+	| pline |
+	
 	self assert: bAddress <= eAddress.
+
+	pline := bAddress line prev.
 	
 	bAddress line == eAddress line
-		ifTrue:[
-			bAddress line eraseFrom: bAddress index to: eAddress index]
+		ifTrue:[ 
+			bAddress line eraseFrom: bAddress index to: eAddress index]			
 		ifFalse:[	
 			bAddress index = 1 
 				ifTrue:[
@@ -247,7 +264,30 @@ eraseFrom: bAddress to: eAddress
 	 
 			eAddress line eraseTo: eAddress index].
 	
-	! !
+	"Several properties may be violated after erasing:
+	
+	1. The line before bAddress line may become unpacked, for 
+	example when we erase the tail of the first token in bAddress line, 
+	making it shorter and therefore it could be shifted left.
+	
+	2. The line eAddress line may become unpacked for example when
+	we erase some characters from its beginning and therefore make 
+	room for a token in the next line.
+	
+	3. The text in the affected lines may kiss --- this is when the last token in a line
+	and the first token in the next line are both words (non separator tokens), which means
+	that they should become a single larger token and thus shift entirely to the left or to
+	the right. 
+	
+	Note that it is possible for lines to kiss but only if one of the tokens occupies the entire
+	line.
+	
+	"
+	
+	self repackAfterErase: pline.
+	
+	self repackAfterErase: eAddress line.
+! !
 
 !FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/13/2025 19:01:12'!
 insert: aCharacter after: anAddress
@@ -392,25 +432,33 @@ lastToken
 	
 ! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 10:50:54'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:08:18'!
 shiftLeft: anIntegerWidth
 	
-	| token len |
+	| len |
 	
 	self assert: (self isPacked: anIntegerWidth) not.
 	
 	len := 0.
 	
 	[self isPacked: anIntegerWidth] whileFalse:[
-		token := next firstToken.
-		self insert: token at: text size + 1.
-		next eraseFrom: 1 to: token size + 1.
-		len := len + token size ].
+		len := len + self shiftLeftOnce ].
 	
 	next length > 0 and:[next isPacked: anIntegerWidth :: not ] ::	
 		ifTrue:[next shiftLeft: anIntegerWidth ]. 
 		
 	^len
+		! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:07:47'!
+shiftLeftOnce
+	
+	| token |
+	
+	token := next firstToken.
+	self insert: token at: text size + 1.
+	next eraseFrom: 1 to: token size + 1.
+	^token size.
 		! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 10:13:30'!
@@ -462,6 +510,22 @@ invariant: aNumberWidth
 	
 	^true! !
 
+!Line methodsFor: 'testing' stamp: 'DF 6/14/2025 20:11:00'!
+isKissing
+	"Answer true if this line ends with a non separator character and the next line starts with a non separating character, and it does not hold a single token that occupies the entire line."
+	
+	text last isSeparator
+		ifTrue:[^false].
+		
+	next startsWithSeparator 
+		ifTrue:[^false].
+		
+	self firstToken size = text size 
+		ifTrue:[^false].
+		
+	^true
+	! !
+
 !Line methodsFor: 'testing' stamp: 'DF 6/12/2025 19:27:35'!
 isOverflow: anIntegerWidth
 	
@@ -499,6 +563,10 @@ precedes: aLine
 	
 	^pp == aLine! !
 
+!Line methodsFor: 'testing' stamp: 'DF 6/14/2025 19:40:19'!
+startsWithSeparator
+	^text first isSeparator! !
+
 !Line methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:50:34'!
 length
 	^text size! !
@@ -523,6 +591,10 @@ prev: aLine
 length
 	^0! !
 
+!Sentinel methodsFor: 'testing' stamp: 'DF 6/14/2025 19:30:17'!
+isKissing
+	^false! !
+
 !Sentinel methodsFor: 'testing' stamp: 'DF 6/12/2025 19:21:12'!
 isOverflow: anIntegerWidth
 	^true! !
@@ -535,7 +607,11 @@ isPacked: aNumberWidth
 isSentinel
 	^true! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:53:49'!
+!Sentinel methodsFor: 'testing' stamp: 'DF 6/14/2025 19:39:35'!
+startsWithSeparator
+	^false! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:34:47'!
 testErase
 
 	| text aFrogEditor bb ee |
@@ -573,6 +649,8 @@ testErase
 	aFrogEditor eraseFrom:bb to:ee.
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 16 with: '').
+	
+	self assert: aFrogEditor invariant.
 	
 ! !
 
@@ -717,4 +795,35 @@ testInsertUnpack
 	
 	self assert: (aFrogEditor textFrom:bb to: ee) = '8abcdefg'.
 	
+! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:16:20'!
+testKissing
+
+	| text aFrogEditor bb ee |
+	
+	text := 'In olden times, when to wish'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+
+	bb := aFrogEditor begin.
+	ee := bb.
+	8 timesRepeat:[ee := ee inc].
+	
+	self assert: ee char = Character space.
+	
+	aFrogEditor eraseFrom:ee to: ee inc.
+	
+	self assert: aFrogEditor invariant.
 ! !
