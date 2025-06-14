@@ -1,0 +1,342 @@
+\documentclass{article}
+\usepackage{zed-csp}
+\title{A data structure for representing text}
+\author{David Faitelson}
+
+\begin{document}
+
+\maketitle
+
+\section{Characters} 
+
+A character can be either a printable character (that we call
+a letter) or a separator. 
+There are two kinds of separators, a new line separator and a
+page separator.
+
+\begin{zed}
+  Char ::= A | B | NEWL | NEWP | SPACE 
+\end{zed}
+
+\begin{zed}
+  Letter == \{ A,B \} \also
+  Separator == \{ NEWL, NEWP, SPACE \}
+\end{zed}
+
+\section{An abstract model}
+
+The abstract representation of a text editor is that it has a
+sequence of characters addressable using an address data type that
+represents the index of a character in the sequence, and supporting
+the following operations: insert a character after an address,
+erasing characters in a range of addresses, and searching forward
+and backward for a substring.
+
+\begin{schema}{AMachine}
+  text : \seq Char
+\end{schema}
+
+\begin{schema}{AAddress}
+  index: \nat
+\end{schema}
+
+\begin{axdef}
+  astart : AMachine \fun AAddress
+\where
+  \forall m : AMachine @ \\
+\t1 (astart~m) . index = 0
+\end{axdef} 
+
+\begin{axdef}
+  aend : AMachine \fun AAddress
+\where
+  \forall m : AMachine @ \\
+\t1 (aend~m) . index = \# m.text
+\end{axdef} 
+
+\begin{axdef}
+  precedes : AAddress \rel AAddress 
+\where
+  \forall b,e : AAddress @ \\
+\t1 b \mapsto e \in precedes \iff \\
+\t2   b.index \leq e.index
+\end{axdef}
+
+\begin{axdef}
+  distance : AAddress \cross AAddress \pfun \nat
+\where
+ \forall x,y : AAddress | x \inrel{precedes} y @ \\
+\t1 distance~(x,y) = y.index - x.index
+\end{axdef}
+
+The function $atext$ associates each valid address range with the
+sequence of characters that this range marks in the text.
+
+\begin{schema}{Atext}
+  AMachine \\
+  atext : (AAddress \cross AAddress) \pfun \seq Char
+\where
+  \forall b,e : AAddress | \\
+\t1 astart~\theta AMachine \inrel{precedes} b \land {} \\
+\t1 b \inrel{precedes} e \land {} \\
+\t1 e \inrel{precedes} aend~\theta AMachine @ \\
+\t1 \exists u,v,w : \seq Char @ \\
+\t2   text = u \cat v \cat w \land {} \\
+\t2   distance~(astart~ \theta AMachine, b) = \# u \land {} \\
+\t2   distance~(b,e) = \# v \land {} \\
+\t2   atext~(b,e) = v
+\end{schema}
+
+The function $ainc$ maps an address to the address immediatley
+following it. Unless it is pointing one past the end of the text
+area. In that case incrementing it takes it back to the beginning.
+
+\begin{schema}{Ainc}
+  AMachine \\
+  ainc : AAddress \fun AAddress
+\where
+  \forall addr : AAddress | addr.index < \# text @ \\
+\t1 (ainc~addr).index = addr.index + 1 \\
+  \forall addr : AAddress | addr.index = \# text @ \\
+\t1 (ainc~addr).index = 0
+\end{schema}
+
+\begin{schema}{AInit}
+  AMachine'
+\where
+  text' = \emptyset
+\end{schema}
+
+The operation $AInsert$ inserts a character after the location
+indicated by the address. This poses the quetion of how to insert
+a character at the beginning of the text. For that we use the address
+that represents one place after the end of the text. In other words
+to insert a character at the beginning of the text we pass $aend$
+as the address.
+
+\begin{schema}{AInsertAtStart}
+  \Delta AMachine \\
+  addr? : AAddress \\
+  char? : Char
+\where
+  addr? = aend~\theta AMachine \\
+  text' = \langle char? \rangle \cat text
+\end{schema}
+
+\begin{schema}{AInsertAfterStart}
+  \Delta AMachine \\
+  Ainc \\
+  Atext \\
+  addr? : AAddress \\
+  char? : Char
+\where
+  addr? \inrel{precedes} aend~\theta AMachine \\
+  addr?  \neq aend~\theta AMachine \\
+  text' = atext~(astart~\theta AMachine, ainc~addr?) \cat \langle char? \rangle \cat atext~(ainc~addr?, aend~\theta AMachine)
+\end{schema}
+
+\begin{zed}
+  AInsert \defs AInsertAtStart \lor AInsertAfterStart
+\end{zed}
+
+
+\begin{schema}{AErase}
+  \Delta AMachine \\
+  Atext \\
+  b? : AAddress\\
+  e? : AAddress 
+\where
+  b? \inrel{precedes} e? \\
+  e? \inrel{precedes} (aend~\theta AMachine) \\
+  text' = atext~(astart~\theta AMachine, b?) \cat atext~(e?, aend~\theta AMachine) 
+\end{schema}
+
+\section{First refinement}
+
+We define a machine that holds the text in a doubly linked list of
+lines. An address is then a pair of line and index in the line.
+
+\begin{schema}{Line}
+  text : \seq Char \\
+\end{schema}
+
+\begin{schema}{CAddress}
+  line : Line \\
+  index : \nat
+\end{schema}
+
+The line $end$ marks the position one-past-the-end. If the text
+area is not empty then $next~end$ is the first line. 
+
+\begin{schema}{CLines}
+  next : Line \inj Line \\ 
+  prev : Line \inj Line \\ 
+  end : Line
+\where
+  next = prev \inv \\ 
+  next\star \limg \{ end \} \rimg = \dom next \\
+  end.text = \langle \rangle 
+\end{schema}
+
+To match the text in the abstract model we concatenate the text in
+the lines according to the $next$ relation starting from $next~end$.
+
+\begin{schema}{CollectText}
+  CLines \\
+  fragments : \seq (\seq Char)
+\where
+  next~end \neq end \\
+  \forall i : \dom fragments @ \\
+\t1 fragments~i = (next^{i+1} end).text
+\end{schema}
+
+Note that in an empty state the only line is $end$ which has no text. 
+Thus in that case $\dom fragments = \{0\}$ and $next~end = end$ thus we have 
+
+\begin{argue}
+fragments~0 = \\
+\t1 (next^{0+1}~ end).text = \\
+\t1 (next~ end).text = \\
+\t1 end.text = \langle\rangle.
+\end{argue}
+
+We use the function $concat$ to concatenate a sequence of sequences
+into a single sequence
+
+\begin{gendef}[T]
+  concat: \seq (\seq T) \fun \seq T
+\where
+  concat~\langle \rangle = \langle \rangle \\
+  \forall s : \seq T; t : \seq (\seq T) @ \\
+\t1 concat~ (\langle s \rangle \cat t) = s \cat (concat~t)
+\end{gendef}
+
+\begin{schema}{RetrieveText}
+  AMachine \\
+  CollectText \\
+\where
+  text = concat~fragments
+\end{schema}
+
+A line $x$ is $before$ line $y$ if it is possible to reach from $x$
+to $y$ by following the $next$ relation without hitting $end$ along
+the way.
+
+\begin{schema}{LineOrder}
+  CLines \\
+  before : Line \rel Line
+\where
+  \forall x,y : Line @ x \inrel{before} y \iff \\
+\t1  (\exists n : \nat @ next^{n} ~ x = y \land {} \\
+\t2    (\forall k : \nat | k < n @ next^{k} ~ x \neq end))
+\end{schema}
+
+In particular this gives for any line $x$
+
+\begin{argue}
+  next^{0}~x = x & because $next^{0}$ is the identity relation \\
+\t1 \implies next^{0}~x = x  \\
+\t1 \implies next^{0}~x = x \land {} \\
+\t2            (\forall k: \nat | k < 0 @ next^{k} ~ x \neq end) \\
+  & because the universal quantifier ranges over the empty set \\
+\t1 \implies x \inrel{before} x 
+\end{argue}
+
+All the lines appear before $end$ because 
+$next\star \limg end\rimg = \dom next$ 
+and as $next$ is a function
+the only time when we can have $next~end = end$ is when the text
+area is empty and thus has no lines.
+
+The function $sumLength$ maps a finite set of lines to the sum of
+the length of their text.
+
+\begin{axdef}
+  sumLength : \power_1 Line \fun \nat
+\end{axdef}
+
+We now define a retrieve relation to translate between abstract
+and concrete addresses
+
+\begin{schema}{RetrieveAddress}
+  AAddress[aindex/index] \\
+  CAddress \\
+  LineOrder 
+\where
+  aindex = index + sumLength~\{ x : Line | x \inrel{before} line \land x \neq line \} 
+\end{schema}
+
+We will now show that the abstract address of the end of the text
+area corresponds to the concrete address $(end, 0)$.
+
+\begin{argue}
+aend~\theta AMachine.index
+= \# m.text \\
+= 0 + \# m.text \\
+= 0 + sumLength~(\dom next \setminus \{end\}) \\
+= 0 + sumLength~\{ x : Line | x \inrel{before} end \land x \neq end \} \\
+= index + sumLength~\{ x : Line | x \inrel{before} end \land x \neq end \} 
+\end{argue}
+
+The function $cinc$ maps a concrete address to the address immediatley 
+following it.
+
+\begin{schema}{CInc}
+  CLines \\
+  cinc : CAddress \fun CAddress
+\where
+  \forall addr : CAddress | addr.index < \# addr.line.text - 1 @ \\
+\t1 (cinc~addr).line = addr.line \land {} \\
+\t1 (cinc~addr).index = addr.index + 1 \\
+  \forall addr : CAddress | addr.index = \# addr.line.text - 1 @ \\
+\t1  (cinc~addr).line = next~addr.line \land {} \\
+\t1  (cinc~addr).index = 0 \\
+  \forall addr : CAddress | addr.line = end \land addr.index = 0 @ \\
+\t1  (cinc~addr).line = next~end \land {} \\
+\t1  (cinc~addr).index = 0
+\end{schema}
+
+Inserting a character after an address.
+
+\begin{schema}{CInsertAtStart}
+  CLines \\
+  addr? : CAddress \\
+  char? : Char \\
+  \Delta Line \\
+\where
+  addr?.line = end \\
+  addr?.index = 0 \\
+  next~end \neq end \\
+  next~end = \theta Line \\
+  text' = \langle char? \rangle \cat text 
+\end{schema}
+
+Note that in general inserting or removing text from lines does not
+change the linked list structure.
+
+\begin{schema}{CInsertAtEnd}
+  CLines \\
+  addr? : CAddress \\
+  char? : Char \\
+  \Delta Line \\
+\where
+  addr?.line = end \\
+  addr?.index = 0 \\
+  next~end \neq end \\
+  next~end = \theta Line \\
+  text' = \langle char? \rangle \cat text 
+\end{schema}
+
+\section{Shifting}
+
+A token is either a single separator or a non empty sequence of non
+separator characters.
+
+There are two ways we can move tokens between lines without changing
+the abstract representation. We can shift the last token in a line to
+the next line, or we can shift the first token in a line to the previous
+line. 
+
+
+\end{document}
+
