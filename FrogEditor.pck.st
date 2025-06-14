@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 14 June 2025 at 12:24:54 pm'!
+'From Cuis7.3 [latest update: #6895] on 14 June 2025 at 12:54:07 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 34!
+!provides: 'FrogEditor' 1 35!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -534,6 +534,47 @@ isPacked: aNumberWidth
 !Sentinel methodsFor: 'testing' stamp: 'DF 6/12/2025 11:15:33'!
 isSentinel
 	^true! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:53:49'!
+testErase
+
+	| text aFrogEditor bb ee |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+
+	bb := aFrogEditor begin.
+	ee := bb inc inc.
+	
+	self assert: ee char = Character space.
+	
+	aFrogEditor eraseFrom:bb to: ee.
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 2 with: '').
+	
+	bb := aFrogEditor begin.
+	
+	ee := bb.
+	
+	[ee char ~= $w] whileTrue:[ee := ee inc].
+	
+	aFrogEditor eraseFrom:bb to:ee.
+
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 16 with: '').
+	
+! !
 
 !TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:36:58'!
 testInitialize
