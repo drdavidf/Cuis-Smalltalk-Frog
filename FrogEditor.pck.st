@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 14 June 2025 at 8:34:49 pm'!
+'From Cuis7.3 [latest update: #6895] on 16 June 2025 at 10:32:04 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 52!
+!provides: 'FrogEditor' 1 58!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -229,38 +229,47 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/14/2025 20:32:39'!
+!FrogEditor methodsFor: 'private' stamp: 'DF 6/16/2025 22:14:16'!
 repackAfterErase: aLine
-
+	
+	| nshifted |
+	
+	nshifted := 0.
+	
 	aLine isPacked: width :: 
-		ifFalse:[ aLine shiftLeft:width].
+		ifFalse:[ nshifted := nshifted - (aLine shiftLeft:width)].
 				
 	aLine isKissing ifTrue:[ 
 		"The line is packed so we cannot shift left, nevertheless we shift left once,
 		this will join the two kissing tokens and will overflow the line. A call to shiftRight
 		will then move the larger token into its correct position."
-		aLine shiftLeftOnce ; shiftRight: width ].
-! !
+		nshifted := nshifted - aLine shiftLeftOnce.
+		nshifted := nshifted + (aLine shiftRight: width) ].
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:33:40'!
+	^nshifted! !
+
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/16/2025 22:32:02'!
 eraseFrom: bAddress to: eAddress
 
-	| pline |
+	| pline pp nshifted |
 	
 	self assert: bAddress <= eAddress.
 
+	pp := bAddress.
+	
 	pline := bAddress line prev.
 	
 	bAddress line == eAddress line
 		ifTrue:[ 
-			bAddress line eraseFrom: bAddress index to: eAddress index]			
+			bAddress line eraseFrom: bAddress index to: eAddress index ]			
 		ifFalse:[	
 			bAddress index = 1 
 				ifTrue:[
-					self eraseLinesFrom: bAddress line to: eAddress line]
+					self eraseLinesFrom: bAddress line to: eAddress line.
+					pp := Address fromLine: eAddress line index:1 ]
 				ifFalse:[
 					bAddress line eraseFrom: bAddress index. 
-					self eraseLinesFrom: bAddress line next to: eAddress line]. 
+					self eraseLinesFrom: bAddress line next to: eAddress line ]. 
 	 
 			eAddress line eraseTo: eAddress index].
 	
@@ -284,9 +293,26 @@ eraseFrom: bAddress to: eAddress
 	
 	"
 	
-	self repackAfterErase: pline.
+	self assert: pp line prev == pline.
+	
+	nshifted := self repackAfterErase: pline.
 	
 	self repackAfterErase: eAddress line.
+	
+	pp index + nshifted > 0
+		ifTrue:[
+			pp index + nshifted > pp line length
+				ifTrue:[ | ii |
+					ii := pp index + nshifted - pp line length.
+					pp line: pp line next ; index: ii]
+				ifFalse:[
+					pp index: pp index + nshifted] ]
+		ifFalse:[
+			| ii |
+			ii := pp line prev length + nshifted + pp index.
+			pp line: pp line prev ; index: ii ]. 
+					
+	^pp "answer the address of the character immediately after the erased section"
 ! !
 
 !FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/13/2025 19:01:12'!
