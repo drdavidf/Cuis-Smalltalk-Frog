@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 16 June 2025 at 10:32:04 pm'!
+'From Cuis7.3 [latest update: #6895] on 18 June 2025 at 8:11:54 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 58!
+!provides: 'FrogEditor' 1 68!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -229,7 +229,7 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/16/2025 22:14:16'!
+!FrogEditor methodsFor: 'private' stamp: 'DF 6/18/2025 19:20:12'!
 repackAfterErase: aLine
 	
 	| nshifted |
@@ -247,6 +247,23 @@ repackAfterErase: aLine
 		nshifted := nshifted + (aLine shiftRight: width) ].
 
 	^nshifted! !
+
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:17:44'!
+abstractIndexOf: anAddress
+
+	| ii pp |
+	
+	ii := 0.
+	
+	pp := self begin line.
+	
+	[pp ~= end and:[pp ~= anAddress line] ]
+		whileTrue:[
+			ii := ii + pp  length.
+			pp := pp next].
+		
+	^ii + anAddress index
+	! !
 
 !FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/16/2025 22:32:02'!
 eraseFrom: bAddress to: eAddress
@@ -637,10 +654,10 @@ isSentinel
 startsWithSeparator
 	^false! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:34:47'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:59:25'!
 testErase
 
-	| text aFrogEditor bb ee |
+	| text aFrogEditor bb ee pp |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
@@ -672,13 +689,62 @@ testErase
 	
 	[ee char ~= $w] whileTrue:[ee := ee inc].
 	
-	aFrogEditor eraseFrom:bb to:ee.
+	self assert: (aFrogEditor abstractIndexOf: ee :: = 15).
+	
+	pp := aFrogEditor eraseFrom:bb to:ee.
+	
+	self assert: (aFrogEditor abstractIndexOf: pp :: = 1).
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 16 with: '').
 	
 	self assert: aFrogEditor invariant.
 	
 ! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 20:11:44'!
+testEraseFullLines
+
+	| text aFrogEditor bb ee pp |
+	
+	text := '12345678abcdefgh12345678ABCDEFGH'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+
+	self assert: aFrogEditor invariant.
+
+	bb := aFrogEditor begin.
+	
+	7 timesRepeat:[bb := bb inc].
+	
+	self assert: bb char = $8.
+	
+	self assert: (aFrogEditor abstractIndexOf: bb) = 8.
+	
+	ee := bb inc inc.
+	
+	self assert: ee char = $b.
+	
+	pp := aFrogEditor eraseFrom: bb to:ee.
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= '1234567bcdefgh12345678ABCDEFGH'.
+	
+	self assert: (aFrogEditor abstractIndexOf: pp) = 8.
+
+	self assert: aFrogEditor invariant.
+	
+	
+		! !
 
 !TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:36:58'!
 testInitialize
