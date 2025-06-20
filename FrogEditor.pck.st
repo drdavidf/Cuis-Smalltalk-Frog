@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 18 June 2025 at 8:11:54 pm'!
+'From Cuis7.3 [latest update: #6895] on 20 June 2025 at 12:25:42 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 68!
+!provides: 'FrogEditor' 1 94!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -88,13 +88,13 @@ hash
 
 	^(line hash hashMultiply + index hash) hashMultiply! !
 
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 15:15:40'!
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 12:25:02'!
 inc
 	^index < line length
 		ifTrue:[
 			Address fromLine: line index: index+1]
 		ifFalse:[
-			Address fromLine: line next index: (line next isSentinel ifTrue:[0] ifFalse:[1])]! !
+			Address fromLine: line next index: 1]! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 14:27:35'!
 index
@@ -136,9 +136,9 @@ invariant
 begin
 	^self end inc! !
 
-!FrogEditor methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:20:06'!
+!FrogEditor methodsFor: 'accessing' stamp: 'DF 6/20/2025 12:21:54'!
 end
-	^Address fromLine: end index: 0! !
+	^Address fromLine: end index: 1! !
 
 !FrogEditor methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:34:47'!
 width: anInteger
@@ -248,6 +248,26 @@ repackAfterErase: aLine
 
 	^nshifted! !
 
+!FrogEditor methodsFor: 'private' stamp: 'DF 6/20/2025 11:55:30'!
+repackAfterErase: bLine to: eLine
+	
+	| nshifted pp |
+	
+	pp := bLine.
+		
+	nshifted := self repackAfterErase: bLine.
+	
+	pp := pp next.
+	
+	[pp ~= eLine and:[eLine isDeleted not] ] "if eLine is deleted it means that we have already packed up to it"
+		whileTrue:[
+			self repackAfterErase: pp.
+			pp := pp next ].
+		
+	^nshifted
+	
+	! !
+
 !FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:17:44'!
 abstractIndexOf: anAddress
 
@@ -265,7 +285,7 @@ abstractIndexOf: anAddress
 	^ii + anAddress index
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/16/2025 22:32:02'!
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 10:49:36'!
 eraseFrom: bAddress to: eAddress
 
 	| pline pp nshifted |
@@ -286,7 +306,8 @@ eraseFrom: bAddress to: eAddress
 					pp := Address fromLine: eAddress line index:1 ]
 				ifFalse:[
 					bAddress line eraseFrom: bAddress index. 
-					self eraseLinesFrom: bAddress line next to: eAddress line ]. 
+					self eraseLinesFrom: bAddress line next to: eAddress line.
+					self assert: bAddress line next == eAddress line ]. 
 	 
 			eAddress line eraseTo: eAddress index].
 	
@@ -312,9 +333,7 @@ eraseFrom: bAddress to: eAddress
 	
 	self assert: pp line prev == pline.
 	
-	nshifted := self repackAfterErase: pline.
-	
-	self repackAfterErase: eAddress line.
+	nshifted := self repackAfterErase: pline to: eAddress line next.
 	
 	pp index + nshifted > 0
 		ifTrue:[
@@ -365,14 +384,15 @@ charAt: anIntegerNumber
 
 	^text at: anIntegerNumber ! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 20:55:25'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 22:42:38'!
 delete
 
 	next prev: prev.
 	prev next: next.	
 	
-	next := nil.
-	prev :=nil.
+	"set text to nil to indicate that this line is deleted but keep the next and prev
+	pointers, they are useful when implementing erase"
+	
 	text := nil.! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:00:14'!
@@ -493,14 +513,20 @@ shiftLeft: anIntegerWidth
 	^len
 		! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:07:47'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 19:19:21'!
 shiftLeftOnce
 	
 	| token |
 	
 	token := next firstToken.
 	self insert: token at: text size + 1.
-	next eraseFrom: 1 to: token size + 1.
+	token size = next length
+		ifTrue:[
+			next delete
+			]
+		ifFalse:[
+			next eraseFrom: 1 to: token size + 1
+		].
 	^token size.
 		! !
 
@@ -536,27 +562,38 @@ shiftRight: anIntegerWidth
 	
 	^len	! !
 
-!Line methodsFor: 'testing' stamp: 'DF 6/12/2025 21:41:31'!
+!Line methodsFor: 'testing' stamp: 'DF 6/19/2025 22:57:24'!
 invariant: aNumberWidth
 
+	self isDeleted ifTrue:[self halt. ^  false].
+	
 	next prev == self ifFalse:[^false].
 	
 	prev next == self ifFalse:[^false].
 
-	self isPacked: aNumberWidth :: ifFalse:[^false].
+	self isPacked: aNumberWidth :: ifFalse:[self halt. ^false].
 		
 	self isSentinel ifTrue:[^true].
 	
-	text size = 0 ifTrue:[^false].
+	text size = 0 ifTrue:[self halt. ^false].
 	
-	text size > aNumberWidth ifTrue:[^false].
+	text size > aNumberWidth ifTrue:[self halt. ^false].
 	
 	^true! !
 
-!Line methodsFor: 'testing' stamp: 'DF 6/14/2025 20:11:00'!
+!Line methodsFor: 'testing' stamp: 'DF 6/19/2025 19:37:42'!
+isDeleted
+
+	^text isNil! !
+
+!Line methodsFor: 'testing' stamp: 'DF 6/19/2025 19:42:33'!
 isKissing
 	"Answer true if this line ends with a non separator character and the next line starts with a non separating character, and it does not hold a single token that occupies the entire line."
 	
+	next isSentinel
+		ifTrue:[
+			^false].
+		
 	text last isSeparator
 		ifTrue:[^false].
 		
@@ -610,9 +647,10 @@ precedes: aLine
 startsWithSeparator
 	^text first isSeparator! !
 
-!Line methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:50:34'!
+!Line methodsFor: 'accessing' stamp: 'DF 6/19/2025 19:38:12'!
 length
-	^text size! !
+
+	^text isNil ifTrue:[0] ifFalse:[text size]! !
 
 !Line methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:31:39'!
 next
@@ -653,6 +691,39 @@ isSentinel
 !Sentinel methodsFor: 'testing' stamp: 'DF 6/14/2025 19:39:35'!
 startsWithSeparator
 	^false! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:55:40'!
+allTextIn: aFrogEditor
+
+	^aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:05'!
+fill: aFrogEditor with: aString
+
+	| bb |
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	aString do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: aFrogEditor invariant.
+! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:25'!
+goto: anIndex from: anAddress
+
+	| pp |
+	
+	pp := anAddress.
+	
+	anIndex timesRepeat:[
+		pp := pp inc
+	].
+
+	^pp! !
 
 !TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:59:25'!
 testErase
@@ -696,6 +767,45 @@ testErase
 	self assert: (aFrogEditor abstractIndexOf: pp :: = 1).
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 16 with: '').
+	
+	self assert: aFrogEditor invariant.
+	
+! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 11:44:36'!
+testEraseError
+
+	| text aFrogEditor ab ae cb ce |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
+Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+
+	cb := aFrogEditor begin.
+	
+	text do:[:each | 
+		cb := aFrogEditor insert: each after: cb].
+	
+	self assert: aFrogEditor invariant.
+
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+	
+	ab := 222.
+	
+	ae := 372.
+	
+	cb := self goto:ab from: aFrogEditor end.
+	
+	self assert: ab = (aFrogEditor abstractIndexOf: cb).
+	
+	ce := self goto: ae from: aFrogEditor end.
+	
+	self assert: ae = (aFrogEditor abstractIndexOf: ce).
+	
+	aFrogEditor eraseFrom:cb to: ce.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -919,3 +1029,57 @@ testKissing
 	
 	self assert: aFrogEditor invariant.
 ! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 10:29:56'!
+testRandom
+
+	| text aFrogEditor ii jj pp ab ae cb ce |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+	
+	self fill: aFrogEditor with: text.
+	
+	self assert: aFrogEditor invariant.
+	
+	"select at random two indices ii, jj between 1 and text size + 1, "
+	
+	[ text isEmpty ] whileFalse:[
+		ii := (text size + 1) atRandom.
+		
+		jj := (text size + 1) atRandom.
+		
+		"move to the same location in both concrete and abstract systems. "
+		
+		ab :=  ii min: jj. ae := ii max: jj.
+		
+		cb := self goto:ab from: aFrogEditor end.
+		
+		self assert: ab = (aFrogEditor abstractIndexOf: cb).
+		
+		ce := self goto: ae from: aFrogEditor end.
+		
+		self assert: ae = (aFrogEditor abstractIndexOf: ce).
+		
+		"erase the parts at both the abstract and concrete sytems. "
+		
+		pp := aFrogEditor eraseFrom: cb to: ce.
+
+		self assert: aFrogEditor invariant.
+			
+		text := text eraseFrom:ab to:ae.
+		
+		"check that the abstract and concrete systems correspond"
+		
+		self assert: text  = (self allTextIn: aFrogEditor).
+		
+		"self assert: (aFrogEditor abstractIndexOf: pp) = ab." ]
+	! !
+
+!CharacterSequence methodsFor: '*FrogEditor-unittest' stamp: 'DF 6/19/2025 18:35:16'!
+eraseFrom: bIndex to: eIndex
+
+	^ self copyReplaceFrom: bIndex to: eIndex - 1 with: ''! !
