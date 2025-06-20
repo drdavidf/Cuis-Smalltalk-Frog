@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 20 June 2025 at 12:25:42 pm'!
+'From Cuis7.3 [latest update: #6895] on 20 June 2025 at 6:43:34 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 94!
+!provides: 'FrogEditor' 1 97!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -285,16 +285,18 @@ abstractIndexOf: anAddress
 	^ii + anAddress index
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 10:49:36'!
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 18:43:29'!
 eraseFrom: bAddress to: eAddress
 
-	| pline pp nshifted |
+	|  start dd |
 	
 	self assert: bAddress <= eAddress.
 
-	pp := bAddress.
+	start := Address fromLine: bAddress line prev index:1.
 	
-	pline := bAddress line prev.
+	"measure the number of characters from start to bAddress"
+	
+	dd := bAddress line prev length + bAddress index - 1.
 	
 	bAddress line == eAddress line
 		ifTrue:[ 
@@ -302,14 +304,12 @@ eraseFrom: bAddress to: eAddress
 		ifFalse:[	
 			bAddress index = 1 
 				ifTrue:[
-					self eraseLinesFrom: bAddress line to: eAddress line.
-					pp := Address fromLine: eAddress line index:1 ]
+					self eraseLinesFrom: bAddress line to: eAddress line ]
 				ifFalse:[
 					bAddress line eraseFrom: bAddress index. 
-					self eraseLinesFrom: bAddress line next to: eAddress line.
-					self assert: bAddress line next == eAddress line ]. 
+					self eraseLinesFrom: bAddress line next to: eAddress line ]. 
 	 
-			eAddress line eraseTo: eAddress index].
+			eAddress line eraseTo: eAddress index ].
 	
 	"Several properties may be violated after erasing:
 	
@@ -331,25 +331,12 @@ eraseFrom: bAddress to: eAddress
 	
 	"
 	
-	self assert: pp line prev == pline.
+	self repackAfterErase: start line to: eAddress line next.
+
+	dd timesRepeat:[start := start inc].
 	
-	nshifted := self repackAfterErase: pline to: eAddress line next.
-	
-	pp index + nshifted > 0
-		ifTrue:[
-			pp index + nshifted > pp line length
-				ifTrue:[ | ii |
-					ii := pp index + nshifted - pp line length.
-					pp line: pp line next ; index: ii]
-				ifFalse:[
-					pp index: pp index + nshifted] ]
-		ifFalse:[
-			| ii |
-			ii := pp line prev length + nshifted + pp index.
-			pp line: pp line prev ; index: ii ]. 
-					
-	^pp "answer the address of the character immediately after the erased section"
-! !
+	^start
+	! !
 
 !FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/13/2025 19:01:12'!
 insert: aCharacter after: anAddress
@@ -668,9 +655,9 @@ prev
 prev: aLine
 	prev := aLine! !
 
-!Sentinel methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:50:04'!
+!Sentinel methodsFor: 'accessing' stamp: 'DF 6/20/2025 18:42:52'!
 length
-	^0! !
+	^1 "because one has to inc an address once to move over the sentinel"! !
 
 !Sentinel methodsFor: 'testing' stamp: 'DF 6/14/2025 19:30:17'!
 isKissing
@@ -772,16 +759,15 @@ testErase
 	
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 11:44:36'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 14:29:59'!
 testEraseError
 
-	| text aFrogEditor ab ae cb ce |
+	| text aFrogEditor ab ae cb ce pp |
 	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.
-Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	text := 'In ollfavourite form of play.'.
 	
 	aFrogEditor := FrogEditor new.
-	
+	 
 	aFrogEditor width:8.
 
 	cb := aFrogEditor begin.
@@ -793,9 +779,9 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
 	
-	ab := 222.
+	ab := 6.
 	
-	ae := 372.
+	ae := 13.
 	
 	cb := self goto:ab from: aFrogEditor end.
 	
@@ -805,9 +791,11 @@ Near the castle of this King was a large and gloomy forest, and in the midst gre
 	
 	self assert: ae = (aFrogEditor abstractIndexOf: ce).
 	
-	aFrogEditor eraseFrom:cb to: ce.
+	pp := aFrogEditor eraseFrom:cb to: ce.
 	
 	self assert: aFrogEditor invariant.
+	
+	self assert: (aFrogEditor abstractIndexOf: pp) = ab. 
 	
 ! !
 
@@ -1030,7 +1018,7 @@ testKissing
 	self assert: aFrogEditor invariant.
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 10:29:56'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 12:30:03'!
 testRandom
 
 	| text aFrogEditor ii jj pp ab ae cb ce |
@@ -1076,7 +1064,7 @@ testRandom
 		
 		self assert: text  = (self allTextIn: aFrogEditor).
 		
-		"self assert: (aFrogEditor abstractIndexOf: pp) = ab." ]
+		self assert: (aFrogEditor abstractIndexOf: pp) = ab. ]
 	! !
 
 !CharacterSequence methodsFor: '*FrogEditor-unittest' stamp: 'DF 6/19/2025 18:35:16'!
