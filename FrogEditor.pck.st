@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 20 June 2025 at 6:43:34 pm'!
+'From Cuis7.3 [latest update: #7041] on 8 July 2025 at 9:14:15 am'!
 'Description '!
-!provides: 'FrogEditor' 1 97!
+!provides: 'FrogEditor' 1 133!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -16,7 +16,7 @@ Address class
 
 !classDefinition: #FrogEditor category: #FrogEditor!
 Object subclass: #FrogEditor
-	instanceVariableNames: 'end width'
+	instanceVariableNames: 'end width lastPage'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -26,7 +26,7 @@ FrogEditor class
 
 !classDefinition: #Line category: #FrogEditor!
 Object subclass: #Line
-	instanceVariableNames: 'next prev text'
+	instanceVariableNames: 'next prev text page'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -42,6 +42,16 @@ Line subclass: #Sentinel
 	category: 'FrogEditor'!
 !classDefinition: 'Sentinel class' category: #FrogEditor!
 Sentinel class
+	instanceVariableNames: ''!
+
+!classDefinition: #Page category: #FrogEditor!
+Object subclass: #Page
+	instanceVariableNames: 'lastLine next prev'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'Page class' category: #FrogEditor!
+Page class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestFrogEditor category: #FrogEditor!
@@ -117,20 +127,70 @@ fromLine: aLine index: anInteger
 
 	^Address new line: aLine; index: anInteger ; yourself! !
 
-!FrogEditor methodsFor: 'testing' stamp: 'DF 6/12/2025 11:36:04'!
+!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 22:58:27'!
+checkLines
+
+	| pp |
+	
+	pp := end.
+	
+	pp checkPages.
+	
+	pp := pp next.
+	
+	[pp isSentinel not and: [pp checkPages ] ] whileTrue:[pp := pp next ].
+	
+	pp isSentinel ifFalse:[self halt].
+
+	^true! !
+
+!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 23:41:29'!
+checkPages
+
+	| pp |
+	
+	pp := lastPage.
+	
+	pp invariant.
+	pp isOverflow ifTrue:[self halt].
+	
+	pp := pp next.
+	
+	[pp ~= lastPage] whileTrue:[
+		pp invariant.
+		pp isOverflow ifTrue:[self halt].
+		pp := pp next ].
+
+	^true! !
+
+!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 16:09:03'!
 invariant
 
 	| pp |
 	
 	pp := end.
 	
-	pp invariant: width :: ifFalse:[^false].
+	pp invariant: width.
 	
 	pp := pp next.
 	
 	[pp isSentinel not and: [pp invariant:width ] ] whileTrue:[pp := pp next ].
 	
-	^pp isSentinel! !
+	pp isSentinel ifFalse:[self halt].
+	
+	pp := lastPage.
+	
+	pp invariant.
+	pp isOverflow ifTrue:[self halt].
+	
+	pp := pp next.
+	
+	[pp ~= lastPage] whileTrue:[
+		pp invariant.
+		pp isOverflow ifTrue:[self halt].
+		pp := pp next ].
+	
+	^true! !
 
 !FrogEditor methodsFor: 'accessing' stamp: 'DF 6/12/2025 14:29:21'!
 begin
@@ -147,23 +207,65 @@ width: anInteger
 	
 	width := anInteger.! !
 
-!FrogEditor methodsFor: 'initialization' stamp: 'DF 6/12/2025 11:34:27'!
+!FrogEditor methodsFor: 'initialization' stamp: 'DF 7/7/2025 14:49:36'!
 initialize
 
 	end := Sentinel new.
 	end next: end.
-	end prev: end.! !
+	end prev: end.
+	
+	lastPage := Page new.
+	
+	lastPage next: lastPage.
+	lastPage prev: lastPage.
+	lastPage lastLine: end.
+	end page: lastPage.
+	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/14/2025 12:05:43'!
+!FrogEditor methodsFor: 'private' stamp: 'DF 7/8/2025 09:14:14'!
 eraseLinesFrom: bLine to: eLine
 
-	"erase all the lines from bLine to eLine not including eLine. 
+	| bpage epage |
 	
+	"erase all the lines from bLine to eLine not including eLine. 
+
 	Note that if bLine == eLine then this operation is a skip "
+
+	" also erase all the pages that are included in this range of lines "
+	
+	bpage := bLine page.
+	epage := eLine page.
+	
+	bpage ~= epage ifTrue:[
+		bLine isFirstInPage 
+			ifTrue:[
+				self erasePagesFrom: bpage to: epage]
+			ifFalse:[
+				self erasePagesFrom: bpage next to: epage.
+				bLine prev page: bpage.
+				bpage lastLine: bLine prev ] ].
 	
 	bLine prev next: eLine.
 	eLine prev: bLine prev.
+
+	"the order here is important because shiftleft can delete epage
+	making it unusable for checking isUnderflow "
+	
+	epage isOverflow ifTrue:[ 
+		epage shiftRight].
+
+	epage isUnderflow ifTrue:[
+		epage shiftLeft].
+	
 	! !
+
+!FrogEditor methodsFor: 'private' stamp: 'DF 7/7/2025 21:05:33'!
+erasePagesFrom: bPage to: ePage
+	
+	bPage prev next: ePage.
+	ePage prev: bPage prev.
+	
+! !
 
 !FrogEditor methodsFor: 'private' stamp: 'DF 6/13/2025 19:05:23'!
 insertAtStart: aCharacter 
@@ -229,11 +331,11 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/18/2025 19:20:12'!
+!FrogEditor methodsFor: 'private' stamp: 'DF 7/8/2025 08:57:42'!
 repackAfterErase: aLine
 	
 	| nshifted |
-	
+		
 	nshifted := 0.
 	
 	aLine isPacked: width :: 
@@ -285,7 +387,7 @@ abstractIndexOf: anAddress
 	^ii + anAddress index
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 18:43:29'!
+!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:32:30'!
 eraseFrom: bAddress to: eAddress
 
 	|  start dd |
@@ -311,6 +413,9 @@ eraseFrom: bAddress to: eAddress
 	 
 			eAddress line eraseTo: eAddress index ].
 	
+	self assert: self checkPages.
+	self assert: self checkLines.
+	
 	"Several properties may be violated after erasing:
 	
 	1. The line before bAddress line may become unpacked, for 
@@ -332,6 +437,9 @@ eraseFrom: bAddress to: eAddress
 	"
 	
 	self repackAfterErase: start line to: eAddress line next.
+
+	self assert: self checkPages.
+	self assert: self checkLines.
 
 	dd timesRepeat:[start := start inc].
 	
@@ -371,16 +479,25 @@ charAt: anIntegerNumber
 
 	^text at: anIntegerNumber ! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 22:42:38'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 20:56:39'!
 delete
-
+	
+	page notNil
+		ifTrue:[
+			self assert: self isSentinel not.
+			page lastLine: prev.
+			prev page: page.
+			page := nil].
+		
 	next prev: prev.
 	prev next: next.	
 	
 	"set text to nil to indicate that this line is deleted but keep the next and prev
 	pointers, they are useful when implementing erase"
 	
-	text := nil.! !
+	text := nil.
+	
+! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:00:14'!
 eraseFrom: bIndex 
@@ -445,10 +562,10 @@ insert: aString at: anIntegerIndex
 	text := text copyReplaceFrom:anIntegerIndex to: anIntegerIndex-1 with: aString.
 	! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 21:37:28'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 17:12:48'!
 insertNewLine
 
-	| aNewLine |
+	| aNewLine aPage |
 	
 	aNewLine := Line new.
 	
@@ -457,7 +574,13 @@ insertNewLine
 	
 	aNewLine prev: self.
 	self next: aNewLine.
-	! !
+	
+	aPage := aNewLine page.
+	
+	aPage isOverflow 
+		ifTrue:[
+			aPage shiftRight]
+		! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 19:31:26'!
 lastToken
@@ -482,6 +605,18 @@ lastToken
 	
 ! !
 
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:36:38'!
+page
+
+	^page ifNil:[next page] ifNotNil:[page]! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:36:01'!
+page: aPage
+
+	page := aPage.
+	
+	! !
+
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:08:18'!
 shiftLeft: anIntegerWidth
 	
@@ -500,7 +635,7 @@ shiftLeft: anIntegerWidth
 	^len
 		! !
 
-!Line methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 19:19:21'!
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 23:18:35'!
 shiftLeftOnce
 	
 	| token |
@@ -508,8 +643,12 @@ shiftLeftOnce
 	token := next firstToken.
 	self insert: token at: text size + 1.
 	token size = next length
-		ifTrue:[
-			next delete
+		ifTrue:[ | aPage | 
+			aPage := next page.
+			next delete.
+			aPage isUnderflow
+				ifTrue:[
+					aPage shiftLeft].
 			]
 		ifFalse:[
 			next eraseFrom: 1 to: token size + 1
@@ -549,22 +688,41 @@ shiftRight: anIntegerWidth
 	
 	^len	! !
 
-!Line methodsFor: 'testing' stamp: 'DF 6/19/2025 22:57:24'!
+!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 22:57:29'!
+checkPages
+
+	page isNil or:[page lastLine == self] :: ifFalse:[self halt].
+
+	page notNil
+		ifTrue:[
+			page next == next page
+				ifFalse:[self halt] ].
+					
+	^true! !
+
+!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 22:55:51'!
 invariant: aNumberWidth
 
-	self isDeleted ifTrue:[self halt. ^  false].
-	
-	next prev == self ifFalse:[^false].
-	
-	prev next == self ifFalse:[^false].
+	self isDeleted ifTrue:[self halt].
 
-	self isPacked: aNumberWidth :: ifFalse:[self halt. ^false].
+	page isNil or:[page lastLine == self] :: ifFalse:[self halt].
+
+	page notNil
+		ifTrue:[
+			page next == next page
+				ifFalse:[self halt] ].
+					
+	next prev == self ifFalse:[self halt].
+	
+	prev next == self ifFalse:[self halt].
+
+	self isPacked: aNumberWidth :: ifFalse:[self halt].
 		
 	self isSentinel ifTrue:[^true].
 	
-	text size = 0 ifTrue:[self halt. ^false].
+	text size = 0 ifTrue:[self halt].
 	
-	text size > aNumberWidth ifTrue:[self halt. ^false].
+	text size > aNumberWidth ifTrue:[self halt].
 	
 	^true! !
 
@@ -572,6 +730,14 @@ invariant: aNumberWidth
 isDeleted
 
 	^text isNil! !
+
+!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 23:11:41'!
+isFirstInPage
+	^prev page notNil! !
+
+!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 19:38:49'!
+isInPage
+	^page isNil! !
 
 !Line methodsFor: 'testing' stamp: 'DF 6/19/2025 19:42:33'!
 isKissing
@@ -592,6 +758,10 @@ isKissing
 		
 	^true
 	! !
+
+!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 19:36:41'!
+isLastInPage
+	^page notNil! !
 
 !Line methodsFor: 'testing' stamp: 'DF 6/12/2025 19:27:35'!
 isOverflow: anIntegerWidth
@@ -679,6 +849,195 @@ isSentinel
 startsWithSeparator
 	^false! !
 
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:54:19'!
+countLines
+
+	| nn begin |
+		
+	lastLine isSentinel and:[lastLine prev isSentinel] :: ifTrue:[^0].
+
+		
+	begin := lastLine isSentinel ifTrue:[lastLine prev] ifFalse:[lastLine].	
+
+	begin page == self ifFalse:[^0].
+
+	begin := begin prev.
+	nn := 1.
+			
+	[begin isInPage] whileTrue:[
+		nn := nn + 1.
+		begin := begin prev.
+	].
+
+	^nn ! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 17:23:24'!
+delete
+
+	prev next: next.
+	next prev: prev.
+	
+	lastLine page: nil.
+	lastLine := nil.
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 09:00:59'!
+invariant
+
+	lastLine ifNil:[self halt].
+	
+	next prev == self ifFalse:[self halt].
+	
+	prev next == self ifFalse:[self halt].
+	
+	lastLine page == self ifFalse:[self halt].
+	
+	lastLine next page == next.
+	
+	lastLine isSentinel or:[self countLines > 0] :: ifFalse:[self halt].
+		 
+	^true
+	
+	
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:40:59'!
+isLast
+
+	^lastLine isSentinel
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 16:09:12'!
+isOverflow
+	
+	^self countLines > Page PageSize
+
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 17:25:56'!
+isUnderflow
+
+	self isLast ifTrue:[^false].
+	
+	^self countLines < Page PageSize
+
+	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:38:39'!
+lastLine
+	^lastLine! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 09:01:12'!
+lastLine: aLine
+
+	self assert: aLine notNil.
+	
+	lastLine := aLine! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:38:42'!
+next
+	^next! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:34:15'!
+next: aPage
+	next := aPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:38:45'!
+prev
+	^prev! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:34:20'!
+prev: aPage
+	prev := aPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 17:04:49'!
+pushNewPage
+
+	| aNewPage |
+		
+	self assert: self isLast.
+		
+	aNewPage := Page new.
+
+	prev next: aNewPage.
+	aNewPage prev: prev.
+
+	aNewPage next: self.
+	prev := aNewPage.		
+
+	aNewPage lastLine: lastLine prev.
+	lastLine prev page: aNewPage.
+
+	^aNewPage! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 21:54:49'!
+shiftLeft
+
+	self assert: self isLast not.
+	
+	lastLine next isSentinel
+		ifTrue:[
+			self delete]
+		ifFalse:[
+			lastLine page: nil.
+			
+			lastLine := lastLine next.
+			
+			lastLine page: self.
+			
+			next isUnderflow
+				ifTrue:[next shiftLeft] ]
+	
+	
+! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 23:38:56'!
+shiftRight
+
+	| aPage nn |
+	
+	self assert: self isOverflow.
+	
+	"move the last line in this page to the next page. create a new page if this is the last page "
+	
+	aPage := self isLast
+				ifTrue:[
+					self pushNewPage]
+				ifFalse:[
+					self].
+	
+	nn := aPage countLines - Page PageSize.
+	
+	nn timesRepeat:[aPage shrink].
+	
+	aPage next isOverflow
+		ifTrue:[aPage next shiftRight].
+
+		
+	
+	
+		! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 17:11:31'!
+shrink
+
+	self assert: self isLast not.
+	
+	lastLine page: nil.
+	
+	lastLine := lastLine prev.
+	
+	lastLine page: self.
+	
+	
+! !
+
+!Page class methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 16:07:12'!
+PageSize
+	"answer number of lines in page "
+	
+	^3! !
+
 !TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:55:40'!
 allTextIn: aFrogEditor
 
@@ -712,7 +1071,7 @@ goto: anIndex from: anAddress
 
 	^pp! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:59:25'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 19:58:14'!
 testErase
 
 	| text aFrogEditor bb ee pp |
@@ -736,8 +1095,10 @@ testErase
 	ee := bb inc inc.
 	
 	self assert: ee char = Character space.
-	
+		
 	aFrogEditor eraseFrom:bb to: ee.
+
+	self assert: aFrogEditor invariant.
 	
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 2 with: '').
 	
@@ -759,12 +1120,12 @@ testErase
 	
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 14:29:59'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:59:40'!
 testEraseError
 
 	| text aFrogEditor ab ae cb ce pp |
 	
-	text := 'In ollfavourite form of play.'.
+	text :='Inmes, whwahery.'.
 	
 	aFrogEditor := FrogEditor new.
 	 
@@ -779,9 +1140,9 @@ testEraseError
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
 	
-	ab := 6.
+	ab := 7.
 	
-	ae := 13.
+	ae := 14.
 	
 	cb := self goto:ab from: aFrogEditor end.
 	
@@ -790,7 +1151,7 @@ testEraseError
 	ce := self goto: ae from: aFrogEditor end.
 	
 	self assert: ae = (aFrogEditor abstractIndexOf: ce).
-	
+		
 	pp := aFrogEditor eraseFrom:cb to: ce.
 	
 	self assert: aFrogEditor invariant.
@@ -922,7 +1283,7 @@ testInsert
 	
 	! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 12:21:29'!
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 15:24:30'!
 testInsertLargeText
 
 	| text aFrogEditor bb |
@@ -941,6 +1302,34 @@ testInsertLargeText
 		bb := aFrogEditor insert: each after: bb].
 	
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+		
+	self assert: aFrogEditor invariant.
+
+
+! !
+
+!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 19:57:27'!
+testInsertPages
+
+	| text aFrogEditor bb |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.'.
+	
+	aFrogEditor := FrogEditor new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+		
+	self assert: aFrogEditor invariant.
+
 
 ! !
 
