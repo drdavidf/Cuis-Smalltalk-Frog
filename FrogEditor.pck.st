@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 8 July 2025 at 9:14:15 am'!
+'From Cuis7.3 [latest update: #7041] on 9 July 2025 at 11:01:23 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 133!
+!provides: 'FrogEditor' 1 159!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -14,14 +14,24 @@ Object subclass: #Address
 Address class
 	instanceVariableNames: ''!
 
-!classDefinition: #FrogEditor category: #FrogEditor!
-Object subclass: #FrogEditor
+!classDefinition: #KaeruEditor category: #FrogEditor!
+Object subclass: #KaeruEditor
+	instanceVariableNames: 'cursor beginH endH textRepository pattern'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'KaeruEditor class' category: #FrogEditor!
+KaeruEditor class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruTextRepository category: #FrogEditor!
+Object subclass: #KaeruTextRepository
 	instanceVariableNames: 'end width lastPage'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
-!classDefinition: 'FrogEditor class' category: #FrogEditor!
-FrogEditor class
+!classDefinition: 'KaeruTextRepository class' category: #FrogEditor!
+KaeruTextRepository class
 	instanceVariableNames: ''!
 
 !classDefinition: #Line category: #FrogEditor!
@@ -54,14 +64,14 @@ Object subclass: #Page
 Page class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestFrogEditor category: #FrogEditor!
-TestCase subclass: #TestFrogEditor
+!classDefinition: #TestKaeruTextRepository category: #FrogEditor!
+TestCase subclass: #TestKaeruTextRepository
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
-!classDefinition: 'TestFrogEditor class' category: #FrogEditor!
-TestFrogEditor class
+!classDefinition: 'TestKaeruTextRepository class' category: #FrogEditor!
+TestKaeruTextRepository class
 	instanceVariableNames: ''!
 
 
@@ -85,13 +95,30 @@ char
 
 	^line charAt: index! !
 
-!Address methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 20:25:15'!
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 20:32:53'!
 dec
-	^index > 0
+	^index > 1
 		ifTrue:[
 			Address fromLine: line index: index - 1]
 		ifFalse:[
 			Address fromLine: line prev index: line prev length]! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:43:27'!
+distanceFrom: anAddress
+
+	| ii pp |
+	
+	ii := 0.
+	
+	pp := anAddress line.
+	
+	[pp ~= line ]
+		whileTrue:[
+			ii := ii + pp length.
+			pp := pp next].
+		
+	^ii + index - anAddress index 
+		! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:55:09'!
 hash
@@ -127,7 +154,115 @@ fromLine: aLine index: anInteger
 
 	^Address new line: aLine; index: anInteger ; yourself! !
 
-!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 22:58:27'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/9/2025 21:55:29'!
+erase
+
+	| pp |
+	
+	pp := textRepository eraseFrom: beginH to: endH.
+	
+	cursor ~= beginH and:[pp ~= textRepository begin] ::
+		ifTrue:[
+			cursor := pp.
+			beginH := pp dec.
+			endH := pp ]
+		ifFalse:[
+			cursor := pp.
+			beginH := pp.
+			endH := beginH inc ].
+		
+	self triggerEvent: #cursor.
+			! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/9/2025 21:55:32'!
+insert: aChar
+
+	beginH := cursor.
+	
+	cursor := textRepository insert: aChar after:cursor.
+	
+	endH := cursor.
+	
+	self triggerEvent: #cursor.! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/9/2025 22:15:04'!
+insertAll: aString
+
+	aString do:[:eachChar |
+		self insert: eachChar ]! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 22:18:13'!
+leapLeft
+
+	| text pp match |
+	
+	text := textRepository textFrom: beginH to: endH.
+
+	self erase.
+	
+	pp := textRepository searchLeft: pattern contents from: cursor.
+
+	match := pp ~= cursor.
+	
+	self insertAll: text. 
+
+	endH := cursor.
+	
+	beginH := endH.
+	
+	text size timesRepeat:[
+		beginH := beginH dec].
+				
+	^match
+	! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 22:21:26'!
+leapRight
+
+	| text pp match |
+	
+	text := textRepository textFrom: beginH to: endH.
+
+	self erase.
+	
+	pp := textRepository searchRight: pattern contents from: cursor.
+
+	match := pp ~= cursor.
+	
+	self insertAll: text. 
+
+	endH := cursor.
+	
+	beginH := endH.
+	
+	text size timesRepeat:[
+		beginH := beginH dec].
+				
+	^match
+	! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 21:58:25'!
+patternClear
+	pattern resetContents! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 21:57:02'!
+patternPut: aCharacter
+	pattern nextPut: aCharacter! !
+
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/9/2025 21:56:31'!
+initialize
+
+	textRepository := KaeruTextRepository new.
+	
+	cursor := textRepository begin.
+	
+	beginH := cursor.
+	
+	endH := cursor.
+	
+	pattern := WriteStream on:''.! !
+
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 22:58:27'!
 checkLines
 
 	| pp |
@@ -144,7 +279,7 @@ checkLines
 
 	^true! !
 
-!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 23:41:29'!
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 23:41:29'!
 checkPages
 
 	| pp |
@@ -163,7 +298,7 @@ checkPages
 
 	^true! !
 
-!FrogEditor methodsFor: 'testing' stamp: 'DF 7/7/2025 16:09:03'!
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 16:09:03'!
 invariant
 
 	| pp |
@@ -192,22 +327,43 @@ invariant
 	
 	^true! !
 
-!FrogEditor methodsFor: 'accessing' stamp: 'DF 6/12/2025 14:29:21'!
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 14:29:21'!
 begin
 	^self end inc! !
 
-!FrogEditor methodsFor: 'accessing' stamp: 'DF 6/20/2025 12:21:54'!
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/20/2025 12:21:54'!
 end
 	^Address fromLine: end index: 1! !
 
-!FrogEditor methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:34:47'!
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/9/2025 23:01:20'!
+pageNumberOf: aPage
+
+	^aPage distanceFrom: end next page! !
+
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:56:49'!
+textFrom: bAddr to: eAddr
+
+	| aWriteStream bb |
+	
+	aWriteStream := WriteStream on: ''.
+	
+	bb := bAddr.
+	
+	[bb ~= eAddr] whileTrue:[
+		aWriteStream nextPut: bb char.
+		bb := bb inc ].
+	
+	^aWriteStream contents
+	! !
+
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:34:47'!
 width: anInteger
 
 	self assert: anInteger > 0.
 	
 	width := anInteger.! !
 
-!FrogEditor methodsFor: 'initialization' stamp: 'DF 7/7/2025 14:49:36'!
+!KaeruTextRepository methodsFor: 'initialization' stamp: 'DF 7/7/2025 14:49:36'!
 initialize
 
 	end := Sentinel new.
@@ -222,7 +378,7 @@ initialize
 	end page: lastPage.
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 7/8/2025 09:14:14'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/8/2025 09:14:14'!
 eraseLinesFrom: bLine to: eLine
 
 	| bpage epage |
@@ -259,7 +415,7 @@ eraseLinesFrom: bLine to: eLine
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 7/7/2025 21:05:33'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/7/2025 21:05:33'!
 erasePagesFrom: bPage to: ePage
 	
 	bPage prev next: ePage.
@@ -267,7 +423,7 @@ erasePagesFrom: bPage to: ePage
 	
 ! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/13/2025 19:05:23'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 6/13/2025 19:05:23'!
 insertAtStart: aCharacter 
 
 	end next = end "the text is empty"
@@ -282,7 +438,7 @@ insertAtStart: aCharacter
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/14/2025 10:52:10'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 6/14/2025 10:52:10'!
 insertNotAtStart: aCharacter after: anAddress
 
 	| line index bb |
@@ -331,7 +487,7 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 7/8/2025 08:57:42'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/8/2025 08:57:42'!
 repackAfterErase: aLine
 	
 	| nshifted |
@@ -350,7 +506,7 @@ repackAfterErase: aLine
 
 	^nshifted! !
 
-!FrogEditor methodsFor: 'private' stamp: 'DF 6/20/2025 11:55:30'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 6/20/2025 11:55:30'!
 repackAfterErase: bLine to: eLine
 	
 	| nshifted pp |
@@ -370,24 +526,7 @@ repackAfterErase: bLine to: eLine
 	
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 19:17:44'!
-abstractIndexOf: anAddress
-
-	| ii pp |
-	
-	ii := 0.
-	
-	pp := self begin line.
-	
-	[pp ~= end and:[pp ~= anAddress line] ]
-		whileTrue:[
-			ii := ii + pp  length.
-			pp := pp next].
-		
-	^ii + anAddress index
-	! !
-
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:32:30'!
+!KaeruTextRepository methodsFor: 'editing' stamp: 'DF 7/8/2025 08:32:30'!
 eraseFrom: bAddress to: eAddress
 
 	|  start dd |
@@ -446,7 +585,7 @@ eraseFrom: bAddress to: eAddress
 	^start
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/13/2025 19:01:12'!
+!KaeruTextRepository methodsFor: 'editing' stamp: 'DF 6/13/2025 19:01:12'!
 insert: aCharacter after: anAddress
 
 	anAddress = self end "add at the beginning of text"
@@ -458,20 +597,88 @@ insert: aCharacter after: anAddress
 	
 	! !
 
-!FrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:56:49'!
-textFrom: bAddr to: eAddr
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:35:43'!
+matchLeft: aString from: anAddress
 
-	| aWriteStream bb |
+	|  pp ii ee |
 	
-	aWriteStream := WriteStream on: ''.
+	self assert: aString size > 0.
 	
-	bb := bAddr.
+	ee := self end.
+		
+	ii := aString size.
 	
-	[bb ~= eAddr] whileTrue:[
-		aWriteStream nextPut: bb char.
-		bb := bb inc ].
+	pp := anAddress.
 	
-	^aWriteStream contents
+	[ii ~= 0 and:[pp ~= ee] and:[pp char = (aString at: ii) ] ] 
+		whileTrue:[
+			ii := ii - 1.
+			pp := pp dec ].
+		
+	^ii == 0
+	
+	
+
+	! !
+
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:35:53'!
+matchRight: aString from: anAddress
+
+	|  pp ii nn ee |
+	
+	self assert: aString size > 0.
+
+	ee := self end.
+	
+	nn := aString size + 1.
+		
+	ii := 1.
+	
+	pp := anAddress.
+	
+	[ii ~= nn  and:[pp ~= ee] and:[pp char = (aString at: ii) ] ] 
+		whileTrue:[
+			ii := ii + 1.
+			pp := pp inc ].
+		
+	^ii == nn
+	
+	
+
+	! !
+
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:05:02'!
+searchLeft: aString from: anAddress
+
+	| pp |
+	
+	self assert: aString notEmpty.
+	
+	pp := anAddress dec.
+	
+	[pp ~= anAddress and:[ (self matchLeft: aString from: pp) not ]  ] 
+		whileTrue:[
+			pp := pp dec ].
+		
+	^pp
+	
+	! !
+
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:41:02'!
+searchRight: aString from: anAddress
+
+	| pp |
+	
+	self assert: aString notEmpty.
+	
+	pp := anAddress inc.
+	
+	[pp ~= anAddress and:[ (self matchRight: aString from: pp) not ]  ] 
+		whileTrue:[
+			pp := pp inc ].
+			
+	^pp
+	
 	! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:56:06'!
@@ -604,6 +811,22 @@ lastToken
 	
 	
 ! !
+
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 22:45:25'!
+lineNumber
+
+	| pp nn |
+	
+	pp := self.
+	
+	nn := 1.
+	
+	[pp prev isLastInPage] 
+		whileFalse:[
+			pp := pp prev.
+			nn := nn + 1].
+		
+	^nn! !
 
 !Line methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:36:38'!
 page
@@ -804,6 +1027,11 @@ precedes: aLine
 startsWithSeparator
 	^text first isSeparator! !
 
+!Line methodsFor: 'accessing' stamp: 'DF 7/9/2025 22:23:18'!
+height
+	^ page ifNil:[1] ifNotNil:[2]
+		! !
+
 !Line methodsFor: 'accessing' stamp: 'DF 6/19/2025 19:38:12'!
 length
 
@@ -880,6 +1108,22 @@ delete
 	lastLine page: nil.
 	lastLine := nil.
 	! !
+
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 22:50:55'!
+distanceFrom: aPage
+
+	| ii pp |
+	
+	ii := 0.
+	
+	pp := aPage.
+	
+	[pp ~= self ]
+		whileTrue:[
+			ii := ii + 1.
+			pp := pp next].
+		
+	^ii ! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 09:00:59'!
 invariant
@@ -1038,12 +1282,18 @@ PageSize
 	
 	^3! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:55:40'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:49:16'!
+abstractIndexOf: anAddress base: anInitialAddress
+
+	^(anAddress distanceFrom: anInitialAddress) + 1
+	! !
+
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:55:40'!
 allTextIn: aFrogEditor
 
 	^aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:05'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:05'!
 fill: aFrogEditor with: aString
 
 	| bb |
@@ -1058,7 +1308,7 @@ fill: aFrogEditor with: aString
 	self assert: aFrogEditor invariant.
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:25'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 6/19/2025 18:53:25'!
 goto: anIndex from: anAddress
 
 	| pp |
@@ -1071,14 +1321,14 @@ goto: anIndex from: anAddress
 
 	^pp! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 19:58:14'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:54:51'!
 testErase
 
 	| text aFrogEditor bb ee pp |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1108,11 +1358,11 @@ testErase
 	
 	[ee char ~= $w] whileTrue:[ee := ee inc].
 	
-	self assert: (aFrogEditor abstractIndexOf: ee :: = 15).
-	
+	self assert: (self abstractIndexOf: ee base: aFrogEditor begin :: = 15).
+		
 	pp := aFrogEditor eraseFrom:bb to:ee.
 	
-	self assert: (aFrogEditor abstractIndexOf: pp :: = 1).
+	self assert: (self abstractIndexOf: pp base: aFrogEditor begin :: = 1).
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= (text copyReplaceFrom: 1 to: 16 with: '').
 	
@@ -1120,14 +1370,14 @@ testErase
 	
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:59:40'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:53:55'!
 testEraseError
 
 	| text aFrogEditor ab ae cb ce pp |
 	
 	text :='Inmes, whwahery.'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	 
 	aFrogEditor width:8.
 
@@ -1146,28 +1396,27 @@ testEraseError
 	
 	cb := self goto:ab from: aFrogEditor end.
 	
-	self assert: ab = (aFrogEditor abstractIndexOf: cb).
+	self assert: ab = (self abstractIndexOf: cb base: aFrogEditor  begin).
 	
 	ce := self goto: ae from: aFrogEditor end.
 	
-	self assert: ae = (aFrogEditor abstractIndexOf: ce).
+	self assert: ae = (self abstractIndexOf: ce base: aFrogEditor  begin).
 		
 	pp := aFrogEditor eraseFrom:cb to: ce.
 	
 	self assert: aFrogEditor invariant.
 	
-	self assert: (aFrogEditor abstractIndexOf: pp) = ab. 
-	
-! !
+	self assert: (self abstractIndexOf: pp base: aFrogEditor begin) = ab. 
+	! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/18/2025 20:11:44'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:52:34'!
 testEraseFullLines
 
 	| text aFrogEditor bb ee pp |
 	
 	text := '12345678abcdefgh12345678ABCDEFGH'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1188,7 +1437,7 @@ testEraseFullLines
 	
 	self assert: bb char = $8.
 	
-	self assert: (aFrogEditor abstractIndexOf: bb) = 8.
+	self assert: (self abstractIndexOf: bb base: aFrogEditor begin) = 8.
 	
 	ee := bb inc inc.
 	
@@ -1198,30 +1447,30 @@ testEraseFullLines
 	
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= '1234567bcdefgh12345678ABCDEFGH'.
 	
-	self assert: (aFrogEditor abstractIndexOf: pp) = 8.
+	self assert: (self abstractIndexOf: pp base: aFrogEditor begin) = 8.
 
 	self assert: aFrogEditor invariant.
 	
 	
 		! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:36:58'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testInitialize
 
 	| aFrogEditor |
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
 	self assert: aFrogEditor invariant.! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/13/2025 20:59:58'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testInsert
 
 	| aFrogEditor bb pp |
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1283,14 +1532,14 @@ testInsert
 	
 	! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 15:24:30'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testInsertLargeText
 
 	| text aFrogEditor bb |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1308,14 +1557,14 @@ testInsertLargeText
 
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 19:57:27'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testInsertPages
 
 	| text aFrogEditor bb |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1333,12 +1582,12 @@ testInsertPages
 
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 11:33:15'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testInsertUnpack
 
 	| aFrogEditor bb ee |
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1376,14 +1625,14 @@ testInsertUnpack
 	
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 20:16:20'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
 testKissing
 
 	| text aFrogEditor bb ee |
 	
 	text := 'In olden times, when to wish'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1407,14 +1656,46 @@ testKissing
 	self assert: aFrogEditor invariant.
 ! !
 
-!TestFrogEditor methodsFor: 'as yet unclassified' stamp: 'DF 6/20/2025 12:30:03'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 20:02:23'!
+testMatch
+
+	| text aFrogEditor bb |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := KaeruTextRepository new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	self assert: (aFrogEditor matchRight: 'In o' from: bb).
+	
+	13 timesRepeat:[ bb := bb inc ].
+	
+	self assert: (aFrogEditor matchLeft: 'times' from:bb).
+	
+! !
+
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:51:31'!
 testRandom
 
 	| text aFrogEditor ii jj pp ab ae cb ce |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
-	aFrogEditor := FrogEditor new.
+	aFrogEditor := KaeruTextRepository new.
 	
 	aFrogEditor width:8.
 	
@@ -1435,11 +1716,11 @@ testRandom
 		
 		cb := self goto:ab from: aFrogEditor end.
 		
-		self assert: ab = (aFrogEditor abstractIndexOf: cb).
+		self assert: ab = (self abstractIndexOf: cb base: aFrogEditor begin).
 		
 		ce := self goto: ae from: aFrogEditor end.
 		
-		self assert: ae = (aFrogEditor abstractIndexOf: ce).
+		self assert: ae = (self abstractIndexOf: ce base: aFrogEditor begin).
 		
 		"erase the parts at both the abstract and concrete sytems. "
 		
@@ -1453,8 +1734,43 @@ testRandom
 		
 		self assert: text  = (self allTextIn: aFrogEditor).
 		
-		self assert: (aFrogEditor abstractIndexOf: pp) = ab. ]
+		self assert: (self abstractIndexOf: pp base: aFrogEditor begin) = ab. ]
+
 	! !
+
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 20:40:52'!
+testSearch
+
+	| text aFrogEditor bb |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := KaeruTextRepository new.
+	
+	aFrogEditor width:8.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	self assert: (aFrogEditor searchRight: 'splashed' from: bb) ~= bb.
+
+	self assert: (aFrogEditor searchRight: 'splazhed' from: bb) = bb.
+	
+	self assert: (aFrogEditor searchLeft: 'splashed' from:bb) ~= bb.
+
+	self assert: (aFrogEditor searchLeft: 'splaxhed' from:bb) = bb.
+	
+! !
 
 !CharacterSequence methodsFor: '*FrogEditor-unittest' stamp: 'DF 6/19/2025 18:35:16'!
 eraseFrom: bIndex to: eIndex
