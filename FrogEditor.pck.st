@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 9 July 2025 at 11:01:23 pm'!
+'From Cuis7.3 [latest update: #7041] on 10 July 2025 at 9:42:26 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 159!
+!provides: 'FrogEditor' 1 170!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -16,7 +16,7 @@ Address class
 
 !classDefinition: #KaeruEditor category: #FrogEditor!
 Object subclass: #KaeruEditor
-	instanceVariableNames: 'cursor beginH endH textRepository pattern'
+	instanceVariableNames: 'cursor beginH endH textRepository pattern pcursor'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -62,6 +62,16 @@ Object subclass: #Page
 	category: 'FrogEditor'!
 !classDefinition: 'Page class' category: #FrogEditor!
 Page class
+	instanceVariableNames: ''!
+
+!classDefinition: #TestKaeruEditor category: #FrogEditor!
+TestCase subclass: #TestKaeruEditor
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'TestKaeruEditor class' category: #FrogEditor!
+TestKaeruEditor class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestKaeruTextRepository category: #FrogEditor!
@@ -154,7 +164,7 @@ fromLine: aLine index: anInteger
 
 	^Address new line: aLine; index: anInteger ; yourself! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/9/2025 21:55:29'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/10/2025 21:42:03'!
 erase
 
 	| pp |
@@ -163,25 +173,24 @@ erase
 	
 	cursor ~= beginH and:[pp ~= textRepository begin] ::
 		ifTrue:[
-			cursor := pp.
-			beginH := pp dec.
-			endH := pp ]
+			beginH := pp dec ]
 		ifFalse:[
-			cursor := pp.
-			beginH := pp.
-			endH := beginH inc ].
-		
+			beginH := pp ].
+
+	cursor := pp.
+	endH := beginH.
+			
 	self triggerEvent: #cursor.
 			! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/9/2025 21:55:32'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/10/2025 20:43:19'!
 insert: aChar
 
 	beginH := cursor.
 	
 	cursor := textRepository insert: aChar after:cursor.
 	
-	endH := cursor.
+	endH := beginH.
 	
 	self triggerEvent: #cursor.! !
 
@@ -191,7 +200,17 @@ insertAll: aString
 	aString do:[:eachChar |
 		self insert: eachChar ]! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 22:18:13'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:29:10'!
+highlight
+
+	self assert: pcursor notNil.
+	
+	beginH := pcursor.
+	endH := cursor.
+	
+	self triggerEvent: #cursor.! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:28:00'!
 leapLeft
 
 	| text pp match |
@@ -203,6 +222,8 @@ leapLeft
 	pp := textRepository searchLeft: pattern contents from: cursor.
 
 	match := pp ~= cursor.
+	
+	cursor := pp.
 	
 	self insertAll: text. 
 
@@ -216,7 +237,7 @@ leapLeft
 	^match
 	! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 22:21:26'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:28:17'!
 leapRight
 
 	| text pp match |
@@ -228,6 +249,10 @@ leapRight
 	pp := textRepository searchRight: pattern contents from: cursor.
 
 	match := pp ~= cursor.
+	
+	pcursor := cursor.
+	
+	cursor := pp.
 	
 	self insertAll: text. 
 
@@ -249,10 +274,12 @@ patternClear
 patternPut: aCharacter
 	pattern nextPut: aCharacter! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/9/2025 21:56:31'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/10/2025 20:31:19'!
 initialize
 
 	textRepository := KaeruTextRepository new.
+	
+	textRepository width:8.
 	
 	cursor := textRepository begin.
 	
@@ -261,6 +288,14 @@ initialize
 	endH := cursor.
 	
 	pattern := WriteStream on:''.! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:37:52'!
+selection	
+	^ textRepository textFrom: beginH to: endH! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:51:54'!
+text
+	^ textRepository textFrom: textRepository begin to: textRepository end! !
 
 !KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 22:58:27'!
 checkLines
@@ -1281,6 +1316,68 @@ PageSize
 	"answer number of lines in page "
 	
 	^3! !
+
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:44:46'!
+testHighlight
+
+	| text aKaeruEditor |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aKaeruEditor := KaeruEditor new.
+
+	aKaeruEditor insertAll: text.
+	
+	'when' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor patternClear.
+	
+	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor highlight.
+	
+	self assert: aKaeruEditor selection = 'when to wish was to '.
+! !
+
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:54:51'!
+testMoveHighlight
+
+	| text aKaeruEditor |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aKaeruEditor := KaeruEditor new.
+
+	aKaeruEditor insertAll: text.
+	
+	'when' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor patternClear.
+	
+	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor highlight.
+	
+	self assert: aKaeruEditor selection = 'when to wish was to '.
+
+	text :=  'In olden times, have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a when to wish was to little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	aKaeruEditor patternClear.
+	
+	' little' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+
+	aKaeruEditor leapRight.
+	
+	self assert: aKaeruEditor text = text.
+	! !
 
 !TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:49:16'!
 abstractIndexOf: anAddress base: anInitialAddress
