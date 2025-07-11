@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 10 July 2025 at 9:42:26 pm'!
+'From Cuis7.3 [latest update: #7041] on 11 July 2025 at 12:31:14 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 170!
+!provides: 'FrogEditor' 1 182!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -12,6 +12,16 @@ Object subclass: #Address
 	category: 'FrogEditor'!
 !classDefinition: 'Address class' category: #FrogEditor!
 Address class
+	instanceVariableNames: ''!
+
+!classDefinition: #AddressRange category: #FrogEditor!
+Object subclass: #AddressRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'AddressRange class' category: #FrogEditor!
+AddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruEditor category: #FrogEditor!
@@ -26,7 +36,7 @@ KaeruEditor class
 
 !classDefinition: #KaeruTextRepository category: #FrogEditor!
 Object subclass: #KaeruTextRepository
-	instanceVariableNames: 'end width lastPage'
+	instanceVariableNames: 'end width lastPage leftMargin rightMargin'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -54,6 +64,16 @@ Line subclass: #Sentinel
 Sentinel class
 	instanceVariableNames: ''!
 
+!classDefinition: #LineRange category: #FrogEditor!
+Object subclass: #LineRange
+	instanceVariableNames: 'begin end'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'LineRange class' category: #FrogEditor!
+LineRange class
+	instanceVariableNames: ''!
+
 !classDefinition: #Page category: #FrogEditor!
 Object subclass: #Page
 	instanceVariableNames: 'lastLine next prev'
@@ -62,6 +82,16 @@ Object subclass: #Page
 	category: 'FrogEditor'!
 !classDefinition: 'Page class' category: #FrogEditor!
 Page class
+	instanceVariableNames: ''!
+
+!classDefinition: #TestAddressRange category: #FrogEditor!
+TestCase subclass: #TestAddressRange
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'TestAddressRange class' category: #FrogEditor!
+TestAddressRange class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestKaeruEditor category: #FrogEditor!
@@ -159,10 +189,105 @@ line
 line: aLine
 	line := aLine! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:09:49'!
+nextLine
+	^Address fromLine: line next index: 1! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:24:53'!
+to: anAddress
+
+	self assert: self <= anAddress.
+	
+	^AddressRange new begin: self; end: anAddress; yourself.! !
+
 !Address class methodsFor: 'as yet unclassified' stamp: 'DF 6/12/2025 11:18:53'!
 fromLine: aLine index: anInteger
 
 	^Address new line: aLine; index: anInteger ; yourself! !
+
+!AddressRange methodsFor: 'private' stamp: 'DF 5/15/2025 20:24:30'!
+lineRange
+	^begin line to: end line! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:40'!
+= anAddressRange
+
+	self class == anAddressRange class 
+		ifFalse:[^false].
+		
+	^begin = anAddressRange begin and:[end = anAddressRange end]
+	
+	! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:20:59'!
+begin
+	^begin! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:20:54'!
+begin: anAddress
+	begin := anAddress ! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 13:47:37'!
+emptyRange
+	^AddressRange new ! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:01'!
+end
+	^end! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:09'!
+end: anAddress
+	end := anAddress! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:22:05'!
+hash
+	"Hash is reimplemented because = is implemented."
+
+	^(begin hash hashMultiply + end hash) hashMultiply! !
+
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 13:49:05'!
+intersect: anAddressRange
+
+	| commonLines beginIndex endIndex |
+	
+	commonLines :=  self lineRange intersect: anAddressRange lineRange.
+	
+	commonLines isEmpty ifTrue:[^self emptyRange]. 
+	
+	commonLines begin = begin line and: [commonLines begin = anAddressRange begin line] ::
+		ifTrue:[
+			beginIndex := begin index max: anAddressRange begin index]
+		ifFalse:[
+			commonLines begin = begin line
+				ifTrue:[
+					beginIndex := begin index]
+				ifFalse:[
+					beginIndex := anAddressRange begin index] ].
+
+	commonLines end = end line and: [commonLines end = anAddressRange end line] ::
+		ifTrue:[
+			endIndex := end index min: anAddressRange end index]
+		ifFalse:[
+			commonLines end = end line
+				ifTrue:[
+					endIndex := end index]
+				ifFalse:[
+					endIndex := anAddressRange end index] ].
+	
+	^ AddressRange new begin: (Address new line: commonLines begin ; index: beginIndex ; yourself) ; end: (Address new line: commonLines end; index: endIndex; yourself) ; yourself
+	! !
+
+!AddressRange methodsFor: 'testing' stamp: 'DF 5/26/2025 13:48:17'!
+invariant
+
+	^ (self isEmpty) or:[begin <= end]! !
+
+!AddressRange methodsFor: 'testing' stamp: 'DF 7/11/2025 12:30:29'!
+isEmpty
+
+	begin isNil and:[end isNil] :: ifTrue:[^true].
+	
+	^begin = end! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 7/10/2025 21:42:03'!
 erase
@@ -274,12 +399,12 @@ patternClear
 patternPut: aCharacter
 	pattern nextPut: aCharacter! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/10/2025 20:31:19'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/11/2025 12:07:31'!
 initialize
 
 	textRepository := KaeruTextRepository new.
 	
-	textRepository width:8.
+	textRepository leftMargin:8 ; rightMargin: 16.
 	
 	cursor := textRepository begin.
 	
@@ -333,18 +458,18 @@ checkPages
 
 	^true! !
 
-!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 16:09:03'!
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/11/2025 12:03:03'!
 invariant
 
 	| pp |
 	
 	pp := end.
 	
-	pp invariant: width.
+	pp invariant: self width.
 	
 	pp := pp next.
 	
-	[pp isSentinel not and: [pp invariant:width ] ] whileTrue:[pp := pp next ].
+	[pp isSentinel not and: [pp invariant:self width ] ] whileTrue:[pp := pp next ].
 	
 	pp isSentinel ifFalse:[self halt].
 	
@@ -370,10 +495,21 @@ begin
 end
 	^Address fromLine: end index: 1! !
 
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/11/2025 12:03:40'!
+leftMargin: anInteger
+	leftMargin := anInteger! !
+
 !KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/9/2025 23:01:20'!
 pageNumberOf: aPage
 
 	^aPage distanceFrom: end next page! !
+
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/11/2025 12:04:08'!
+rightMargin: anInteger
+
+	self assert: anInteger >= (leftMargin + 2).
+	
+	rightMargin := anInteger! !
 
 !KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:56:49'!
 textFrom: bAddr to: eAddr
@@ -391,12 +527,10 @@ textFrom: bAddr to: eAddr
 	^aWriteStream contents
 	! !
 
-!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 11:34:47'!
-width: anInteger
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/11/2025 12:06:16'!
+width
 
-	self assert: anInteger > 0.
-	
-	width := anInteger.! !
+	^ rightMargin - leftMargin! !
 
 !KaeruTextRepository methodsFor: 'initialization' stamp: 'DF 7/7/2025 14:49:36'!
 initialize
@@ -473,7 +607,7 @@ insertAtStart: aCharacter
 	
 	! !
 
-!KaeruTextRepository methodsFor: 'private' stamp: 'DF 6/14/2025 10:52:10'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/11/2025 12:02:55'!
 insertNotAtStart: aCharacter after: anAddress
 
 	| line index bb |
@@ -489,13 +623,13 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	bb := anAddress.
 		
-	line length = (width + 1) " the newly inserted character overflows the line "
+	line length = (self width + 1) " the newly inserted character overflows the line "
 		ifTrue:[ "if the index is located after width + 1 - shifted tokens length then the address that indicates the location moves to the next line at index - (width + 1 - stlen)"
 			| stlen |
-			stlen := line shiftRight: width.
-			index > (width + 1 - stlen + 1)
+			stlen := line shiftRight: self width.
+			index > (self width + 1 - stlen + 1)
 				ifTrue:[
-					bb := Address fromLine: line next index: index - (width + 1 - stlen) - 1 ] ].
+					bb := Address fromLine: line next index: index - (self width + 1 - stlen) - 1 ] ].
 	
 	aCharacter isSeparator
 		ifFalse:[^bb inc].
@@ -504,13 +638,13 @@ insertNotAtStart: aCharacter after: anAddress
 		ifTrue:[ 
 			[index < line length]  "the line separator is not the last token in the line"
 				whileTrue:[
-					line shiftRight: width ] ]. "shift all the token after the line separator to the next line"
+					line shiftRight: self width ] ]. "shift all the token after the line separator to the next line"
 			
-	line prev isPacked: width ::
+	line prev isPacked: self width ::
 		ifTrue:[
 			^bb inc]
 		ifFalse:[ | len |
-			len := line prev shiftLeft: width. 
+			len := line prev shiftLeft: self width. 
 			len < index 
 				ifTrue:[
 					^Address fromLine: line index: index - len]
@@ -522,22 +656,22 @@ insertNotAtStart: aCharacter after: anAddress
 	
 	! !
 
-!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/8/2025 08:57:42'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/11/2025 12:03:14'!
 repackAfterErase: aLine
 	
 	| nshifted |
 		
 	nshifted := 0.
 	
-	aLine isPacked: width :: 
-		ifFalse:[ nshifted := nshifted - (aLine shiftLeft:width)].
+	aLine isPacked: self width :: 
+		ifFalse:[ nshifted := nshifted - (aLine shiftLeft: self width)].
 				
 	aLine isKissing ifTrue:[ 
 		"The line is packed so we cannot shift left, nevertheless we shift left once,
 		this will join the two kissing tokens and will overflow the line. A call to shiftRight
 		will then move the larger token into its correct position."
 		nshifted := nshifted - aLine shiftLeftOnce.
-		nshifted := nshifted + (aLine shiftRight: width) ].
+		nshifted := nshifted + (aLine shiftRight: self width) ].
 
 	^nshifted! !
 
@@ -946,6 +1080,13 @@ shiftRight: anIntegerWidth
 	
 	^len	! !
 
+!Line methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:28:10'!
+to: aLine
+
+	self assert: (self precedes: aLine).
+	
+	^LineRange new begin: self ; end: aLine ; yourself! !
+
 !Line methodsFor: 'testing' stamp: 'DF 7/7/2025 22:57:29'!
 checkPages
 
@@ -1111,6 +1252,82 @@ isSentinel
 !Sentinel methodsFor: 'testing' stamp: 'DF 6/14/2025 19:39:35'!
 startsWithSeparator
 	^false! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:47:11'!
+begin
+	^begin! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:09'!
+begin: aLine
+	begin := aLine ! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 21:47:14'!
+end
+	^end! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:03:19'!
+end: aLine
+	end := aLine! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 5/12/2025 23:08:54'!
+hash
+	"Hash is reimplemented because = is implemented."
+
+	^(begin hash hashMultiply + end hash) hashMultiply! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 21:50:06'!
+intersect: aLineRange
+
+	| b e p q  |
+	
+	p := begin.
+	
+	[p = end]
+		whileFalse:[
+			p = aLineRange begin
+				ifTrue:[
+					b := p].
+			p = aLineRange end
+				ifTrue:[
+					e := p].
+			p := p next ].
+	
+	q := aLineRange begin.
+
+	[q = aLineRange end ]
+		whileFalse:[
+			q = begin
+				ifTrue:[
+					b := q].
+			q = end
+				ifTrue:[
+					e := q].
+			q := q next ].
+	
+	^LineRange new begin: b ; end: e ; yourself! !
+
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 11:46:17'!
+invariant
+
+	self assert: ((begin isNil and: end isNil) or:[begin precedes: end] ).
+	
+	^true! !
+
+!LineRange methodsFor: 'testing' stamp: 'DF 5/12/2025 23:08:25'!
+= aLineRange
+
+	self class == aLineRange class 
+		ifFalse:[^false].
+		
+	^begin = aLineRange begin and:[end = aLineRange end]
+	
+	! !
+
+!LineRange methodsFor: 'testing' stamp: 'DF 7/11/2025 12:31:13'!
+isEmpty
+	begin isNil and:[ end isNil ] :: ifTrue:[^true].
+	
+	^begin = end! !
 
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:54:19'!
 countLines
@@ -1317,6 +1534,36 @@ PageSize
 	
 	^3! !
 
+!TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:28:56'!
+testIntersection
+
+	| text aFrogEditor bb ee |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aFrogEditor := KaeruTextRepository new.
+	
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
+	
+	self assert: aFrogEditor invariant.
+	
+	bb := aFrogEditor begin.
+	
+	text do:[:each | 
+		bb := aFrogEditor insert: each after: bb].
+	
+	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
+
+	bb := aFrogEditor begin.
+	ee := bb inc inc.
+	
+	self assert: ee char = Character space.
+		
+	self assert: ((bb to:ee) intersect: (aFrogEditor begin to: aFrogEditor end)) = (bb to:ee).
+	
+	self assert: (bb to:bb) isEmpty
+	! !
+
 !TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:44:46'!
 testHighlight
 
@@ -1418,7 +1665,7 @@ goto: anIndex from: anAddress
 
 	^pp! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:54:51'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:05:37'!
 testErase
 
 	| text aFrogEditor bb ee pp |
@@ -1427,7 +1674,7 @@ testErase
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1467,7 +1714,7 @@ testErase
 	
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:53:55'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:36'!
 testEraseError
 
 	| text aFrogEditor ab ae cb ce pp |
@@ -1476,7 +1723,7 @@ testEraseError
 	
 	aFrogEditor := KaeruTextRepository new.
 	 
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 
 	cb := aFrogEditor begin.
 	
@@ -1506,7 +1753,7 @@ testEraseError
 	self assert: (self abstractIndexOf: pp base: aFrogEditor begin) = ab. 
 	! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:52:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:40'!
 testEraseFullLines
 
 	| text aFrogEditor bb ee pp |
@@ -1515,7 +1762,7 @@ testEraseFullLines
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1551,25 +1798,25 @@ testEraseFullLines
 	
 		! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:45'!
 testInitialize
 
 	| aFrogEditor |
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:48'!
 testInsert
 
 	| aFrogEditor bb pp |
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1629,7 +1876,7 @@ testInsert
 	
 	! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:52'!
 testInsertLargeText
 
 	| text aFrogEditor bb |
@@ -1638,7 +1885,7 @@ testInsertLargeText
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1654,7 +1901,7 @@ testInsertLargeText
 
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:55'!
 testInsertPages
 
 	| text aFrogEditor bb |
@@ -1663,7 +1910,7 @@ testInsertPages
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1679,14 +1926,14 @@ testInsertPages
 
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:00'!
 testInsertUnpack
 
 	| aFrogEditor bb ee |
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1722,7 +1969,7 @@ testInsertUnpack
 	
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:15:34'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:04'!
 testKissing
 
 	| text aFrogEditor bb ee |
@@ -1731,7 +1978,7 @@ testKissing
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1753,7 +2000,7 @@ testKissing
 	self assert: aFrogEditor invariant.
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 20:02:23'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:06'!
 testMatch
 
 	| text aFrogEditor bb |
@@ -1762,7 +2009,7 @@ testMatch
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
@@ -1785,7 +2032,7 @@ testMatch
 	
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 18:51:31'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:10'!
 testRandom
 
 	| text aFrogEditor ii jj pp ab ae cb ce |
@@ -1794,7 +2041,7 @@ testRandom
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self fill: aFrogEditor with: text.
 	
@@ -1835,7 +2082,7 @@ testRandom
 
 	! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/9/2025 20:40:52'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:13'!
 testSearch
 
 	| text aFrogEditor bb |
@@ -1844,7 +2091,7 @@ testSearch
 	
 	aFrogEditor := KaeruTextRepository new.
 	
-	aFrogEditor width:8.
+	aFrogEditor leftMargin:8 ; rightMargin: 16.
 	
 	self assert: aFrogEditor invariant.
 	
