@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 11 July 2025 at 12:31:14 pm'!
+'From Cuis7.3 [latest update: #7041] on 11 July 2025 at 11:29:10 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 182!
+!provides: 'FrogEditor' 1 200!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -32,6 +32,36 @@ Object subclass: #KaeruEditor
 	category: 'FrogEditor'!
 !classDefinition: 'KaeruEditor class' category: #FrogEditor!
 KaeruEditor class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruKeyboardMapper category: #FrogEditor!
+Object subclass: #KaeruKeyboardMapper
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'KaeruKeyboardMapper class' category: #FrogEditor!
+KaeruKeyboardMapper class
+	instanceVariableNames: ''!
+
+!classDefinition: #LinuxKeyboardMapper category: #FrogEditor!
+KaeruKeyboardMapper subclass: #LinuxKeyboardMapper
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'LinuxKeyboardMapper class' category: #FrogEditor!
+LinuxKeyboardMapper class
+	instanceVariableNames: ''!
+
+!classDefinition: #LinuxRaspiKeyboardMapper category: #FrogEditor!
+LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'LinuxRaspiKeyboardMapper class' category: #FrogEditor!
+LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruTextRepository category: #FrogEditor!
@@ -82,6 +112,16 @@ Object subclass: #Page
 	category: 'FrogEditor'!
 !classDefinition: 'Page class' category: #FrogEditor!
 Page class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruEditorMorph category: #FrogEditor!
+ColoredBoxMorph subclass: #KaeruEditorMorph
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont pageWidth'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'FrogEditor'!
+!classDefinition: 'KaeruEditorMorph class' category: #FrogEditor!
+KaeruEditorMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestAddressRange category: #FrogEditor!
@@ -192,6 +232,10 @@ line: aLine
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:09:49'!
 nextLine
 	^Address fromLine: line next index: 1! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 19:30:19'!
+prevLine
+	^Address fromLine: line prev index: 1! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:24:53'!
 to: anAddress
@@ -325,6 +369,10 @@ insertAll: aString
 	aString do:[:eachChar |
 		self insert: eachChar ]! !
 
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/11/2025 22:51:24'!
+clearPattern
+	pattern resetContents! !
+
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:29:10'!
 highlight
 
@@ -391,10 +439,6 @@ leapRight
 	^match
 	! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 21:58:25'!
-patternClear
-	pattern resetContents! !
-
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 21:57:02'!
 patternPut: aCharacter
 	pattern nextPut: aCharacter! !
@@ -414,13 +458,171 @@ initialize
 	
 	pattern := WriteStream on:''.! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:37:52'!
-selection	
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:24:26'!
+begin
+	^ textRepository begin! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:23:29'!
+cursor
+	^ cursor! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:24:31'!
+end
+	^ textRepository end! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:23:56'!
+leftMargin
+	^ textRepository leftMargin! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:40:02'!
+selection
+	^ beginH to: endH! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:39:14'!
+selectionText	
 	^ textRepository textFrom: beginH to: endH! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:23:19'!
+width
+	^ textRepository width! !
 
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:51:54'!
 text
 	^ textRepository textFrom: textRepository begin to: textRepository end! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 23:02:47'!
+textFrom: bAddr to: eAddr
+
+	^ textRepository textFrom: bAddr to: eAddr! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
+isCopyKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
+isEnterKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
+isEraseKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:16'!
+isLeapAgainKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:23'!
+isLeapLeftKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:32'!
+isLeapRightKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:43:40'!
+isPageBreakKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
+isPageKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:38'!
+instance
+
+	| aMapperClass |
+	
+	aMapperClass := Smalltalk platformName caseOf: {
+		['Mac OS'] 	-> [MacOSKeyboardMapper] .
+		['unix'] 		-> [Smalltalk platformSubtype = 'aarch64' 
+							and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
+								ifTrue:[LinuxRaspiKeyboardMapper ] 
+								ifFalse:[LinuxKeyboardMapper] ] }.
+						
+	^aMapperClass new
+		
+		! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:13'!
+isCopyKey: aMorphicEvent
+	^aMorphicEvent controlKeyPressed and: [aMorphicEvent keyValue = 97]	! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
+isEnterKey: aMorphicEvent
+	^aMorphicEvent keyValue = 13! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
+isEraseKey: aMorphicEvent
+	^aMorphicEvent keyValue = 8! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:39:59'!
+isLeapAgainKeyUp: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and:[aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:18'!
+isLeapLeftKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:42'!
+isLeapLeftKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:13'!
+isLeapRightKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:59'!
+isLeapRightKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and:[aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:44:19'!
+isPageBreakKey: aMorphicEvent
+	^aMorphicEvent isPageDown and: [aMorphicEvent controlKeyPressed ]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
+isPageKey: aMorphicEvent
+
+	^aMorphicEvent isPageDown! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^aMorphicEvent controlKeyPressed ! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
+isLeapAgainKeyUp: aMorphicEvent
+	^aMorphicEvent controlKeyPressed not! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
+isLeapLeftKeyUp: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 128! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
+isLeapRightKeyUp: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 0! !
 
 !KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 22:58:27'!
 checkLines
@@ -494,6 +696,10 @@ begin
 !KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/20/2025 12:21:54'!
 end
 	^Address fromLine: end index: 1! !
+
+!KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:45:54'!
+leftMargin
+	^leftMargin! !
 
 !KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 7/11/2025 12:03:40'!
 leftMargin: anInteger
@@ -1099,6 +1305,11 @@ checkPages
 					
 	^true! !
 
+!Line methodsFor: 'testing' stamp: 'DF 7/11/2025 19:12:20'!
+endsWithPageSeparator
+
+	^text notEmpty and: [text last isPageSeparator ]! !
+
 !Line methodsFor: 'testing' stamp: 'DF 7/7/2025 22:55:51'!
 invariant: aNumberWidth
 
@@ -1206,6 +1417,25 @@ startsWithSeparator
 !Line methodsFor: 'accessing' stamp: 'DF 7/9/2025 22:23:18'!
 height
 	^ page ifNil:[1] ifNotNil:[2]
+		! !
+
+!Line methodsFor: 'accessing' stamp: 'DF 7/11/2025 18:53:28'!
+heightFrom: aLine
+
+	| height pp |
+	
+	self assert: (aLine precedes: self).
+	
+	height := 0.
+	
+	pp := aLine.
+	
+	[pp ~= self]
+		whileTrue:[
+			height := height + pp height.
+			pp := pp next ].
+		
+	^height
 		! !
 
 !Line methodsFor: 'accessing' stamp: 'DF 6/19/2025 19:38:12'!
@@ -1438,6 +1668,22 @@ next
 next: aPage
 	next := aPage! !
 
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 19:15:40'!
+pageNumber
+
+	| pp nn |
+	
+	pp := self.
+	
+	nn := 1.
+	
+	[pp prev isLast] 
+		whileFalse:[
+			pp := pp prev.
+			nn := nn + 1].
+		
+	^nn! !
+
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 14:38:45'!
 prev
 	^prev! !
@@ -1534,6 +1780,473 @@ PageSize
 	
 	^3! !
 
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:11'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[ leapLeftDown := true].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[ leapRightDown := true].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[ leapAgainDown := true].
+
+	leapRightDown and: [ leapLeftDown ] ::
+		ifTrue:[
+			machine highlight.
+			self redrawNeeded ].
+	
+	leapRightDown = false and: [ leapLeftDown = false ] ::
+		ifTrue:[
+			state := #editing].
+
+	state = #init and: [ leapAgainDown ] ::
+		ifTrue:[
+			leapRightDown
+				ifTrue:[
+					machine creepRight]
+				ifFalse:[
+					leapLeftDown
+						ifTrue:[
+							machine creepLeft] ].
+			self leap. 
+			self scrollToCursor ].
+	
+	state = #editing and: [ leapRightDown or: [ leapLeftDown ] ] ::
+		ifTrue:[
+			state := #init].
+	
+	"Transcript show: ('key: down. state: {1}. code: {5} . leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown . aMorphicEvent keyValue }); cr."
+
+! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/11/2025 18:48:38'!
+keyStroke: aKeyboardEvent
+
+	| keyv |
+	
+	keyv := aKeyboardEvent keyValue.
+
+	state = #editing and: [keyv < 128 ] ::
+		ifTrue:[
+			mapper isCopyKey: aKeyboardEvent ::
+				ifTrue:[
+					^machine copy].	
+			mapper isEnterKey: aKeyboardEvent ::
+				ifTrue:[
+					machine insert: String crString].
+			mapper isPageBreakKey: aKeyboardEvent ::
+				ifTrue:[
+					machine insert: (String with: Character newPage) ].
+			mapper isEraseKey: aKeyboardEvent ::
+				ifTrue:[
+					self erase]
+				ifFalse:[ 
+					keyv > 31
+						ifTrue:[ | cc |
+							cc := Character codePoint: keyv.
+							machine insert: cc asString] ] ].
+	
+	state = #init and: [keyv < 128 ] :: 
+		ifTrue:[
+			machine clearPattern.
+			match := true.
+			machine pushCursor.
+			state := #building ].
+			
+	state = #building and:[keyv < 128] and:[match] ::
+		ifTrue:[
+			machine patternPut: keyv.
+			match := self leap.
+			match 
+				ifFalse:[
+					machine popCursor ]	].
+	
+	self scrollToCursor.
+"	
+	self removeAlarm: #autoSave.
+	
+	self addAlarm: #autoSave after: 3*60*1000."  "3 min. in millisec"
+! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:56'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[ leapLeftDown := false].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[ leapRightDown := false].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[ leapAgainDown := false].
+
+	leapRightDown = false and: [ leapLeftDown = false ] ::
+		ifTrue:[
+			state := #editing].
+
+	"Transcript show: ('key: up. state: {1}. leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown  }); cr."
+		
+	self redrawNeeded 
+! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 6/5/2025 18:55:06'!
+mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
+
+	self activeHand newKeyboardFocus: self! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 6/5/2025 18:55:17'!
+mouseEnter: aMouseButtonEvent
+
+	self activeHand newKeyboardFocus: self! !
+
+!KaeruEditorMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 18:51:34'!
+onBlinkCursor
+	
+	"Blink the cursor"
+	
+	showCursor := showCursor not.
+	
+	textCursorRect ifNotNil:[:r | self invalidateLocalRect: r].
+! !
+
+!KaeruEditorMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 17:35:36'!
+startBlinking
+	
+	showCursor := true.
+	
+	self startStepping: #onBlinkCursor stepTime: 500.
+	! !
+
+!KaeruEditorMorph methodsFor: 'blinking' stamp: 'DF 5/11/2025 17:20:55'!
+stopBlinking
+	"And do not show cursor anymore."
+	self stopStepping: #onBlinkCursor.
+	
+	"Hide cursor right now if needed"
+	showCursor ifTrue: [
+		showCursor := false.
+		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:11:24'!
+drawCursorOn: aCanvas
+
+	| xcursor ycursor |
+	
+	ycursor := dy * (machine cursor line heightFrom: wbegin line).
+	
+	"A line that begins a page occupies two lines, its text is in the bottom line "
+	
+	machine cursor line isLastInPage
+		ifTrue:[
+			ycursor := ycursor + dy].
+		
+	xcursor := dx * (machine cursor index) - dx + (dx * machine leftMargin).
+	
+	textCursorRect := xcursor@ycursor extent: dx@dy.
+
+	aCanvas fillRectangle: textCursorRect  color: cursorColor.
+	
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:10:46'!
+drawOn: aCanvas
+
+	[ | selection yy wend |
+		
+	self assert: machine notNil.
+	
+	super drawOn: aCanvas.
+
+	wend := self wend.
+	
+	selection := (wbegin to: wend) intersect: machine selection.
+	
+	selection isEmpty
+		ifTrue:[
+			self drawOn:aCanvas textFrom: wbegin to: wend atHeight:0 highlight: false color: Color black]
+
+		ifFalse:[
+	
+			yy := self drawOn: aCanvas textFrom: wbegin to: selection begin atHeight: 0 highlight: false color: Color black.
+	
+			yy := self drawOn: aCanvas textFrom: selection begin to: selection end atHeight: yy highlight: true color: Color white.
+			self drawOn: aCanvas textFrom: selection end to: wend atHeight: yy highlight: false color: Color black ].
+
+	showCursor 
+		ifTrue:[self drawCursorOn: aCanvas ] 
+	]
+	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
+	! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:06:45'!
+drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
+
+	| yy |
+	
+	self assert: (anAddressB line == anAddressE line or: [ anAddressB line next == anAddressE line and: [ anAddressE index = 1 ] ]).
+	
+	yy := anAddressB line isLastInPage
+			ifTrue:[aNumberHeight + dy]
+			ifFalse:[aNumberHeight].
+			
+	aBoolean
+		ifTrue:[ | xb |
+			xb := dx * (anAddressB index - 1) + (dx * machine leftMargin).
+			aCanvas fillRectangle: (xb @ yy extent: (dx * (anAddressE index - anAddressB index)) @ dy) color: Color black].
+		
+	aCanvas drawString: (machine textFrom: anAddressB to: anAddressE) at: dx * (anAddressB index - 1) + (dx * machine leftMargin) @ yy font: font color: aColor.
+
+	anAddressB line endsWithPageSeparator  
+		ifTrue:[
+			aCanvas drawString: (Character codePoint:182) asString at:dx * (anAddressB line length - 1) + (dx * machine leftMargin) @ yy font: font color: aColor ].
+
+	anAddressB line isLastInPage
+		ifTrue:[ 
+			self drawOn: aCanvas page: anAddressB line page breakAt: aNumberHeight. ].
+	
+	^  anAddressE line ~= anAddressB line
+		ifTrue:[yy + dy]
+		ifFalse:[aNumberHeight]
+		
+		
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 19:15:49'!
+drawOn: aCanvas page: aPage breakAt: aNumberHeight
+
+	| hh |
+	
+	hh := aNumberHeight + (0.25*dy).
+	aCanvas fillRectangle: (0@hh extent: self morphWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+	
+	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ hh) font: pageNumberFont color: Color black.
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 19:18:17'!
+drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
+
+	| yy addr |
+
+	addr := addrB.
+	yy := hh.
+	
+	[ addr line ~= addrE line ] whileTrue:[
+		
+		yy := self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addr nextLine.		
+		addr := addr nextLine ].
+
+	^self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
+! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:40:47'!
+erase
+
+	| selection bb ee |
+	
+	" If the selection we are about to erase includes wbegin we must set wbegin to 
+	the line immediately after the erased lines.
+	"
+	selection := machine selection.
+	
+	bb := selection begin line.
+	ee := selection end line.
+	
+	[ bb ~= wbegin line and: [bb ~= ee ] ] 
+		whileTrue:[ bb := bb next ].
+	
+	machine erase.
+	
+	bb == wbegin line
+		ifTrue:[
+			wbegin := machine cursor line ].
+! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 19:27:20'!
+leap
+
+	^leapLeftDown 
+		ifTrue:[
+			machine pattern first = Character newPage 
+				ifTrue:[
+					machine "leapBackToPage" ]
+				ifFalse:[
+					machine leapLeft] ]
+		ifFalse:[
+			leapRightDown
+				ifTrue:[
+					machine pattern first = Character newPage 
+						ifTrue:[
+							machine "leapForwardToPage" ]
+						ifFalse:[
+							machine leapRight] ]
+				ifFalse:[
+					self assert: false. "we must not leap when both alts are pressed" ] ].
+			
+	
+! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 18:51:13'!
+machine: aKaeruEditor
+
+	machine := aKaeruEditor.
+
+	pageWidth := machine width.
+	
+	wbegin := machine begin.
+	
+	self scrollToCursor ! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:24:51'!
+wend
+
+	| pp ii |
+	
+	pp := wbegin.
+	
+	ii := 0.
+	
+	[ii < wsize and:[pp line isSentinel not] ] whileTrue:[
+		ii := ii + pp line height.
+		pp := pp nextLine ].
+	
+	^pp! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 7/11/2025 19:30:39'!
+scrollBackwardToCursor
+
+	[ wbegin line = machine cursor line ] whileFalse:[wbegin := wbegin prevLine ].
+	
+! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 7/11/2025 23:27:36'!
+scrollForwardToCursor
+
+	| ii pp |
+	
+	pp := machine cursor line.
+	
+	ii := pp height - 1.	
+
+	[ pp prev isSentinel not and:[ii <( wsize - 1)]  ] whileTrue:[pp := pp prev. ii := ii + pp height. ].
+	
+	" pp prev isNil and pp notNil and ii = distance[pp,line] and pp prev isNil or ii = wsize "
+	
+	" pp notNil and ii = distance[pp,line] and ii <= wsize "
+	
+	"pp notNil and distance[pp,line] <= wsize"
+	
+	wbegin := Address fromLine: pp index:1.! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 7/11/2025 22:16:06'!
+scrollToCursor
+
+	"
+	look for the cursor within the window, if found there is no need to scroll.
+	
+	"
+	
+	| pp ee |
+	
+	"if wbegin is a sentinel it means that the text was empty and an insert adds the first real line to the text."
+	
+	wbegin line isSentinel ifTrue:[
+		wbegin := machine begin ].
+	
+	pp := wbegin.
+	
+	ee := self wend.
+	
+	[pp ~= ee and: [pp line ~= machine cursor line ] ] whileTrue:[ pp := pp nextLine ].
+	
+	pp line = machine cursor line ifTrue:[^self].
+	
+	" otherwise, see where to scroll "
+	
+	ee line precedes: machine cursor line ::
+		ifTrue:[
+			^self scrollForwardToCursor ].
+		
+	machine cursor line precedes: wbegin line ::
+		ifTrue:[
+			^self scrollBackwardToCursor ].
+		
+		! !
+
+!KaeruEditorMorph methodsFor: 'event handling testing' stamp: 'DF 5/11/2025 19:27:43'!
+handlesKeyboard
+	^true! !
+
+!KaeruEditorMorph methodsFor: 'event handling testing' stamp: 'DF 5/12/2025 21:45:09'!
+handlesMouseDown: aMouseButtonEvent
+	^true! !
+
+!KaeruEditorMorph methodsFor: 'event handling testing' stamp: 'DF 6/5/2025 18:54:45'!
+handlesMouseOver:aMouseButtonEvent
+	^true! !
+
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 7/11/2025 18:47:29'!
+initialize
+
+	super initialize. 
+	
+	mapper := KaeruKeyboardMapper instance.
+	
+	color := Color white.
+	
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	dy := font lineSpacing.
+	
+	dx := font widthOf:$M.
+	
+	wsize := 17.
+	
+	showCursor := true.
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+	
+	leapLeftDown := false.
+
+	leapRightDown := false.
+
+	leapAgainDown := false.
+
+	state := #editing.
+
+	match := true.! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 18:14:14'!
+Erase
+	^8! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:15'!
+LeftAlt
+	^152! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:51'!
+LeftCtrl
+	^222! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 19:10:02'!
+NewLine
+	^13! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/16/2025 21:13:12'!
+Page
+	^12! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:26:31'!
+RightAlt
+	^136! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 5/14/2025 16:27:02'!
+RightCtrl
+	^221! !
+
 !TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:28:56'!
 testIntersection
 
@@ -1564,7 +2277,7 @@ testIntersection
 	self assert: (bb to:bb) isEmpty
 	! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:44:46'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:51:44'!
 testHighlight
 
 	| text aKaeruEditor |
@@ -1579,7 +2292,7 @@ testHighlight
 	
 	aKaeruEditor leapRight.
 	
-	aKaeruEditor patternClear.
+	aKaeruEditor clearPattern.
 	
 	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
@@ -1587,10 +2300,10 @@ testHighlight
 	
 	aKaeruEditor highlight.
 	
-	self assert: aKaeruEditor selection = 'when to wish was to '.
+	self assert: aKaeruEditor selectionText = 'when to wish was to '.
 ! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 20:54:51'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:52:15'!
 testMoveHighlight
 
 	| text aKaeruEditor |
@@ -1605,7 +2318,7 @@ testMoveHighlight
 	
 	aKaeruEditor leapRight.
 	
-	aKaeruEditor patternClear.
+	aKaeruEditor clearPattern.
 	
 	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
@@ -1613,11 +2326,11 @@ testMoveHighlight
 	
 	aKaeruEditor highlight.
 	
-	self assert: aKaeruEditor selection = 'when to wish was to '.
+	self assert: aKaeruEditor selectionText = 'when to wish was to '.
 
 	text :=  'In olden times, have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a when to wish was to little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
-	aKaeruEditor patternClear.
+	aKaeruEditor clearPattern.
 	
 	' little' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 
@@ -2120,3 +2833,8 @@ testSearch
 eraseFrom: bIndex to: eIndex
 
 	^ self copyReplaceFrom: bIndex to: eIndex - 1 with: ''! !
+
+!Character methodsFor: '*FrogEditor' stamp: 'DF 7/11/2025 19:12:15'!
+isPageSeparator
+
+	^self codePoint = 12 "form feed"! !
