@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 2:53:21 pm'!
+'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 10:42:35 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 210!
+!provides: 'FrogEditor' 1 237!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -26,7 +26,7 @@ AddressRange class
 
 !classDefinition: #KaeruEditor category: #FrogEditor!
 Object subclass: #KaeruEditor
-	instanceVariableNames: 'cursor beginH endH textRepository pattern pcursor'
+	instanceVariableNames: 'cursor beginH endH textRepository pattern pcursor wide addreg'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -249,9 +249,10 @@ fromLine: aLine index: anInteger
 
 	^Address new line: aLine; index: anInteger ; yourself! !
 
-!AddressRange methodsFor: 'private' stamp: 'DF 5/15/2025 20:24:30'!
+!AddressRange methodsFor: 'private' stamp: 'DF 7/12/2025 19:42:25'!
 lineRange
-	^begin line to: end line! !
+	
+	^begin line to: end line ! !
 
 !AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:21:40'!
 = anAddressRange
@@ -283,19 +284,45 @@ end
 end: anAddress
 	end := anAddress! !
 
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 18:33:00'!
+expand
+
+	^AddressRange new begin: begin ; end: end inc ; yourself! !
+
 !AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/15/2025 20:22:05'!
 hash
 	"Hash is reimplemented because = is implemented."
 
 	^(begin hash hashMultiply + end hash) hashMultiply! !
 
-!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 5/26/2025 13:49:05'!
+!AddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 21:04:20'!
 intersect: anAddressRange
 
 	| commonLines beginIndex endIndex |
 	
+	begin line = end line 
+		ifTrue:[
+			^(anAddressRange begin line precedes: begin line)
+				and:[end line precedes: anAddressRange end line] ::
+					ifTrue:[
+						beginIndex := begin line = anAddressRange begin line 
+								ifTrue:[begin index max: anAddressRange begin index]
+								ifFalse:[begin index].
+						endIndex := end line = anAddressRange end line
+								ifTrue:[end index min: anAddressRange end index]
+								ifFalse:[end index].
+						
+						AddressRange new begin: (Address new line: begin line ; index: beginIndex ; yourself) ; end: (Address new line: begin line; index: endIndex; yourself) ; yourself
+						]
+					ifFalse:[
+						self emptyRange] ].
+
+	anAddressRange begin line = anAddressRange end line
+		ifTrue:[
+			^anAddressRange intersect: self].
+				
 	commonLines :=  self lineRange intersect: anAddressRange lineRange.
-	
+
 	commonLines isEmpty ifTrue:[^self emptyRange]. 
 	
 	commonLines begin = begin line and: [commonLines begin = anAddressRange begin line] ::
@@ -307,8 +334,8 @@ intersect: anAddressRange
 					beginIndex := begin index]
 				ifFalse:[
 					beginIndex := anAddressRange begin index] ].
-
-	commonLines end = end line and: [commonLines end = anAddressRange end line] ::
+	
+	commonLines end = end line and: [commonLines end = anAddressRange end line ] ::
 		ifTrue:[
 			endIndex := end index min: anAddressRange end index]
 		ifFalse:[
@@ -333,40 +360,49 @@ isEmpty
 	
 	^begin = end! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 14:21:03'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 21:18:34'!
 erase
 
-	| pp isWide |
+	| pp |
 	
-	isWide := beginH inc = cursor.
+	pp := beginH = endH
+		ifTrue:[
+			textRepository eraseFrom: beginH to: endH inc]
+		ifFalse:[
+			textRepository eraseFrom: beginH to: endH].
 	
-	pp := beginH = endH 
-			ifTrue:[ "the cursor is not extended"
-				textRepository eraseFrom: cursor to: cursor inc]
-			ifFalse:[ "the cursor is extended"
-				textRepository eraseFrom: beginH to: endH].
+	self isCursorWide 
+		ifTrue:[
+			pp ~= textRepository begin
+				ifTrue:[
+					cursor := pp dec]
+				ifFalse:[
+					cursor := pp.
+					wide := false ] ]
+		ifFalse:[
+			cursor := pp].
+	
+	beginH := cursor.
 		
-	cursor := isWide and:[pp ~= textRepository begin] ::
-		ifTrue:[ pp dec ]
-		ifFalse:[	pp ].
-	
-	beginH := isWide and:[cursor ~= textRepository begin] ::
-		ifTrue: [cursor dec]
-		ifFalse:[cursor].
-		
-	endH := beginH.
-			
+	endH := cursor.
+				
 	self triggerEvent: #cursor.
 			! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 14:04:56'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 22:32:20'!
 insert: aChar
 	
+	self isCursorNarrow 
+		ifTrue:[
+			cursor := cursor dec].
+		
 	cursor := textRepository insert: aChar after:cursor.
 	
-	beginH := cursor dec.
+	beginH := cursor.
 	
 	endH := beginH.
+	
+	wide := true.
 	
 	self triggerEvent: #cursor.! !
 
@@ -390,11 +426,42 @@ highlight
 	
 	self triggerEvent: #cursor.! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:28:00'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:37:51'!
 leapLeft
 
 	| text pp match |
+
+	beginH = endH "cursor is not extended, only search "
+		ifTrue:[
+
+			match := textRepository match: pattern contents from: cursor.
+			
+			match 
+				ifTrue:[
+					wide := false.
+					pcursor := cursor.
+					^true].
+			
+			pp := textRepository searchLeft: pattern contents from: cursor.
+
+			match := pp ~= cursor.
+
+			match 
+				ifTrue:[
+					wide := false.	
+					cursor := pp.
+
+					pcursor := cursor.
+
+					beginH := cursor.
+			
+					endH := cursor].
+			
+			^match
+		].
 	
+	"cursor is extended, also move text "
+				
 	text := textRepository textFrom: beginH to: endH.
 
 	self erase.
@@ -403,24 +470,54 @@ leapLeft
 
 	match := pp ~= cursor.
 	
+	match 
+		ifTrue:[
+			wide := false.
+		].
+	
 	cursor := pp.
 	
 	self insertAll: text. 
 
+	beginH := cursor.
+	
 	endH := cursor.
 	
-	beginH := endH.
-	
 	text size timesRepeat:[
-		beginH := beginH dec].
+		endH := endH inc].
 				
 	^match
 	! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:28:17'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:37:05'!
 leapRight
 
 	| text pp match |
+
+	beginH = endH "cursor is not extended, only search "
+		ifTrue:[
+
+			match := textRepository match: pattern contents from: cursor.
+			
+			match ifTrue:[
+				wide := false.
+				^true].
+
+			pp := textRepository searchRight: pattern contents from: cursor.
+
+			match := pp ~= cursor.
+	
+			match 
+				ifTrue:[
+					wide := false.	
+					cursor := pp.
+					
+					beginH := cursor.
+			
+					endH := cursor].
+			
+			^match
+		].
 	
 	text := textRepository textFrom: beginH to: endH.
 
@@ -429,16 +526,19 @@ leapRight
 	pp := textRepository searchRight: pattern contents from: cursor.
 
 	match := pp ~= cursor.
-	
-	pcursor := cursor.
+
+	match 
+		ifTrue:[
+			wide := false.
+		].
 	
 	cursor := pp.
 	
 	self insertAll: text. 
 
-	endH := cursor.
+	beginH := cursor.
 	
-	beginH := endH.
+	endH := cursor.
 	
 	text size timesRepeat:[
 		beginH := beginH dec].
@@ -446,11 +546,31 @@ leapRight
 	^match
 	! !
 
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 15:30:18'!
+pattern
+	^pattern contents! !
+
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/9/2025 21:57:02'!
 patternPut: aCharacter
 	pattern nextPut: aCharacter! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/11/2025 12:07:31'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:26:13'!
+restoreCursor
+
+	cursor := addreg at:1.
+	beginH := addreg at:2.
+	endH := addreg at:3.
+	wide := addreg at:4.! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:26:07'!
+storeCursor
+
+	addreg at:1 put: cursor.
+	addreg at:2 put: beginH.
+	addreg at:3 put: endH.
+	addreg at:4 put: wide.! !
+
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/12/2025 22:26:22'!
 initialize
 
 	textRepository := KaeruTextRepository new.
@@ -463,7 +583,11 @@ initialize
 	
 	endH := cursor.
 	
-	pattern := WriteStream on:''.! !
+	wide := false.
+	
+	pattern := WriteStream on:''.
+	
+	addreg := Array new:4.! !
 
 !KaeruEditor methodsFor: 'accessing' stamp: 'DF 7/11/2025 22:24:26'!
 begin
@@ -501,6 +625,14 @@ text
 textFrom: bAddr to: eAddr
 
 	^ textRepository textFrom: bAddr to: eAddr! !
+
+!KaeruEditor methodsFor: 'testing' stamp: 'DF 7/12/2025 20:22:46'!
+isCursorNarrow
+	^wide not! !
+
+!KaeruEditor methodsFor: 'testing' stamp: 'DF 7/12/2025 20:22:55'!
+isCursorWide
+	^ wide! !
 
 !KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
 isCopyKey: aMorphicEvent
@@ -979,32 +1111,8 @@ insert: aCharacter after: anAddress
 	
 	! !
 
-!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:35:43'!
-matchLeft: aString from: anAddress
-
-	|  pp ii ee |
-	
-	self assert: aString size > 0.
-	
-	ee := self end.
-		
-	ii := aString size.
-	
-	pp := anAddress.
-	
-	[ii ~= 0 and:[pp ~= ee] and:[pp char = (aString at: ii) ] ] 
-		whileTrue:[
-			ii := ii - 1.
-			pp := pp dec ].
-		
-	^ii == 0
-	
-	
-
-	! !
-
-!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:35:53'!
-matchRight: aString from: anAddress
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/12/2025 16:32:24'!
+match: aString from: anAddress
 
 	|  pp ii nn ee |
 	
@@ -1029,7 +1137,31 @@ matchRight: aString from: anAddress
 
 	! !
 
-!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:05:02'!
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:35:43'!
+matchLeft: aString from: anAddress
+
+	|  pp ii ee |
+	
+	self assert: aString size > 0.
+	
+	ee := self end.
+		
+	ii := aString size.
+	
+	pp := anAddress.
+	
+	[ii ~= 0 and:[pp ~= ee] and:[pp char = (aString at: ii) ] ] 
+		whileTrue:[
+			ii := ii - 1.
+			pp := pp dec ].
+		
+	^ii == 0
+	
+	
+
+	! !
+
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/12/2025 16:32:32'!
 searchLeft: aString from: anAddress
 
 	| pp |
@@ -1038,7 +1170,7 @@ searchLeft: aString from: anAddress
 	
 	pp := anAddress dec.
 	
-	[pp ~= anAddress and:[ (self matchLeft: aString from: pp) not ]  ] 
+	[pp ~= anAddress and:[ (self match: aString from: pp) not ]  ] 
 		whileTrue:[
 			pp := pp dec ].
 		
@@ -1046,7 +1178,7 @@ searchLeft: aString from: anAddress
 	
 	! !
 
-!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/9/2025 20:41:02'!
+!KaeruTextRepository methodsFor: 'searching' stamp: 'DF 7/12/2025 16:32:24'!
 searchRight: aString from: anAddress
 
 	| pp |
@@ -1055,7 +1187,7 @@ searchRight: aString from: anAddress
 	
 	pp := anAddress inc.
 	
-	[pp ~= anAddress and:[ (self matchRight: aString from: pp) not ]  ] 
+	[pp ~= anAddress and:[ (self match: aString from: pp) not ]  ] 
 		whileTrue:[
 			pp := pp inc ].
 			
@@ -1512,7 +1644,7 @@ hash
 
 	^(begin hash hashMultiply + end hash) hashMultiply! !
 
-!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/10/2025 21:50:06'!
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 21:04:35'!
 intersect: aLineRange
 
 	| b e p q  |
@@ -1540,6 +1672,11 @@ intersect: aLineRange
 				ifTrue:[
 					e := q].
 			q := q next ].
+	
+	p = q 
+		ifTrue:[
+			self assert: e isNil.
+			e := p].
 	
 	^LineRange new begin: b ; end: e ; yourself! !
 
@@ -1787,7 +1924,7 @@ PageSize
 	
 	^3! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:11'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 15:29:14'!
 keyDown: aMorphicEvent
 
 	mapper isLeapLeftKeyDown: aMorphicEvent ::
@@ -1812,11 +1949,11 @@ keyDown: aMorphicEvent
 		ifTrue:[
 			leapRightDown
 				ifTrue:[
-					machine creepRight]
+					"machine creepRight" ]
 				ifFalse:[
 					leapLeftDown
 						ifTrue:[
-							machine creepLeft] ].
+							"machine creepLeft" ] ].
 			self leap. 
 			self scrollToCursor ].
 	
@@ -1828,7 +1965,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 13:25:37'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 22:24:01'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -1859,16 +1996,16 @@ keyStroke: aKeyboardEvent
 		ifTrue:[
 			machine clearPattern.
 			match := true.
-			machine pushCursor.
+			machine storeCursor.
 			state := #building ].
 			
 	state = #building and:[keyv < 128] and:[match] ::
 		ifTrue:[
-			machine patternPut: keyv.
+			machine patternPut: (Character codePoint:keyv).
 			match := self leap.
 			match 
 				ifFalse:[
-					machine popCursor ]	].
+					machine restoreCursor ] ].
 	
 	self scrollToCursor.
 "	
@@ -1936,11 +2073,11 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 14:31:17'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 18:28:35'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
-	
+
 	ycursor := dy * (machine cursor line heightFrom: wbegin line).
 	
 	"A line that begins a page occupies two lines, its text is in the bottom line "
@@ -1948,8 +2085,12 @@ drawCursorOn: aCanvas
 	machine cursor line isFirstInPage
 		ifTrue:[
 			ycursor := ycursor + dy].
-		
+
+	"draw the blinking gray part "
+			
 	xcursor := dx * (machine cursor index) + (dx * machine leftMargin).
+	
+	machine isCursorNarrow ifTrue:[xcursor := xcursor - dx].
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
 
@@ -1957,7 +2098,7 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:10:46'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 20:54:41'!
 drawOn: aCanvas
 
 	[ | selection yy wend |
@@ -1967,15 +2108,14 @@ drawOn: aCanvas
 	super drawOn: aCanvas.
 
 	wend := self wend.
-	
-	selection := (wbegin to: wend) intersect: machine selection.
+
+	selection := (wbegin to: wend) intersect: machine selection expand.
 	
 	selection isEmpty
 		ifTrue:[
 			self drawOn:aCanvas textFrom: wbegin to: wend atHeight:0 highlight: false color: Color black]
 
-		ifFalse:[
-	
+		ifFalse:[ 			
 			yy := self drawOn: aCanvas textFrom: wbegin to: selection begin atHeight: 0 highlight: false color: Color black.
 	
 			yy := self drawOn: aCanvas textFrom: selection begin to: selection end atHeight: yy highlight: true color: Color white.
@@ -1987,13 +2127,17 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 13:20:16'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 21:15:28'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
-	| yy |
+	| yy nn |
 	
 	self assert: (anAddressB line == anAddressE line or: [ anAddressB line next == anAddressE line and: [ anAddressE index = 1 ] ]).
 	
+	nn := anAddressB line == anAddressE line
+		ifTrue:[anAddressE index - anAddressB index]
+		ifFalse:[anAddressB line length + 1 - anAddressB index ].
+			
 	yy := anAddressB line isFirstInPage
 			ifTrue:[aNumberHeight + dy]
 			ifFalse:[aNumberHeight].
@@ -2001,7 +2145,7 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 	aBoolean
 		ifTrue:[ | xb |
 			xb := dx * (anAddressB index - 1) + (dx * machine leftMargin).
-			aCanvas fillRectangle: (xb @ yy extent: (dx * (anAddressE index - anAddressB index)) @ dy) color: Color black].
+			aCanvas fillRectangle: (xb @ yy extent: (dx * nn) @ dy) color: Color black].
 		
 	aCanvas drawString: (machine textFrom: anAddressB to: anAddressE) at: dx * (anAddressB index - 1) + (dx * machine leftMargin) @ yy font: font color: aColor.
 
@@ -2031,7 +2175,7 @@ drawOn: aCanvas page: aPage breakAt: aNumberHeight
 	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ hh) font: pageNumberFont color: Color black.
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 19:18:17'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 21:30:36'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
 	| yy addr |
@@ -2044,10 +2188,13 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 		yy := self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addr nextLine.		
 		addr := addr nextLine ].
 
-	^self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
+	^addrE index = 1
+		ifTrue:[yy]
+		ifFalse:[
+			self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE]
 ! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 14:53:09'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 21:22:25'!
 erase
 
 	| selection bb ee |
@@ -2068,7 +2215,7 @@ erase
 	
 	bb == wbegin line
 		ifTrue:[
-			wbegin := machine cursor line ].
+			wbegin := Address fromLine:machine cursor line index:1 ].
 ! !
 
 !KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 19:27:20'!
@@ -2257,7 +2404,7 @@ RightAlt
 RightCtrl
 	^221! !
 
-!TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:28:56'!
+!TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 19:45:48'!
 testIntersection
 
 	| text aFrogEditor bb ee |
@@ -2281,7 +2428,9 @@ testIntersection
 	ee := bb inc inc.
 	
 	self assert: ee char = Character space.
-		
+	
+	self halt.
+	
 	self assert: ((bb to:ee) intersect: (aFrogEditor begin to: aFrogEditor end)) = (bb to:ee).
 	
 	self assert: (bb to:bb) isEmpty
@@ -2723,7 +2872,7 @@ testKissing
 	self assert: aFrogEditor invariant.
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:06'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 16:38:22'!
 testMatch
 
 	| text aFrogEditor bb |
@@ -2747,11 +2896,11 @@ testMatch
 	
 	bb := aFrogEditor begin.
 	
-	self assert: (aFrogEditor matchRight: 'In o' from: bb).
+	self assert: (aFrogEditor match: 'In o' from: bb).
 	
-	13 timesRepeat:[ bb := bb inc ].
+	9 timesRepeat:[ bb := bb inc ].
 	
-	self assert: (aFrogEditor matchLeft: 'times' from:bb).
+	self assert: (aFrogEditor match: 'times' from:bb).
 	
 ! !
 
@@ -2805,10 +2954,10 @@ testRandom
 
 	! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:07:13'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 15:59:43'!
 testSearch
 
-	| text aFrogEditor bb |
+	| text aFrogEditor bb pp qq |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
@@ -2828,9 +2977,17 @@ testSearch
 	self assert: aFrogEditor invariant.
 	
 	bb := aFrogEditor begin.
-	
-	self assert: (aFrogEditor searchRight: 'splashed' from: bb) ~= bb.
 
+	pp := aFrogEditor searchRight: 'splashed' from: bb.
+	
+	self assert: pp ~= bb.
+
+	qq := pp.
+	
+	'splashed' size timesRepeat:[qq := qq inc].
+	
+	self assert: (aFrogEditor textFrom: pp to: qq) = 'splashed'.
+	
 	self assert: (aFrogEditor searchRight: 'splazhed' from: bb) = bb.
 	
 	self assert: (aFrogEditor searchLeft: 'splashed' from:bb) ~= bb.
