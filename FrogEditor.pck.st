@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 10:42:35 pm'!
+'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 11:06:25 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 237!
+!provides: 'FrogEditor' 1 239!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -1553,9 +1553,9 @@ precedes: aLine
 startsWithSeparator
 	^text first isSeparator! !
 
-!Line methodsFor: 'accessing' stamp: 'DF 7/12/2025 14:52:27'!
+!Line methodsFor: 'accessing' stamp: 'DF 7/12/2025 22:58:38'!
 height
-	^ self isFirstInPage ifTrue:[2] ifFalse:[1]
+	^ self isLastInPage ifTrue:[2] ifFalse:[1]
 		! !
 
 !Line methodsFor: 'accessing' stamp: 'DF 7/12/2025 14:30:28'!
@@ -2073,19 +2073,19 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 18:28:35'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 22:59:25'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
 
 	ycursor := dy * (machine cursor line heightFrom: wbegin line).
 	
-	"A line that begins a page occupies two lines, its text is in the bottom line "
+	"A line that ends a page occupies two lines, its text is in the top line "
 	
-	machine cursor line isFirstInPage
+	"machine cursor line isLastInPage
 		ifTrue:[
 			ycursor := ycursor + dy].
-
+"
 	"draw the blinking gray part "
 			
 	xcursor := dx * (machine cursor index) + (dx * machine leftMargin).
@@ -2127,7 +2127,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 21:15:28'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 23:03:41'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy nn |
@@ -2138,9 +2138,7 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 		ifTrue:[anAddressE index - anAddressB index]
 		ifFalse:[anAddressB line length + 1 - anAddressB index ].
 			
-	yy := anAddressB line isFirstInPage
-			ifTrue:[aNumberHeight + dy]
-			ifFalse:[aNumberHeight].
+	yy := aNumberHeight.
 			
 	aBoolean
 		ifTrue:[ | xb |
@@ -2153,9 +2151,10 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 		ifTrue:[
 			aCanvas drawString: (Character codePoint:182) asString at:dx * (anAddressB line length - 1) + (dx * machine leftMargin) @ yy font: font color: aColor ].
 
-	anAddressB line isFirstInPage
+	anAddressB line isLastInPage
 		ifTrue:[ 
-			self drawOn: aCanvas page: anAddressB line page breakAt: aNumberHeight. ].
+			yy := yy + dy.
+			self drawOn: aCanvas page: anAddressB line page breakAt: yy. ].
 	
 	^  anAddressE line ~= anAddressB line
 		ifTrue:[yy + dy]
@@ -2164,7 +2163,7 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 		
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 19:15:49'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 23:05:43'!
 drawOn: aCanvas page: aPage breakAt: aNumberHeight
 
 	| hh |
@@ -2172,7 +2171,7 @@ drawOn: aCanvas page: aPage breakAt: aNumberHeight
 	hh := aNumberHeight + (0.25*dy).
 	aCanvas fillRectangle: (0@hh extent: self morphWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
 	
-	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ hh) font: pageNumberFont color: Color black.
+	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ (hh - (0.125*dy))) font: pageNumberFont color: Color black.
 ! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 21:30:36'!
