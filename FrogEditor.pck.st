@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 11 July 2025 at 11:29:10 pm'!
+'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 2:53:21 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 200!
+!provides: 'FrogEditor' 1 210!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -333,31 +333,38 @@ isEmpty
 	
 	^begin = end! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/10/2025 21:42:03'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 14:21:03'!
 erase
 
-	| pp |
+	| pp isWide |
 	
-	pp := textRepository eraseFrom: beginH to: endH.
+	isWide := beginH inc = cursor.
 	
-	cursor ~= beginH and:[pp ~= textRepository begin] ::
-		ifTrue:[
-			beginH := pp dec ]
-		ifFalse:[
-			beginH := pp ].
-
-	cursor := pp.
+	pp := beginH = endH 
+			ifTrue:[ "the cursor is not extended"
+				textRepository eraseFrom: cursor to: cursor inc]
+			ifFalse:[ "the cursor is extended"
+				textRepository eraseFrom: beginH to: endH].
+		
+	cursor := isWide and:[pp ~= textRepository begin] ::
+		ifTrue:[ pp dec ]
+		ifFalse:[	pp ].
+	
+	beginH := isWide and:[cursor ~= textRepository begin] ::
+		ifTrue: [cursor dec]
+		ifFalse:[cursor].
+		
 	endH := beginH.
 			
 	self triggerEvent: #cursor.
 			! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/10/2025 20:43:19'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 14:04:56'!
 insert: aChar
-
-	beginH := cursor.
 	
 	cursor := textRepository insert: aChar after:cursor.
+	
+	beginH := cursor dec.
 	
 	endH := beginH.
 	
@@ -1341,9 +1348,9 @@ isDeleted
 
 	^text isNil! !
 
-!Line methodsFor: 'testing' stamp: 'DF 7/7/2025 23:11:41'!
+!Line methodsFor: 'testing' stamp: 'DF 7/12/2025 13:17:42'!
 isFirstInPage
-	^prev page notNil! !
+	^prev isLastInPage! !
 
 !Line methodsFor: 'testing' stamp: 'DF 7/7/2025 19:38:49'!
 isInPage
@@ -1414,12 +1421,12 @@ precedes: aLine
 startsWithSeparator
 	^text first isSeparator! !
 
-!Line methodsFor: 'accessing' stamp: 'DF 7/9/2025 22:23:18'!
+!Line methodsFor: 'accessing' stamp: 'DF 7/12/2025 14:52:27'!
 height
-	^ page ifNil:[1] ifNotNil:[2]
+	^ self isFirstInPage ifTrue:[2] ifFalse:[1]
 		! !
 
-!Line methodsFor: 'accessing' stamp: 'DF 7/11/2025 18:53:28'!
+!Line methodsFor: 'accessing' stamp: 'DF 7/12/2025 14:30:28'!
 heightFrom: aLine
 
 	| height pp |
@@ -1821,7 +1828,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/11/2025 18:48:38'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 13:25:37'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
@@ -1835,10 +1842,10 @@ keyStroke: aKeyboardEvent
 					^machine copy].	
 			mapper isEnterKey: aKeyboardEvent ::
 				ifTrue:[
-					machine insert: String crString].
+					machine insert: Character cr ].
 			mapper isPageBreakKey: aKeyboardEvent ::
 				ifTrue:[
-					machine insert: (String with: Character newPage) ].
+					machine insert: Character newPage ].
 			mapper isEraseKey: aKeyboardEvent ::
 				ifTrue:[
 					self erase]
@@ -1846,7 +1853,7 @@ keyStroke: aKeyboardEvent
 					keyv > 31
 						ifTrue:[ | cc |
 							cc := Character codePoint: keyv.
-							machine insert: cc asString] ] ].
+							machine insert: cc ] ] ].
 	
 	state = #init and: [keyv < 128 ] :: 
 		ifTrue:[
@@ -1929,7 +1936,7 @@ stopBlinking
 		showCursor := false.
 		textCursorRect ifNotNil: [ :r | self invalidateLocalRect: r ]]! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:11:24'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 14:31:17'!
 drawCursorOn: aCanvas
 
 	| xcursor ycursor |
@@ -1938,11 +1945,11 @@ drawCursorOn: aCanvas
 	
 	"A line that begins a page occupies two lines, its text is in the bottom line "
 	
-	machine cursor line isLastInPage
+	machine cursor line isFirstInPage
 		ifTrue:[
 			ycursor := ycursor + dy].
 		
-	xcursor := dx * (machine cursor index) - dx + (dx * machine leftMargin).
+	xcursor := dx * (machine cursor index) + (dx * machine leftMargin).
 	
 	textCursorRect := xcursor@ycursor extent: dx@dy.
 
@@ -1980,14 +1987,14 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/11/2025 23:06:45'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 13:20:16'!
 drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddressB to: anAddressE 
 
 	| yy |
 	
 	self assert: (anAddressB line == anAddressE line or: [ anAddressB line next == anAddressE line and: [ anAddressE index = 1 ] ]).
 	
-	yy := anAddressB line isLastInPage
+	yy := anAddressB line isFirstInPage
 			ifTrue:[aNumberHeight + dy]
 			ifFalse:[aNumberHeight].
 			
@@ -2002,7 +2009,7 @@ drawOn: aCanvas at: aNumberHeight color: aColor highlight: aBoolean from: anAddr
 		ifTrue:[
 			aCanvas drawString: (Character codePoint:182) asString at:dx * (anAddressB line length - 1) + (dx * machine leftMargin) @ yy font: font color: aColor ].
 
-	anAddressB line isLastInPage
+	anAddressB line isFirstInPage
 		ifTrue:[ 
 			self drawOn: aCanvas page: anAddressB line page breakAt: aNumberHeight. ].
 	
@@ -2040,7 +2047,7 @@ drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color
 	^self drawOn: aCanvas at: yy color: aColor highlight: aBoolean from: addr to: addrE.
 ! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:40:47'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 14:53:09'!
 erase
 
 	| selection bb ee |
@@ -2048,6 +2055,7 @@ erase
 	" If the selection we are about to erase includes wbegin we must set wbegin to 
 	the line immediately after the erased lines.
 	"
+	
 	selection := machine selection.
 	
 	bb := selection begin line.
@@ -2139,7 +2147,7 @@ scrollForwardToCursor
 	
 	wbegin := Address fromLine: pp index:1.! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 7/11/2025 22:16:06'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 7/12/2025 13:45:59'!
 scrollToCursor
 
 	"
@@ -2147,7 +2155,7 @@ scrollToCursor
 	
 	"
 	
-	| pp ee |
+	| pp ii |
 	
 	"if wbegin is a sentinel it means that the text was empty and an insert adds the first real line to the text."
 	
@@ -2156,15 +2164,17 @@ scrollToCursor
 	
 	pp := wbegin.
 	
-	ee := self wend.
+	ii := 0.
 	
-	[pp ~= ee and: [pp line ~= machine cursor line ] ] whileTrue:[ pp := pp nextLine ].
+	[ii < wsize and:[pp line isSentinel not] and: [pp line ~= machine cursor line ] ] whileTrue:[
+		ii := ii + pp line height.
+		pp := pp nextLine ].
 	
-	pp line = machine cursor line ifTrue:[^self].
+	ii < wsize and: [pp line = machine cursor line] :: ifTrue:[^self].
 	
 	" otherwise, see where to scroll "
 	
-	ee line precedes: machine cursor line ::
+	self wend line precedes: machine cursor line ::
 		ifTrue:[
 			^self scrollForwardToCursor ].
 		
