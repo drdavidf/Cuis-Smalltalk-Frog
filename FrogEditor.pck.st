@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 July 2025 at 11:06:25 pm'!
+'From Cuis7.3 [latest update: #7041] on 16 July 2025 at 6:25:50 pm'!
 'Description '!
-!provides: 'FrogEditor' 1 239!
+!provides: 'FrogEditor' 1 284!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -26,7 +26,7 @@ AddressRange class
 
 !classDefinition: #KaeruEditor category: #FrogEditor!
 Object subclass: #KaeruEditor
-	instanceVariableNames: 'cursor beginH endH textRepository pattern pcursor wide addreg'
+	instanceVariableNames: 'cursor beginH endH textRepository pattern wide addreg'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -116,7 +116,7 @@ Page class
 
 !classDefinition: #KaeruEditorMorph category: #FrogEditor!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont pageWidth'
+	instanceVariableNames: 'font machine dy wbegin wsize showCursor textCursorRect dx cursorColor leapLeftDown leapRightDown leapAgainDown state match rulerCursorRect mapper pageNumberFont pageWidth highlight keystroke'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'FrogEditor'!
@@ -154,6 +154,14 @@ TestCase subclass: #TestKaeruTextRepository
 TestKaeruTextRepository class
 	instanceVariableNames: ''!
 
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 15:51:47'!
+< anAddress
+
+	self = anAddress 
+		ifTrue:[^false].
+		
+	^self <= anAddress! !
 
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 6/14/2025 11:43:33'!
 <= anAddress
@@ -360,16 +368,12 @@ isEmpty
 	
 	^begin = end! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 21:18:34'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 11:50:49'!
 erase
 
 	| pp |
 	
-	pp := beginH = endH
-		ifTrue:[
-			textRepository eraseFrom: beginH to: endH inc]
-		ifFalse:[
-			textRepository eraseFrom: beginH to: endH].
+	pp := textRepository eraseFrom: beginH to: endH.
 	
 	self isCursorWide 
 		ifTrue:[
@@ -384,12 +388,11 @@ erase
 	
 	beginH := cursor.
 		
-	endH := cursor.
+	endH := cursor inc.
 				
-	self triggerEvent: #cursor.
-			! !
+	self triggerEvent: #cursor.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/12/2025 22:32:20'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 11:49:11'!
 insert: aChar
 	
 	self isCursorNarrow 
@@ -400,7 +403,7 @@ insert: aChar
 	
 	beginH := cursor.
 	
-	endH := beginH.
+	endH := cursor inc.
 	
 	wide := true.
 	
@@ -412,139 +415,142 @@ insertAll: aString
 	aString do:[:eachChar |
 		self insert: eachChar ]! !
 
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 18:25:47'!
+move
+
+	| text distance |
+	
+	"move text from range [beginH, endH) to immediately after cursor
+		
+	first we calculate the distance from the to-be-erased block to cursor,
+	then we erase, then we move the cursor to the same relative distance.
+
+	examples:
+	
+	beginH = 12, endH = 15, cursor = 9, delta = -3
+	=>
+	distance = -3
+	
+	after erasing the range, the cursor will be at (abstract) index 12.
+	decreasing it by 3 will give abstract index 9.
+	
+	12 - 9 = 3 = - delta as required.
+	
+	beginH = 12, endH = 15, cursor = 17, delta = 2
+	=>
+	distance = 2
+	
+	after erasing the range, the cursor will be at (abstract) index 12.
+	increasing it by 2 will give abstract index 14.
+	
+	14 - 12 = 2 = delta as required.
+	
+	"
+	
+	self assert: (cursor < beginH or: [endH <= cursor]).
+	
+	cursor < beginH 
+		ifTrue:[
+			distance := 0 - (beginH distanceFrom: cursor)]
+		ifFalse:[
+			distance := cursor distanceFrom: endH].
+		
+	text := textRepository textFrom: beginH to: endH.
+
+	self erase.
+
+	distance < 0
+		ifTrue:[
+			0 - distance timesRepeat: [cursor := cursor dec] ]
+		ifFalse:[
+			distance timesRepeat: [cursor := cursor inc ] ].
+		
+	self insertAll: text. 
+	
+	endH := cursor inc.
+	beginH := endH.
+	text size timesRepeat:[
+		beginH := beginH dec].
+	
+
+	! !
+
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/11/2025 22:51:24'!
 clearPattern
 	pattern resetContents! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/10/2025 20:29:10'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/16/2025 17:03:57'!
+cursorToSelectionBegin
+
+	cursor := beginH.
+	endH := beginH inc.	
+	wide := false.! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/16/2025 17:39:17'!
+cursorToSelectionEnd
+
+	cursor := endH dec.
+	beginH := cursor.	
+	wide := false.! !
+
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/14/2025 21:19:37'!
 highlight
 
-	self assert: pcursor notNil.
+	self assert: (addreg at: 1 :: notNil).
+		
+	beginH := addreg at: 1.
+	endH := cursor inc.
 	
-	beginH := pcursor.
-	endH := cursor.
+	wide := true.
 	
 	self triggerEvent: #cursor.! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:37:51'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/16/2025 15:04:27'!
 leapLeft
 
-	| text pp match |
+	| pp match |
 
-	beginH = endH "cursor is not extended, only search "
+	match := textRepository match: pattern contents from: cursor.
+
+	match 
 		ifTrue:[
+			wide := false.
+			^true].
 
-			match := textRepository match: pattern contents from: cursor.
-			
-			match 
-				ifTrue:[
-					wide := false.
-					pcursor := cursor.
-					^true].
-			
-			pp := textRepository searchLeft: pattern contents from: cursor.
-
-			match := pp ~= cursor.
-
-			match 
-				ifTrue:[
-					wide := false.	
-					cursor := pp.
-
-					pcursor := cursor.
-
-					beginH := cursor.
-			
-					endH := cursor].
-			
-			^match
-		].
-	
-	"cursor is extended, also move text "
-				
-	text := textRepository textFrom: beginH to: endH.
-
-	self erase.
-	
 	pp := textRepository searchLeft: pattern contents from: cursor.
 
 	match := pp ~= cursor.
-	
+
 	match 
 		ifTrue:[
-			wide := false.
-		].
-	
-	cursor := pp.
-	
-	self insertAll: text. 
+			wide := false.	
+			cursor := pp].
 
-	beginH := cursor.
-	
-	endH := cursor.
-	
-	text size timesRepeat:[
-		endH := endH inc].
-				
 	^match
-	! !
+! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:37:05'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/16/2025 15:04:39'!
 leapRight
 
-	| text pp match |
-
-	beginH = endH "cursor is not extended, only search "
-		ifTrue:[
-
-			match := textRepository match: pattern contents from: cursor.
-			
-			match ifTrue:[
-				wide := false.
-				^true].
-
-			pp := textRepository searchRight: pattern contents from: cursor.
-
-			match := pp ~= cursor.
+	| pp match |
 	
-			match 
-				ifTrue:[
-					wide := false.	
-					cursor := pp.
-					
-					beginH := cursor.
+	match := textRepository match: pattern contents from: cursor.
 			
-					endH := cursor].
-			
-			^match
-		].
-	
-	text := textRepository textFrom: beginH to: endH.
+	match ifTrue:[
+		wide := false.
+		^true].
 
-	self erase.
-	
 	pp := textRepository searchRight: pattern contents from: cursor.
 
 	match := pp ~= cursor.
-
+	
 	match 
 		ifTrue:[
-			wide := false.
-		].
-	
-	cursor := pp.
-	
-	self insertAll: text. 
-
-	beginH := cursor.
-	
-	endH := cursor.
-	
-	text size timesRepeat:[
-		beginH := beginH dec].
-				
-	^match
-	! !
+			wide := false.	
+			cursor := pp].
+			
+			^match
+! !
 
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 15:30:18'!
 pattern
@@ -562,6 +568,14 @@ restoreCursor
 	endH := addreg at:3.
 	wide := addreg at:4.! !
 
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/16/2025 17:04:44'!
+selectionToCursor
+
+	beginH := cursor.
+	endH := cursor inc.
+	wide := false.
+	! !
+
 !KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/12/2025 22:26:07'!
 storeCursor
 
@@ -570,7 +584,7 @@ storeCursor
 	addreg at:3 put: endH.
 	addreg at:4 put: wide.! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/12/2025 22:26:22'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 7/16/2025 11:50:55'!
 initialize
 
 	textRepository := KaeruTextRepository new.
@@ -581,7 +595,7 @@ initialize
 	
 	beginH := cursor.
 	
-	endH := cursor.
+	endH := cursor inc.
 	
 	wide := false.
 	
@@ -625,6 +639,13 @@ text
 textFrom: bAddr to: eAddr
 
 	^ textRepository textFrom: bAddr to: eAddr! !
+
+!KaeruEditor methodsFor: 'testing' stamp: 'DF 7/16/2025 13:28:55'!
+invariant
+
+	textRepository invariant.
+	
+	^true! !
 
 !KaeruEditor methodsFor: 'testing' stamp: 'DF 7/12/2025 20:22:46'!
 isCursorNarrow
@@ -1644,7 +1665,7 @@ hash
 
 	^(begin hash hashMultiply + end hash) hashMultiply! !
 
-!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 21:04:35'!
+!LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 12:37:36'!
 intersect: aLineRange
 
 	| b e p q  |
@@ -1678,7 +1699,10 @@ intersect: aLineRange
 			self assert: e isNil.
 			e := p].
 	
-	^LineRange new begin: b ; end: e ; yourself! !
+	^b isNil or:[e isNil] ::
+		ifTrue:[LineRange new begin: nil; end:nil ; yourself]
+		ifFalse:[LineRange new begin: b ; end: e ; yourself]
+		! !
 
 !LineRange methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 11:46:17'!
 invariant
@@ -1924,9 +1948,12 @@ PageSize
 	
 	^3! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 15:29:14'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 18:10:31'!
 keyDown: aMorphicEvent
 
+	highlight := false.
+	keystroke := false.
+		
 	mapper isLeapLeftKeyDown: aMorphicEvent ::
 		ifTrue:[ leapLeftDown := true].
 
@@ -1938,6 +1965,7 @@ keyDown: aMorphicEvent
 
 	leapRightDown and: [ leapLeftDown ] ::
 		ifTrue:[
+			highlight := true.
 			machine highlight.
 			self redrawNeeded ].
 	
@@ -1961,14 +1989,15 @@ keyDown: aMorphicEvent
 		ifTrue:[
 			state := #init].
 	
-	"Transcript show: ('key: down. state: {1}. code: {5} . leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown . aMorphicEvent keyValue }); cr."
 
 ! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/12/2025 22:24:01'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 18:10:24'!
 keyStroke: aKeyboardEvent
 
 	| keyv |
+	
+	keystroke := true.
 	
 	keyv := aKeyboardEvent keyValue.
 
@@ -2012,27 +2041,57 @@ keyStroke: aKeyboardEvent
 	self removeAlarm: #autoSave.
 	
 	self addAlarm: #autoSave after: 3*60*1000."  "3 min. in millisec"
+
 ! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 5/31/2025 12:32:56'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 17:31:12'!
 keyUp: aMorphicEvent
 
+	"first compare the current state of the leap keys to the new event. "
+	
+	(mapper isLeapLeftKeyUp: aMorphicEvent) and: [ leapLeftDown ] and: [ leapRightDown not ]  ::
+		ifTrue:[
+			self leftLeapWentUp ].
+
+	(mapper isLeapRightKeyUp: aMorphicEvent) and: [leapLeftDown not] and: [ leapRightDown ] :: 
+		ifTrue:[ 
+			self rightLeapWentUp ].
+
+	"now update the state to reflect the new event. "
+	
 	mapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[ leapLeftDown := false].
+		ifTrue:[
+			leapLeftDown := false].
 
 	mapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[ leapRightDown := false].
-
+		ifTrue:[ 
+			leapRightDown := false].
+		
 	mapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[ leapAgainDown := false].
 
 	leapRightDown = false and: [ leapLeftDown = false ] ::
 		ifTrue:[
 			state := #editing].
-
-	"Transcript show: ('key: up. state: {1}. leap again: {2}. leap left:{3} . leap right:{4} ' format:{ state . leapAgainDown . leapLeftDown . leapRightDown  }); cr."
 		
 	self redrawNeeded 
+! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 18:16:13'!
+leftLeapWentUp
+	
+	highlight
+		ifFalse:[ "we are not in the middle of a highlight operation"
+			keystroke
+				ifTrue:[
+					machine selection begin inc = machine selection end
+						ifFalse:[machine move] ]
+				ifFalse:[
+					machine cursorToSelectionBegin] ].
+	
+	self redrawNeeded
+	
+	
 ! !
 
 !KaeruEditorMorph methodsFor: 'events' stamp: 'DF 6/5/2025 18:55:06'!
@@ -2044,6 +2103,23 @@ mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
+
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 18:16:48'!
+rightLeapWentUp
+
+	highlight 
+		ifFalse:[
+			keystroke
+				ifTrue:[
+					machine selection begin inc = machine selection end
+						ifFalse:[machine move] ]
+				ifFalse:[
+					machine cursorToSelectionEnd] ].
+	
+	self redrawNeeded
+	
+	
+! !
 
 !KaeruEditorMorph methodsFor: 'blinking' stamp: 'DF 5/16/2025 18:51:34'!
 onBlinkCursor
@@ -2098,18 +2174,20 @@ drawCursorOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 20:54:41'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/16/2025 12:41:15'!
 drawOn: aCanvas
 
 	[ | selection yy wend |
 		
 	self assert: machine notNil.
 	
+	self assert: wbegin line isDeleted not.
+	
 	super drawOn: aCanvas.
 
 	wend := self wend.
 
-	selection := (wbegin to: wend) intersect: machine selection expand.
+	selection := (wbegin to: wend) intersect: machine selection.
 	
 	selection isEmpty
 		ifTrue:[
@@ -2174,11 +2252,14 @@ drawOn: aCanvas page: aPage breakAt: aNumberHeight
 	aCanvas drawString: ('{1}' format:{aPage pageNumber}) atCenterX: (self morphWidth / 2.0 @ (hh - (0.125*dy))) font: pageNumberFont color: Color black.
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/12/2025 21:30:36'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 7/16/2025 12:16:46'!
 drawOn: aCanvas textFrom: addrB to: addrE atHeight: hh highlight: aBoolean color: aColor
 
 	| yy addr |
 
+	self assert: addrB line notNil.
+	self assert: addrE line notNil.
+	
 	addr := addrB.
 	yy := hh.
 	
@@ -2217,10 +2298,10 @@ erase
 			wbegin := Address fromLine:machine cursor line index:1 ].
 ! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 19:27:20'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 18:07:20'!
 leap
 
-	^leapLeftDown 
+	match := leapLeftDown 
 		ifTrue:[
 			machine pattern first = Character newPage 
 				ifTrue:[
@@ -2237,6 +2318,16 @@ leap
 							machine leapRight] ]
 				ifFalse:[
 					self assert: false. "we must not leap when both alts are pressed" ] ].
+
+	machine selection begin inc = machine selection end
+		ifTrue:[
+			machine selectionToCursor].
+					
+	wbegin line isDeleted
+		ifTrue:[ 
+			wbegin := machine selection begin].
+	
+	^match
 			
 	
 ! !
@@ -2435,7 +2526,65 @@ testIntersection
 	self assert: (bb to:bb) isEmpty
 	! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:51:44'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 16:25:47'!
+abstractIndexOf: anAddress base: anInitialAddress
+
+	^(anAddress distanceFrom: anInitialAddress) + 1
+	! !
+
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 13:37:54'!
+testError
+
+	| text aKaeruEditor |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	aKaeruEditor := KaeruEditor new.
+
+	aKaeruEditor insertAll: text.
+	
+	'in' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapLeft.
+
+	aKaeruEditor clearPattern.
+
+	'h' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapLeft.
+
+	aKaeruEditor clearPattern.
+
+	'in' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapLeft.
+	
+	aKaeruEditor storeCursor.
+	
+	aKaeruEditor clearPattern.
+	
+	'it' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor highlight.
+	
+	self assert: aKaeruEditor selectionText = 'in the air and catching i'.
+
+	aKaeruEditor clearPattern.
+	
+	'old' do:[:eachChar | aKaeruEditor patternPut: eachChar].
+		
+	aKaeruEditor leapLeft.
+
+	'olde' do:[:eachChar | aKaeruEditor patternPut: eachChar].
+		
+	aKaeruEditor leapLeft.
+	
+	self assert: aKaeruEditor invariant.
+	! !
+
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 10:46:12'!
 testHighlight
 
 	| text aKaeruEditor |
@@ -2447,12 +2596,14 @@ testHighlight
 	aKaeruEditor insertAll: text.
 	
 	'when' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
-	
+		
 	aKaeruEditor leapRight.
+
+	aKaeruEditor storeCursor.
 	
 	aKaeruEditor clearPattern.
 	
-	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	' have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
 	aKaeruEditor leapRight.
 	
@@ -2461,7 +2612,50 @@ testHighlight
 	self assert: aKaeruEditor selectionText = 'when to wish was to '.
 ! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 22:52:15'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 16:31:30'!
+testMove
+
+	| text aKaeruEditor ae ac |
+		
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.
+	
+	aKaeruEditor := KaeruEditor new.
+
+	aKaeruEditor insertAll: text.
+	
+	'when' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+		
+	aKaeruEditor leapRight.
+
+	aKaeruEditor storeCursor.
+	
+	aKaeruEditor clearPattern.
+	
+	' have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+	
+	aKaeruEditor highlight.
+	
+	self assert: aKaeruEditor selectionText = 'when to wish was to '.
+
+	aKaeruEditor clearPattern.
+
+	'saw' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapRight.
+
+	ae := self abstractIndexOf: aKaeruEditor selection end base: aKaeruEditor end.
+	
+	ac := self abstractIndexOf: aKaeruEditor cursor base: aKaeruEditor end.
+
+	aKaeruEditor move.
+
+	
+	self assert: aKaeruEditor text = 'In olden times, have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he when to wish was to saw her often, was enchanted every time she came out into the sunshine.'.
+	! !
+
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 10:46:28'!
 testMoveHighlight
 
 	| text aKaeruEditor |
@@ -2476,9 +2670,11 @@ testMoveHighlight
 	
 	aKaeruEditor leapRight.
 	
+	aKaeruEditor storeCursor.
+	
 	aKaeruEditor clearPattern.
 	
-	'have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	' have' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
 	aKaeruEditor leapRight.
 	
@@ -2490,7 +2686,7 @@ testMoveHighlight
 
 	aKaeruEditor clearPattern.
 	
-	' little' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	'little' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 
 	aKaeruEditor leapRight.
 	
