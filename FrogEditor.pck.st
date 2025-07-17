@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 July 2025 at 6:25:50 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 July 2025 at 8:59:11 am'!
 'Description '!
-!provides: 'FrogEditor' 1 284!
+!provides: 'FrogEditor' 1 296!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -237,6 +237,20 @@ line
 line: aLine
 	line := aLine! !
 
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 08:50:48'!
+max: anAddress
+
+	^self <= anAddress
+		ifTrue:[anAddress]
+		ifFalse:[self]! !
+
+!Address methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 08:50:35'!
+min: anAddress
+
+	^self <= anAddress
+		ifTrue:[self]
+		ifFalse:[anAddress]! !
+
 !Address methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:09:49'!
 nextLine
 	^Address fromLine: line next index: 1! !
@@ -415,7 +429,7 @@ insertAll: aString
 	aString do:[:eachChar |
 		self insert: eachChar ]! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 18:25:47'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 23:00:08'!
 move
 
 	| text distance |
@@ -493,13 +507,18 @@ cursorToSelectionEnd
 	beginH := cursor.	
 	wide := false.! !
 
-!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/14/2025 21:19:37'!
+!KaeruEditor methodsFor: 'leaping' stamp: 'DF 7/17/2025 08:56:18'!
 highlight
 
 	self assert: (addreg at: 1 :: notNil).
 		
-	beginH := addreg at: 1.
-	endH := cursor inc.
+	beginH := (addreg at: 1) min: cursor.
+	
+	endH := (addreg at: 1) max: cursor.
+	
+	cursor := endH. "always move to the end of the selection"
+	
+	endH := endH inc.
 	
 	wide := true.
 	
@@ -801,7 +820,7 @@ checkLines
 
 	^true! !
 
-!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/7/2025 23:41:29'!
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/16/2025 22:56:21'!
 checkPages
 
 	| pp |
@@ -816,6 +835,7 @@ checkPages
 	[pp ~= lastPage] whileTrue:[
 		pp invariant.
 		pp isOverflow ifTrue:[self halt].
+		pp isUnderflow ifTrue:[self halt].
 		pp := pp next ].
 
 	^true! !
@@ -848,6 +868,21 @@ invariant
 		pp := pp next ].
 	
 	^true! !
+
+!KaeruTextRepository methodsFor: 'testing' stamp: 'DF 7/16/2025 22:56:40'!
+reportPages
+
+	| pp |
+	
+	pp := lastPage.
+	
+	pp := pp next.
+	
+	[pp ~= lastPage] whileTrue:[
+		Transcript show: ('page no. {1} has {2} lines' format:{pp pageNumber . pp countLines }) ; cr.
+		pp := pp next ].
+
+! !
 
 !KaeruTextRepository methodsFor: 'accessing' stamp: 'DF 6/12/2025 14:29:21'!
 begin
@@ -913,7 +948,7 @@ initialize
 	end page: lastPage.
 	! !
 
-!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/8/2025 09:14:14'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/17/2025 08:58:56'!
 eraseLinesFrom: bLine to: eLine
 
 	| bpage epage |
@@ -940,14 +975,20 @@ eraseLinesFrom: bLine to: eLine
 	eLine prev: bLine prev.
 
 	"the order here is important because shiftleft can delete epage
-	making it unusable for checking isUnderflow "
+	making it unusable for checking isOverflow "
 	
 	epage isOverflow ifTrue:[ 
 		epage shiftRight].
 
+	epage prev isUnderflow ifTrue:[
+		epage prev shiftLeft].
+	
 	epage isUnderflow ifTrue:[
 		epage shiftLeft].
 	
+	self assert: epage isUnderflow not.
+	
+	self assert: self checkPages.
 	! !
 
 !KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/7/2025 21:05:33'!
@@ -1061,7 +1102,7 @@ repackAfterErase: bLine to: eLine
 	
 	! !
 
-!KaeruTextRepository methodsFor: 'editing' stamp: 'DF 7/8/2025 08:32:30'!
+!KaeruTextRepository methodsFor: 'editing' stamp: 'DF 7/16/2025 23:07:13'!
 eraseFrom: bAddress to: eAddress
 
 	|  start dd |
@@ -1880,23 +1921,27 @@ pushNewPage
 
 	^aNewPage! !
 
-!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/7/2025 21:54:49'!
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 08:38:49'!
 shiftLeft
 
 	self assert: self isLast not.
 	
-	lastLine next isSentinel
-		ifTrue:[
-			self delete]
-		ifFalse:[
+	[self isUnderflow and:[lastLine next isSentinel not ] ]
+		whileTrue:[
 			lastLine page: nil.
 			
 			lastLine := lastLine next.
 			
 			lastLine page: self.
-			
+						
 			next isUnderflow
-				ifTrue:[next shiftLeft] ]
+				ifTrue:[next shiftLeft] ] .
+	
+	lastLine next isSentinel
+		ifTrue:[ 
+			^self delete].
+
+	self assert: self isUnderflow not.
 	
 	
 ! !
@@ -2044,7 +2089,7 @@ keyStroke: aKeyboardEvent
 
 ! !
 
-!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 17:31:12'!
+!KaeruEditorMorph methodsFor: 'events' stamp: 'DF 7/16/2025 19:25:53'!
 keyUp: aMorphicEvent
 
 	"first compare the current state of the leap keys to the new event. "
@@ -2298,9 +2343,9 @@ erase
 			wbegin := Address fromLine:machine cursor line index:1 ].
 ! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 18:07:20'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 19:26:03'!
 leap
-
+	
 	match := leapLeftDown 
 		ifTrue:[
 			machine pattern first = Character newPage 
@@ -2532,12 +2577,12 @@ abstractIndexOf: anAddress base: anInitialAddress
 	^(anAddress distanceFrom: anInitialAddress) + 1
 	! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 13:37:54'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 21:37:49'!
 testError
 
 	| text aKaeruEditor |
 		
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
 	aKaeruEditor := KaeruEditor new.
 
@@ -2558,31 +2603,38 @@ testError
 	'in' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
 	aKaeruEditor leapLeft.
-	
+
 	aKaeruEditor storeCursor.
-	
+
 	aKaeruEditor clearPattern.
-	
+
 	'it' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
 	aKaeruEditor leapRight.
-	
+
 	aKaeruEditor highlight.
+
+	aKaeruEditor clearPattern.
+
+	'olden' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
-	self assert: aKaeruEditor selectionText = 'in the air and catching i'.
+	aKaeruEditor leapLeft ; move.
+
+	aKaeruEditor clearPattern.
+
+	'g' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
+	
+	aKaeruEditor leapLeft.
 
 	aKaeruEditor clearPattern.
 	
-	'old' do:[:eachChar | aKaeruEditor patternPut: eachChar].
-		
-	aKaeruEditor leapLeft.
-
-	'olde' do:[:eachChar | aKaeruEditor patternPut: eachChar].
-		
-	aKaeruEditor leapLeft.
+	'olden' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 	
-	self assert: aKaeruEditor invariant.
-	! !
+	aKaeruEditor leapLeft ; move.
+	
+	aKaeruEditor erase.
+	
+! !
 
 !TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 10:46:12'!
 testHighlight
