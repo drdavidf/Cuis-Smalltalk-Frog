@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 July 2025 at 11:00:57 am'!
+'From Cuis7.3 [latest update: #7041] on 17 July 2025 at 11:18:31 am'!
 'Description '!
-!provides: 'FrogEditor' 1 303!
+!provides: 'FrogEditor' 1 305!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -382,11 +382,11 @@ isEmpty
 	
 	^begin = end! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/16/2025 11:50:49'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 7/17/2025 11:18:13'!
 erase
 
 	| pp |
-	
+		
 	pp := textRepository eraseFrom: beginH to: endH.
 	
 	self isCursorWide 
@@ -398,7 +398,12 @@ erase
 					cursor := pp.
 					wide := false ] ]
 		ifFalse:[
-			cursor := pp].
+			pp = textRepository end
+				ifTrue:[
+					cursor := pp dec.
+					wide := true ]
+				ifFalse:[
+				cursor := pp] ].
 	
 	beginH := cursor.
 		
