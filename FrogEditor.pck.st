@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 July 2025 at 8:59:11 am'!
+'From Cuis7.3 [latest update: #7041] on 17 July 2025 at 11:00:57 am'!
 'Description '!
-!provides: 'FrogEditor' 1 296!
+!provides: 'FrogEditor' 1 303!
 SystemOrganization addCategory: #FrogEditor!
 
 
@@ -948,7 +948,7 @@ initialize
 	end page: lastPage.
 	! !
 
-!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/17/2025 08:58:56'!
+!KaeruTextRepository methodsFor: 'private' stamp: 'DF 7/17/2025 10:58:43'!
 eraseLinesFrom: bLine to: eLine
 
 	| bpage epage |
@@ -974,20 +974,20 @@ eraseLinesFrom: bLine to: eLine
 	bLine prev next: eLine.
 	eLine prev: bLine prev.
 
-	"the order here is important because shiftleft can delete epage
-	making it unusable for checking isOverflow "
+	" The order here is important:
+	
+	We must ensure that if a page is not the last page then it will not underflow
+	before a previous page is shifting left because we can't shift left from an empty page. "
 	
 	epage isOverflow ifTrue:[ 
 		epage shiftRight].
-
-	epage prev isUnderflow ifTrue:[
-		epage prev shiftLeft].
-	
-	epage isUnderflow ifTrue:[
+		
+	epage isDeleted not and:[epage isUnderflow] :: ifTrue:[
 		epage shiftLeft].
 	
-	self assert: epage isUnderflow not.
-	
+	epage prev isUnderflow ifTrue:[
+		epage prev shiftLeft].
+
 	self assert: self checkPages.
 	! !
 
@@ -1768,6 +1768,10 @@ isEmpty
 	
 	^begin = end! !
 
+!Page methodsFor: 'testing' stamp: 'DF 7/17/2025 09:53:04'!
+isDeleted
+	^lastLine isNil! !
+
 !Page methodsFor: 'as yet unclassified' stamp: 'DF 7/8/2025 08:54:19'!
 countLines
 
@@ -1921,23 +1925,24 @@ pushNewPage
 
 	^aNewPage! !
 
-!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 08:38:49'!
+!Page methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 10:55:29'!
 shiftLeft
 
 	self assert: self isLast not.
 	
 	[self isUnderflow and:[lastLine next isSentinel not ] ]
 		whileTrue:[
+			
 			lastLine page: nil.
 			
 			lastLine := lastLine next.
 			
 			lastLine page: self.
-						
+			
 			next isUnderflow
 				ifTrue:[next shiftLeft] ] .
 	
-	lastLine next isSentinel
+	self isUnderflow and: [lastLine next isSentinel] ::
 		ifTrue:[ 
 			^self delete].
 
@@ -2539,7 +2544,7 @@ RightAlt
 RightCtrl
 	^221! !
 
-!TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/12/2025 19:45:48'!
+!TestAddressRange methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 11:00:53'!
 testIntersection
 
 	| text aFrogEditor bb ee |
@@ -2563,9 +2568,7 @@ testIntersection
 	ee := bb inc inc.
 	
 	self assert: ee char = Character space.
-	
-	self halt.
-	
+		
 	self assert: ((bb to:ee) intersect: (aFrogEditor begin to: aFrogEditor end)) = (bb to:ee).
 	
 	self assert: (bb to:bb) isEmpty
@@ -2707,7 +2710,7 @@ testMove
 	self assert: aKaeruEditor text = 'In olden times, have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he when to wish was to saw her often, was enchanted every time she came out into the sunshine.'.
 	! !
 
-!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/16/2025 10:46:28'!
+!TestKaeruEditor methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 11:00:34'!
 testMoveHighlight
 
 	| text aKaeruEditor |
@@ -2740,7 +2743,7 @@ testMoveHighlight
 	
 	'little' do:[:eachChar | aKaeruEditor patternPut:eachChar ].
 
-	aKaeruEditor leapRight.
+	aKaeruEditor leapRight ; move.
 	
 	self assert: aKaeruEditor text = text.
 	! !
@@ -2833,12 +2836,12 @@ testErase
 	
 ! !
 
-!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/11/2025 12:06:36'!
+!TestKaeruTextRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/17/2025 10:55:44'!
 testEraseError
 
 	| text aFrogEditor ab ae cb ce pp |
 	
-	text :='Inmes, whwahery.'.
+	text :='In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
 	aFrogEditor := KaeruTextRepository new.
 	 
@@ -2853,9 +2856,9 @@ testEraseError
 
 	self assert: (aFrogEditor textFrom: aFrogEditor begin to: aFrogEditor end)	= text.
 	
-	ab := 7.
+	ab := 131.
 	
-	ae := 14.
+	ae := 211.
 	
 	cb := self goto:ab from: aFrogEditor end.
 	
@@ -2864,7 +2867,7 @@ testEraseError
 	ce := self goto: ae from: aFrogEditor end.
 	
 	self assert: ae = (self abstractIndexOf: ce base: aFrogEditor  begin).
-		
+			
 	pp := aFrogEditor eraseFrom:cb to: ce.
 	
 	self assert: aFrogEditor invariant.
