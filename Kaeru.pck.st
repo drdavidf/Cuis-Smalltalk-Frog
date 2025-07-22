@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 21 July 2025 at 12:28:44 pm'!
+'From Cuis7.3 [latest update: #6895] on 22 July 2025 at 12:44:34 pm'!
 'Description '!
-!provides: 'Kaeru' 1 84!
+!provides: 'Kaeru' 1 108!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -112,6 +112,10 @@ isOverflow: aParentNode
 
 	^self subclassResponsibility ! !
 
+!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 10:15:35'!
+lastAddress
+	^self subclassResponsibility ! !
+
 !KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 16:33:41'!
 length
 
@@ -128,6 +132,11 @@ overweight
 !KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:41'!
 removeLast: aKNode
 	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 10:01:44'!
+resolve: anAddress  
+
+	^self subclassResponsibility! !
 
 !KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:46'!
 textInto: aWriteStream
@@ -184,29 +193,26 @@ length
 
 	^chars size! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/20/2025 16:34:30'!
+!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 09:25:44'!
 removeLast: aParagraph
 
-	|  cc aWriteStream nn |
+	|  ii |
 		
-	nn := 0.
-	
-	cc := chars last.
-	
-	cc isSeparator
+	chars last isSeparator
 		ifTrue:[ 
-			chars removeLast.
-			^cc asString].
+			^chars removeLast asString].
 
-	aWriteStream := WriteStream on: ''.
-			
-	[nn <= aParagraph width and: [chars size >1] and:[cc isSeparator not] ] whileTrue:[
-		aWriteStream nextPut: cc.
-		chars removeLast.
-		cc := chars last.
-		nn := nn + 1 ].
+	"moving backwards find the position of the first separator. If none exist this means that the line is a single word so cut off the tail that overflows the line and return that tail"
 	
-	^aWriteStream contents reverse
+	ii := chars size.
+	
+	[ii > 0 and: [chars at:ii :: isSeparator not] ] whileTrue:[ii := ii - 1].
+	
+	ii = 0 
+		ifTrue:[ " n = chars size. n := n - (n - w) => n = w " 
+			^ chars removeLast: chars size - aParagraph width  ].
+	
+	^chars removeLast: chars size - ii. "let n =  chars size. n := n - (n - ii) => n = ii. thus after this operation the last character in chars is the separator as required. "
 	
 	
 	! !
@@ -230,12 +236,36 @@ initialize
 
 	chars := OrderedCollection new! !
 
+!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:14:45'!
+lastAddress
+	^ { chars size }! !
+
+!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:11:30'!
+prev: anAddress  
+
+	self assert: anAddress size = 1.
+	
+	anAddress first = 0
+		ifTrue:[
+			^{} ].
+	
+	^ { anAddress first - 1 } ! !
+
+!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:01:44'!
+resolve: anAddress  
+
+	self assert: anAddress size = 1.
+	
+	self assert: anAddress first > 0.
+	
+	^chars at: anAddress first! !
+
 !KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/20/2025 11:37:37'!
 textInto: aWriteStream
 
 	aWriteStream nextPutAll: chars.! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/21/2025 12:24:30'!
+!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 12:44:31'!
 insert: aCharacter after: anAddress
 
 	| ii cc addr |
@@ -296,6 +326,11 @@ length
 
 	^containers size! !
 
+!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 10:01:44'!
+resolve: anAddress  
+			
+	^containers at: anAddress first :: resolve: anAddress allButFirst ! !
+
 !KPart methodsFor: 'interface' stamp: 'DF 7/20/2025 11:38:06'!
 textInto: aWriteStream
 
@@ -311,6 +346,28 @@ weight
 initialize
 
 	containers := OrderedCollection new! !
+
+!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:15:16'!
+lastAddress
+
+	^ { containers size } , containers last lastAddress! !
+
+!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 11:31:44'!
+prev: anAddress  
+
+	| addr |
+	
+	addr := containers at: anAddress first :: prev: anAddress allButFirst.
+	
+	addr isEmpty
+		ifTrue:[
+			^anAddress first = 1
+				ifTrue:[
+					{}]
+				ifFalse:[
+					{ anAddress first - 1 } , (containers at: anAddress first - 1 :: lastAddress) ] ] .
+			
+	^{ anAddress first }, addr! !
 
 !KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 22:17:37'!
 push: anItem
@@ -355,12 +412,79 @@ isOverflow: aParentNode
 newItem
 	^KPage new! !
 
-!KPage methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 09:35:46'!
+!KPage methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:14:10'!
 captures: anAddress 
 
-	"a page captures an address only if the address of its line exceeds the number of lines allowed in the page (that is weight - overweight)."
+	"a page captures an address if the weight of all the lines up to the address exceeds the number of lines allowed in the page (that is its weight - overweight)."
 	
-	^anAddress first = self length and:[ anAddress second > (self weight - self overweight)]! !
+	| sum parIndex lineIndex |
+	
+	parIndex := anAddress first. lineIndex := anAddress second.
+	
+	sum := 0.
+	
+	1 to: parIndex - 1 do:[:ii | sum := sum + (containers at:ii :: weight) ].
+	
+	sum := sum + lineIndex. 
+	
+	^sum > (self weight - self overweight)! !
+
+!KPage methodsFor: 'interface' stamp: 'DF 7/22/2025 12:16:37'!
+insert: aCharacter after: anAddress
+
+	| addr newpar |
+
+	"if the paragraph ends with two adjacent newline characters then we must start a new paragraph"
+
+	newpar := 
+	
+		aCharacter = Character cr 
+			ifTrue:[ 
+				"To decide if we must create a new paragraph we look at the character currently at anAddress. 
+				
+				if it is at a previous paragraph then we won't create a new paragraph. This happens exactly when
+				anAddress ends with #(1 0), meaning it refers one place before the first character (0) in the first line (1), 
+				that is it references the last character in the previous paragraph.
+				"
+				anAddress allButFirst = { 1 . 0 }
+					ifTrue:[
+						false]
+					ifFalse:[ | aa | 
+						
+						"The address may point to character at index 0 meaning that we must look at the last character in the previous
+						line. We can be sure that a previous line exists because we know that the line's index
+						is not 1."
+						aa := anAddress last = 0 
+							ifTrue:[
+								self prev: anAddress ]
+							ifFalse:[
+								anAddress ]. 
+						( self resolve: aa ) = Character cr ] ]
+			ifFalse:[false].
+			
+	addr := super insert: aCharacter after: anAddress.
+
+	newpar ifTrue:[ | aNewPar |
+		
+		"We have seen two newline characters in a row in the same paragraph. Therefore we need
+		to create a new paragraph and answer an address one place before the first line in this new
+		paragraph."
+	
+		aNewPar := self newItem.
+		
+		"the address addr points to the new empty line that was created after the second newline
+		character. we need to move this line to the new paragraph."
+		
+		aNewPar lines add: (containers at: addr first) lines removeLast.
+		
+		containers add: aNewPar afterIndex: addr first.
+		
+		^ { addr first + 1 . 1 . 0 } "index of new paragraph . first line . just before first character "
+		
+	].
+
+	^addr
+! !
 
 !KPage methodsFor: 'interface' stamp: 'DF 7/19/2025 16:40:42'!
 isOverflow: aParentNode
@@ -419,12 +543,35 @@ initialize
 	
 	rightMargin := 6+8! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 12:27:46'!
+!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:44:27'!
 insert: aCharacter after: anAddress
 
 	| addr aLine tail |
 
-	aCharacter = Character cr ifTrue:[
+	"If aCharacter a new line separator we must move all the characters that appear after the address
+	 in the line to a new line and a append the newline character at the end of the new line.
+	
+	for example
+	
+	'abcdef' insert: Character cr after: 3 
+	=>
+	'abc' , Character cr
+	'def' 
+	
+	and the index we return should be 3 on the second line (marking the f in the second line)
+	
+	another example showing what happens when we put the newline at the end of a line:
+	
+	'abcde' insert: Character cr after: 5
+	=>
+	'abcde', Character cr
+	''
+	
+	and the index we return should be 0 on the second line. 
+	"
+	
+	
+	aCharacter = Character cr ifTrue:[ 
 				
 		aLine := containers at: anAddress first.
 	
@@ -441,7 +588,10 @@ insert: aCharacter after: anAddress
 		
 		tail do:[:each | index := aNewLine insert: each after: index].
 		
-		containers add: aNewLine afterIndex: addr first ].
+		containers add: aNewLine afterIndex: addr first.
+		
+		" we always return an index pointing just before the line that follows the new line character. "
+		^ {addr first + 1 . 0 } ].
 	
 	^addr! !
 
@@ -536,12 +686,12 @@ testInsertInParts
 	
 	self assert: aKDoc text = (p1,p2).! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 12:26:16'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:26:04'!
 testInsertNewLines
 
 	| p1 p2 aKDoc addr |
 	
-	p1 := 'In olden times, when to wish', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	p1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
 	
 	p2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
@@ -556,6 +706,22 @@ testInsertNewLines
 	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
 	
 	self assert: aKDoc text = (p1,p2).! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:16:57'!
+testMakeParagraphs
+
+	| p1 aKDoc addr |
+	
+	p1 := 'In olden times, when to wish was to have, there lived a King whose Xaughters were all beautiful.', Character cr asString, Character cr asString, 'But the youngest was so',Character cr asString, Character cr asString,'fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+
+	aKDoc := KDoc new.
+	
+	addr := aKDoc insertAtStart: p1 first.
+	
+	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
+	
+	self assert: aKDoc text = (p1).
+! !
 
 !Integer methodsFor: '*Kaeru-enumerating' stamp: 'DF 7/20/2025 11:09:43'!
 copiesOf: anObject
