@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 22 July 2025 at 12:44:34 pm'!
+'From Cuis7.3 [latest update: #6895] on 22 July 2025 at 4:07:23 pm'!
 'Description '!
-!provides: 'Kaeru' 1 108!
+!provides: 'Kaeru' 1 121!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -97,6 +97,18 @@ newItem
 Answers a new child object. For example, a paragraph answers a new line. A page answers a new paragraph.
 !
 
+!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 13:08:48'!
+eraseFrom: aBeginAddress
+
+	"erase all the children from aBeginAddress"
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 13:00:55'!
+eraseFrom: aBeginAddress to: anEndAddress
+
+	^self subclassResponsibility ! !
+
 !KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 21:55:27'!
 insert: aCharacter after: anAddress
 
@@ -162,6 +174,77 @@ text
 	self textInto: aWriteStream.
 	
 	^aWriteStream contents.! !
+
+!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:24:55'!
+eraseFrom: aBeginAddress
+
+	" Erase all the characters from the begin index (inclusive). begin must not be 1. 
+	
+	answers the address that points to the last character not erase.
+		
+	Line chars: 'abcde' :: eraseFrom: {3} = 'ab'
+	
+	  will answer 2
+	
+	"
+
+	self assert: aBeginAddress size = 1.
+
+	self assert: aBeginAddress first > 1.
+	
+	self assert: aBeginAddress first <= chars size.
+	
+	chars := chars copyFrom: 1 to: aBeginAddress first - 1.
+	
+	^ { aBeginAddress first - 1 }.
+	! !
+
+!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:35:15'!
+eraseFrom: aBeginAddress to: anEndAddress
+
+	"Erase a part of the characters in this line. Never erase all the characters. 
+	
+		Line chars: 'abcdefg' :: eraseFrom: {2} to: {4} = 'adefg'
+		
+	Note that eraseFrom: aa to: aa is a skip
+	"
+	
+	self assert: aBeginAddress size = 1.
+	self assert: anEndAddress size = 1.
+	
+	self assert: aBeginAddress first > 1.
+	
+	self assert: aBeginAddress first <= anEndAddress first.
+		
+	self assert: anEndAddress first <= chars size.
+	
+	" note that copyFrom:to: is an inclusive copy "
+	
+	chars := (chars copyFrom: 1 to: aBeginAddress first - 1) , (chars copyFrom: anEndAddress first to: chars size).
+	
+	^ { aBeginAddress first - 1 }
+	! !
+
+!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:28:27'!
+eraseTo: anEndAddress
+
+	" Erase all the characters upto end (not including the character at end). 
+	
+	Answers the address of first character not erased. For a line this will always be {1}.
+	
+	Line chars: 'abcde' :: eraseTo: {3} = 'cde'
+	
+	"
+	
+	self assert: anEndAddress size = 1.
+	
+	self assert: 1 <= anEndAddress first.
+		
+	self assert: anEndAddress first <= chars size.
+	
+	chars := chars copyFrom: anEndAddress first to: chars size.
+	
+	^ { 1 } 	! !
 
 !KLine methodsFor: 'interface' stamp: 'DF 7/20/2025 11:14:29'!
 insert: aCharacter after: anAddress
@@ -264,6 +347,74 @@ resolve: anAddress
 textInto: aWriteStream
 
 	aWriteStream nextPutAll: chars.! !
+
+!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:26:23'!
+eraseFrom: aBeginAddress 
+
+	
+	" Erase all the characters that are in addresses equal to or after aBeginAddress. 
+	
+	aBeginAddress must never be the address of the first character in this tree (all 1's).
+	
+	"
+
+	| addr |
+	
+	self assert: (aBeginAddress anySatisfy:[:any | any > 1]). 
+	
+	self assert: aBeginAddress first <= containers size.
+		
+	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
+	
+	containers := containers copyFrom: 1 to: aBeginAddress first.
+	
+	^ { aBeginAddress first } , addr
+	! !
+
+!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:58:07'!
+eraseFrom: aBeginAddress to: anEndAddress
+
+	| addr |
+	
+	self assert: (aBeginAddress anySatisfy:[:any | any > 1]).		
+	self assert: aBeginAddress first <= anEndAddress first.	
+	self assert: anEndAddress first <= containers size.
+
+	aBeginAddress first = anEndAddress first
+		ifTrue:[ 
+			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst.
+			^ { aBeginAddress first } , addr ].
+		
+	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
+	
+	containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+	
+	containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size).
+	
+	^ { aBeginAddress first } , addr
+	
+	
+	! !
+
+!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:38:31'!
+eraseTo: anEndAddress 
+
+	" Erase all the characters that are in addresses before anEndAddress. 
+		
+	"
+	
+	| addr |
+		
+	self assert: anEndAddress first <= containers size.
+		
+	addr := containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst. 
+	
+	containers := containers copyFrom: anEndAddress first to: containers size.
+	
+	"the container at anEndAddress first is now located at index 1"
+	
+	^ { 1 } , addr
+	! !
 
 !KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 12:44:31'!
 insert: aCharacter after: anAddress
@@ -649,6 +800,31 @@ newItem
 removeLast: aPage
 
 	^containers removeLast.! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 15:13:51'!
+testErase
+
+	| text aKDoc bb ee |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.'.
+
+	aKDoc := KDoc new.
+	
+	bb := aKDoc insertAtStart: text first.
+	
+	text allButFirst do:[:each | bb := aKDoc insert:each after: bb.  ].
+	
+	self assert: aKDoc text = text.
+	
+	bb := #(2 1 2 3).
+
+	ee := #(2 1 4 2).
+		
+	bb := aKDoc eraseFrom:bb to: ee.
+	
+	self assert: aKDoc text = 'In olden times, when to wish was to have, thing whose daughters were all beautiful.'.
+	
+	aKDoc explore.! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:09:22'!
 testInsert
