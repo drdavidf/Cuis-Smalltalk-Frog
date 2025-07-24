@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 22 July 2025 at 4:07:23 pm'!
+'From Cuis7.3 [latest update: #6895] on 24 July 2025 at 6:37:58 pm'!
 'Description '!
-!provides: 'Kaeru' 1 121!
+!provides: 'Kaeru' 1 133!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -121,6 +121,11 @@ insertAtStart: aCharacter
 
 !KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:32'!
 isOverflow: aParentNode
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
+isUnderflow: aParentNode neighbour: aKNode 
 
 	^self subclassResponsibility ! !
 
@@ -271,6 +276,14 @@ isOverflow: aParagraph
 
 	^aParagraph width < chars size ! !
 
+!KLine methodsFor: 'interface' stamp: 'DF 7/24/2025 18:37:55'!
+isUnderflow: aParagraph neighbour: aKNode 
+
+	"check if the first token in the next line can be inserted at the end of self
+	without overflowing self"
+	
+	^aKNode firstTokenLength + self length <= aParagraph width  ! !
+
 !KLine methodsFor: 'interface' stamp: 'DF 7/19/2025 16:33:49'!
 length
 
@@ -313,6 +326,24 @@ eraseAfter: anIndex
 "
 
 	^chars removeLast: chars size - anIndex! !
+
+!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 18:37:35'!
+firstTokenLength
+
+	| ii |
+	
+	chars first isSeparator
+		ifTrue:[^1].
+		
+	ii := 1.
+	
+	[ii <= chars size and:[chars at:ii :: isSeparator not] ]
+		whileTrue:[
+			ii := ii + 1].
+		
+	"ii = chars size + 1 or:[ ii <= chars size and chars at:ii :: isSeparator] "
+	
+	^ ii - 1! !
 
 !KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 15:42:54'!
 initialize
@@ -371,20 +402,35 @@ eraseFrom: aBeginAddress
 	^ { aBeginAddress first } , addr
 	! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:58:07'!
+!KPart methodsFor: 'interface' stamp: 'DF 7/24/2025 16:10:05'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	| addr |
 	
-	self assert: (aBeginAddress anySatisfy:[:any | any > 1]).		
 	self assert: aBeginAddress first <= anEndAddress first.	
 	self assert: anEndAddress first <= containers size.
 
+	" Erasing in a single item. The item itself cannot be entirely erased because anEndAddress at most can
+	point to the last element, but erasing does not include the last element. "
+	
 	aBeginAddress first = anEndAddress first
 		ifTrue:[ 
 			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst.
 			^ { aBeginAddress first } , addr ].
+	
+	" Erasing more than one item, and starting from the first char in the first item, necessarily erases
+	the first item. "
 		
+	aBeginAddress allSatisfy:[:each | each = 1 ] :: 
+		ifTrue:[
+			addr := containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+	
+			containers := containers copyFrom: anEndAddress first to: containers size. 
+			
+			^{ 1 } , addr ].
+	
+	" Otherwise the first item is not erased, only a part of it is erased. " 
+			
 	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
 	
 	containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
@@ -527,6 +573,30 @@ push: anItem
 	
 	containers add: anItem afterIndex:0 ! !
 
+!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 18:23:11'!
+shiftLeft: anIndex 
+
+	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
+	
+	| item ii  |
+	
+	ii := anIndex.
+	
+	[ii ~= containers size and:[ (containers at:ii) isUnderflow: self neighbour: (containers at:ii+1)] ]  
+		whileTrue:[
+
+			item := containers at: ii +1 :: removeFirst: (containers at:ii).
+	
+			containers at: ii  :: add: item.
+			
+			containers at: ii + 1 :: isEmpty 
+				ifTrue:[
+					containers removeAt: ii + 1].
+			
+			ii := ii + 1 ].
+	
+	! !
+
 !KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:26:53'!
 shiftRight: anIndex 
 
@@ -559,6 +629,11 @@ isOverflow: aParentNode
 	
 	^false! !
 
+!KDoc methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
+isUnderflow: aParentNode neighbour: aKNode 
+	
+	^false! !
+
 !KDoc methodsFor: 'interface' stamp: 'DF 7/20/2025 10:23:52'!
 newItem
 	^KPage new! !
@@ -580,57 +655,51 @@ captures: anAddress
 	
 	^sum > (self weight - self overweight)! !
 
-!KPage methodsFor: 'interface' stamp: 'DF 7/22/2025 12:16:37'!
+!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
 
-	| addr newpar |
+	| addr |
 
-	"if the paragraph ends with two adjacent newline characters then we must start a new paragraph"
-
-	newpar := 
-	
-		aCharacter = Character cr 
-			ifTrue:[ 
-				"To decide if we must create a new paragraph we look at the character currently at anAddress. 
-				
-				if it is at a previous paragraph then we won't create a new paragraph. This happens exactly when
-				anAddress ends with #(1 0), meaning it refers one place before the first character (0) in the first line (1), 
-				that is it references the last character in the previous paragraph.
-				"
-				anAddress allButFirst = { 1 . 0 }
-					ifTrue:[
-						false]
-					ifFalse:[ | aa | 
-						
-						"The address may point to character at index 0 meaning that we must look at the last character in the previous
-						line. We can be sure that a previous line exists because we know that the line's index
-						is not 1."
-						aa := anAddress last = 0 
-							ifTrue:[
-								self prev: anAddress ]
-							ifFalse:[
-								anAddress ]. 
-						( self resolve: aa ) = Character cr ] ]
-			ifFalse:[false].
-			
 	addr := super insert: aCharacter after: anAddress.
 
-	newpar ifTrue:[ | aNewPar |
-		
-		"We have seen two newline characters in a row in the same paragraph. Therefore we need
-		to create a new paragraph and answer an address one place before the first line in this new
-		paragraph."
+	" A newline character starts a new paragraph. If the newline happens in the middle of a line
+	then the part of the line after the new line (the tail) and all further lines in the paragraph move 
+	to the new paragraph. 
 	
+	line    text
+	1       abc
+	2      dexfg
+	3      12 34
+	4      xyz 
+
+       after inserting newline after address { 2 . 3 }
+
+	line    text
+	1       abc
+	2      dex
+	
+	1.     fg
+	2      12 34
+	3      xyz 
+	
+	the answer should be { 1. 0 } marking the position just before the 'f' in the first line.
+	
+	In general we must answer an address just before the tail. The tail always begins the new line. 
+	That is, the character index will always be 0. 	
+	"
+	
+	aCharacter = Character cr ifTrue:[ | aNewPar | 
+			
 		aNewPar := self newItem.
 		
-		"the address addr points to the new empty line that was created after the second newline
-		character. we need to move this line to the new paragraph."
+		"The address addr points to the new line that was created after the newline
+		character. we need to move this line and all the other lines to the new paragraph."
 		
-		aNewPar lines add: (containers at: addr first) lines removeLast.
+		aNewPar lines addAll: ((containers at: addr first) removeLinesFrom: addr second ).
 		
 		containers add: aNewPar afterIndex: addr first.
 		
-		^ { addr first + 1 . 1 . 0 } "index of new paragraph . first line . just before first character "
+		^ { addr first + 1 . 1 . 0 } "index of new paragraph . first line . just before the tail "
 		
 	].
 
@@ -641,6 +710,11 @@ insert: aCharacter after: anAddress
 isOverflow: aParentNode
 
 	^self weight > 5! !
+
+!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
+isUnderflow: aParentNode neighbour: aKNode 
+
+	^self weight < 5! !
 
 !KPage methodsFor: 'interface' stamp: 'DF 7/20/2025 10:24:04'!
 newItem
@@ -661,6 +735,24 @@ push: aKPar
 		ifFalse:[
 			containers first addLinesOf: aKPar]! !
 
+!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:16:06'!
+removeFirst: aPage
+
+	"if the weight of the first paragraph is less than the underweight (available space) in aPage
+	move the entire paragraph to aPage. Otherwise split the paragraph and move only enough
+	to fill aPage without overflowing it. "
+	
+	| aPar |
+	
+	aPar := containers first.
+	
+	^aPar weight <= aPage underweight 
+		ifTrue:[
+			containers removeFirst]
+		ifFalse:[
+			aPar splitAfter: aPage underweight].  
+			! !
+
 !KPage methodsFor: 'interface' stamp: 'DF 7/19/2025 22:18:42'!
 removeLast: aDoc
 
@@ -676,6 +768,11 @@ removeLast: aDoc
 		ifFalse:[
 			aPar splitAfter: self overweight].  
 			! !
+
+!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:10:58'!
+underweight
+
+	^5 - self weight ! !
 
 !KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:58:33'!
 addLinesOf: aKPar
@@ -694,13 +791,13 @@ initialize
 	
 	rightMargin := 6+8! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:44:27'!
+!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 16:33:34'!
 insert: aCharacter after: anAddress
 
-	| addr aLine tail |
+	| addr  |
 
-	"If aCharacter a new line separator we must move all the characters that appear after the address
-	 in the line to a new line and a append the newline character at the end of the new line.
+	"If aCharacter a new line separator we must create a new line and 
+	move all the characters that appear after the address  in the line to a new line.
 	
 	for example
 	
@@ -721,17 +818,13 @@ insert: aCharacter after: anAddress
 	and the index we return should be 0 on the second line. 
 	"
 	
-	
-	aCharacter = Character cr ifTrue:[ 
-				
-		aLine := containers at: anAddress first.
-	
-		tail := aLine eraseAfter: anAddress second.  
-	].
-
 	addr := super insert: aCharacter after: anAddress.
 
-	aCharacter = Character cr ifTrue:[ | aNewLine index |
+	aCharacter = Character cr ifTrue:[ | aLine tail aNewLine index |
+
+		aLine := containers at: addr first.
+	
+		tail := aLine eraseAfter: addr second.  
 		
 		aNewLine := self newItem.
 		
@@ -749,6 +842,29 @@ insert: aCharacter after: anAddress
 !KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:58:41'!
 lines
 	^containers! !
+
+!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 18:13:36'!
+rebuild
+
+	"reinsert the text of self from scratch. This will ensure that all the lines in self
+	are packed. "
+	
+	| text addr |
+	
+	text := self text.
+	
+	containers removeAll.
+	
+	addr := self insertAtStart: text first.
+	
+	text allButFirst do:[:each | addr := self insert: each after: addr].
+	
+	! !
+
+!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 15:14:04'!
+removeLinesFrom: anInteger
+
+	^containers removeLast: containers size - anInteger + 1! !
 
 !KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/20/2025 17:58:20'!
 shiftRight: anInteger 
@@ -792,6 +908,11 @@ isOverflow: aParentNode
 
 	^false! !
 
+!KParagraph methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
+isUnderflow: aParentNode neighbour: aKNode 
+
+	^false! !
+
 !KParagraph methodsFor: 'interface' stamp: 'DF 7/20/2025 10:24:19'!
 newItem
 	^KLine new! !
@@ -801,7 +922,7 @@ removeLast: aPage
 
 	^containers removeLast.! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 15:13:51'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 16:33:19'!
 testErase
 
 	| text aKDoc bb ee |
@@ -824,7 +945,15 @@ testErase
 	
 	self assert: aKDoc text = 'In olden times, when to wish was to have, thing whose daughters were all beautiful.'.
 	
-	aKDoc explore.! !
+	bb := #(1 1 1 1).
+	
+	ee := #(3 1 1 1).
+	
+	aKDoc eraseFrom:bb to: ee.
+
+	self assert: aKDoc text = 'daughters were all beautiful.'.
+	
+	! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:09:22'!
 testInsert
