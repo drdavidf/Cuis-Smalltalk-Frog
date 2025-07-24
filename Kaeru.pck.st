@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 24 July 2025 at 6:37:58 pm'!
+'From Cuis7.3 [latest update: #6895] on 24 July 2025 at 11:09:30 pm'!
 'Description '!
-!provides: 'Kaeru' 1 133!
+!provides: 'Kaeru' 1 152!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -97,79 +97,56 @@ newItem
 Answers a new child object. For example, a paragraph answers a new line. A page answers a new paragraph.
 !
 
-!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 13:08:48'!
+!KNode methodsFor: 'inserting' stamp: 'DF 7/19/2025 21:55:27'!
+insert: aCharacter after: anAddress
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'inserting' stamp: 'DF 7/20/2025 11:34:37'!
+insertAtStart: aCharacter 
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'erasing' stamp: 'DF 7/22/2025 13:08:48'!
 eraseFrom: aBeginAddress
 
 	"erase all the children from aBeginAddress"
 
 	^self subclassResponsibility ! !
 
-!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 13:00:55'!
+!KNode methodsFor: 'erasing' stamp: 'DF 7/22/2025 13:00:55'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	^self subclassResponsibility ! !
 
-!KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 21:55:27'!
-insert: aCharacter after: anAddress
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/20/2025 11:34:37'!
-insertAtStart: aCharacter 
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:32'!
-isOverflow: aParentNode
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
-isUnderflow: aParentNode neighbour: aKNode 
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 10:15:35'!
-lastAddress
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 16:33:41'!
-length
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/20/2025 10:03:47'!
-newItem
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 16:22:31'!
-overweight
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:41'!
+!KNode methodsFor: 'erasing' stamp: 'DF 7/21/2025 08:18:41'!
 removeLast: aKNode
 	^self subclassResponsibility ! !
 
-!KNode methodsFor: 'interface' stamp: 'DF 7/22/2025 10:01:44'!
-resolve: anAddress  
-
-	^self subclassResponsibility! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/21/2025 08:18:46'!
-textInto: aWriteStream
-
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'interface' stamp: 'DF 7/19/2025 15:57:18'!
-weight
-	^self subclassResponsibility ! !
-
-!KNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 09:36:10'!
+!KNode methodsFor: 'addressing' stamp: 'DF 7/21/2025 09:36:10'!
 captures: anAddress 
 
 	^anAddress first = self length! !
 
-!KNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:09:37'!
+!KNode methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:15:35'!
+lastAddress
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:01:44'!
+resolve: anAddress  
+
+	^self subclassResponsibility! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:41'!
+length
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:22:31'!
+overweight
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/21/2025 08:09:37'!
 text
 
 	| aWriteStream |
@@ -180,7 +157,61 @@ text
 	
 	^aWriteStream contents.! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:24:55'!
+!KNode methodsFor: 'accessing' stamp: 'DF 7/21/2025 08:18:46'!
+textInto: aWriteStream
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:57:18'!
+weight
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'testing' stamp: 'DF 7/21/2025 08:18:32'!
+isOverflow: aParentNode
+
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'factory' stamp: 'DF 7/20/2025 10:03:47'!
+newItem
+	^self subclassResponsibility ! !
+
+!KLine methodsFor: 'testing' stamp: 'DF 7/24/2025 21:17:45'!
+invariant: aKParagraph neighbour: aKLine
+
+	self assert: (self isOverflow: aKParagraph :: not).
+	
+	aKLine 
+		ifNil:[^true].
+		
+	self assert: (self isUnderflow: aKParagraph neighbour: aKLine :: not).
+	
+	^true
+		! !
+
+!KLine methodsFor: 'testing' stamp: 'DF 7/19/2025 16:40:32'!
+isOverflow: aParagraph
+
+	^aParagraph width < chars size ! !
+
+!KLine methodsFor: 'testing' stamp: 'DF 7/24/2025 18:37:55'!
+isUnderflow: aParagraph neighbour: aKNode 
+
+	"check if the first token in the next line can be inserted at the end of self
+	without overflowing self"
+	
+	^aKNode firstTokenLength + self length <= aParagraph width  ! !
+
+!KLine methodsFor: 'erasing' stamp: 'DF 7/21/2025 10:12:19'!
+eraseAfter: anIndex
+
+" 1234567 eraseAfter:3  = removeLast:4 = 4567 
+
+ eraseAfter: k = removeLast: size - k
+"
+
+	^chars removeLast: chars size - anIndex! !
+
+!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:24:55'!
 eraseFrom: aBeginAddress
 
 	" Erase all the characters from the begin index (inclusive). begin must not be 1. 
@@ -204,7 +235,7 @@ eraseFrom: aBeginAddress
 	^ { aBeginAddress first - 1 }.
 	! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:35:15'!
+!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:35:15'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	"Erase a part of the characters in this line. Never erase all the characters. 
@@ -230,7 +261,7 @@ eraseFrom: aBeginAddress to: anEndAddress
 	^ { aBeginAddress first - 1 }
 	! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 14:28:27'!
+!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:28:27'!
 eraseTo: anEndAddress
 
 	" Erase all the characters upto end (not including the character at end). 
@@ -251,45 +282,7 @@ eraseTo: anEndAddress
 	
 	^ { 1 } 	! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/20/2025 11:14:29'!
-insert: aCharacter after: anAddress
-
-	| ii |
-	
-	self assert: anAddress size = 1.
-	
-	ii := anAddress first.
-	
-	chars add:aCharacter afterIndex: ii .
-	
-	^{ii + 1}! !
-
-!KLine methodsFor: 'interface' stamp: 'DF 7/20/2025 11:25:56'!
-insertAtStart: aCharacter 
-
-	chars add:aCharacter afterIndex: 0 .
-	
-	^{1}! !
-
-!KLine methodsFor: 'interface' stamp: 'DF 7/19/2025 16:40:32'!
-isOverflow: aParagraph
-
-	^aParagraph width < chars size ! !
-
-!KLine methodsFor: 'interface' stamp: 'DF 7/24/2025 18:37:55'!
-isUnderflow: aParagraph neighbour: aKNode 
-
-	"check if the first token in the next line can be inserted at the end of self
-	without overflowing self"
-	
-	^aKNode firstTokenLength + self length <= aParagraph width  ! !
-
-!KLine methodsFor: 'interface' stamp: 'DF 7/19/2025 16:33:49'!
-length
-
-	^chars size! !
-
-!KLine methodsFor: 'interface' stamp: 'DF 7/22/2025 09:25:44'!
+!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 09:25:44'!
 removeLast: aParagraph
 
 	|  ii |
@@ -313,21 +306,27 @@ removeLast: aParagraph
 	
 	! !
 
-!KLine methodsFor: 'interface' stamp: 'DF 7/19/2025 15:57:24'!
-weight
-	^1! !
+!KLine methodsFor: 'inserting' stamp: 'DF 7/20/2025 11:14:29'!
+insert: aCharacter after: anAddress
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:12:19'!
-eraseAfter: anIndex
+	| ii |
+	
+	self assert: anAddress size = 1.
+	
+	ii := anAddress first.
+	
+	chars add:aCharacter afterIndex: ii .
+	
+	^{ii + 1}! !
 
-" 1234567 eraseAfter:3  = removeLast:4 = 4567 
+!KLine methodsFor: 'inserting' stamp: 'DF 7/20/2025 11:25:56'!
+insertAtStart: aCharacter 
 
- eraseAfter: k = removeLast: size - k
-"
+	chars add:aCharacter afterIndex: 0 .
+	
+	^{1}! !
 
-	^chars removeLast: chars size - anIndex! !
-
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 18:37:35'!
+!KLine methodsFor: 'accessing' stamp: 'DF 7/24/2025 18:37:35'!
 firstTokenLength
 
 	| ii |
@@ -345,16 +344,38 @@ firstTokenLength
 	
 	^ ii - 1! !
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 15:42:54'!
+!KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
+length
+
+	^chars size! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/20/2025 11:37:37'!
+textInto: aWriteStream
+
+	aWriteStream nextPutAll: chars.! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:57:24'!
+weight
+	^1! !
+
+!KLine methodsFor: 'initialization' stamp: 'DF 7/19/2025 15:42:54'!
 initialize
 
 	chars := OrderedCollection new! !
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:14:45'!
+!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:14:45'!
 lastAddress
 	^ { chars size }! !
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:11:30'!
+!KLine methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:12:09'!
+next: anAddress
+
+	self assert: anAddress size = 1.
+	
+	^ { anAddress first + 1 }.
+! !
+
+!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:11:30'!
 prev: anAddress  
 
 	self assert: anAddress size = 1.
@@ -365,7 +386,7 @@ prev: anAddress
 	
 	^ { anAddress first - 1 } ! !
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:01:44'!
+!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:01:44'!
 resolve: anAddress  
 
 	self assert: anAddress size = 1.
@@ -374,12 +395,52 @@ resolve: anAddress
 	
 	^chars at: anAddress first! !
 
-!KLine methodsFor: 'as yet unclassified' stamp: 'DF 7/20/2025 11:37:37'!
-textInto: aWriteStream
+!KPart methodsFor: 'initialization' stamp: 'DF 7/19/2025 14:28:12'!
+initialize
 
-	aWriteStream nextPutAll: chars.! !
+	containers := OrderedCollection new! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:26:23'!
+!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 21:16:07'!
+invariant
+
+	self assert: (self invariant: nil neighbour: nil).		
+	
+	^true! !
+
+!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 21:06:24'!
+invariant: aKPage neighbour: aKParagraph
+
+	1 to: containers size - 1 do:[:ii |
+		self assert: (containers at:ii :: invariant: self neighbour: (containers at:ii+1)) ].
+	
+	self assert: (containers last invariant: self neighbour: nil).
+	
+	^true
+		! !
+
+!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 23:06:52'!
+isEmpty
+	^containers isEmpty! !
+
+!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 21:13:03'!
+isUnderflow: aParentNode  
+	
+	^self subclassResponsibility ! !
+
+!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 22:06:42'!
+precedes: aBeginAddress before: anEndAddress
+
+	self assert: aBeginAddress size = anEndAddress size.
+	
+	aBeginAddress isEmpty
+		ifTrue:[
+			^true].
+		
+	^ aBeginAddress first < anEndAddress first or:[
+		aBeginAddress first = anEndAddress first and:[
+			self precedes: aBeginAddress allButFirst before: anEndAddress allButFirst ] ]! !
+
+!KPart methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:26:23'!
 eraseFrom: aBeginAddress 
 
 	
@@ -402,7 +463,7 @@ eraseFrom: aBeginAddress
 	^ { aBeginAddress first } , addr
 	! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/24/2025 16:10:05'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:32:31'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	| addr |
@@ -415,34 +476,34 @@ eraseFrom: aBeginAddress to: anEndAddress
 	
 	aBeginAddress first = anEndAddress first
 		ifTrue:[ 
-			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst.
-			^ { aBeginAddress first } , addr ].
-	
-	" Erasing more than one item, and starting from the first char in the first item, necessarily erases
-	the first item. "
+			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst 
+		]
+		ifFalse:[
+
+			" Erasing more than one item, and starting from the first char in the first item, necessarily erases
+			the first item. "
 		
-	aBeginAddress allSatisfy:[:each | each = 1 ] :: 
-		ifTrue:[
-			addr := containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+			aBeginAddress allSatisfy:[:each | each = 1 ] :: 
+				ifTrue:[
+					addr := containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
 	
-			containers := containers copyFrom: anEndAddress first to: containers size. 
+					containers := containers copyFrom: anEndAddress first to: containers size ]
+				ifFalse:[
+					
+					" Otherwise the first item is not erased, only a part of it is erased. " 
 			
-			^{ 1 } , addr ].
+					addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
 	
-	" Otherwise the first item is not erased, only a part of it is erased. " 
-			
-	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
+					containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
 	
-	containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
-	
-	containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size).
+					containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size) ] ].
 	
 	^ { aBeginAddress first } , addr
 	
 	
 	! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 14:38:31'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:38:31'!
 eraseTo: anEndAddress 
 
 	" Erase all the characters that are in addresses before anEndAddress. 
@@ -462,13 +523,44 @@ eraseTo: anEndAddress
 	^ { 1 } , addr
 	! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 12:44:31'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/24/2025 23:04:08'!
+shiftLeft: anIndex 
+
+	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
+	
+	| item ii  |
+	
+	ii := anIndex.
+	
+	[ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]  
+		whileTrue:[
+
+			item := containers at: ii +1 :: removeFirst: (containers at:ii).
+	
+			containers at: ii  :: append: item.
+			
+			containers at: ii + 1 :: isEmpty 
+				ifTrue:[
+					containers removeAt: ii + 1].
+			
+			ii := ii + 1 ].
+	
+	! !
+
+!KPart methodsFor: 'inserting' stamp: 'DF 7/24/2025 23:04:02'!
+append: anItem
+
+	self assert: (anItem isKindOf: KNode).
+	
+	containers add: anItem ! !
+
+!KPart methodsFor: 'inserting' stamp: 'DF 7/24/2025 21:35:49'!
 insert: aCharacter after: anAddress
 
 	| ii cc addr |
 			
 	self assert: (aCharacter isKindOf: Character).
-		
+			
 	ii := anAddress first.
 	
 	cc := containers at:ii.
@@ -498,7 +590,7 @@ insert: aCharacter after: anAddress
 
 	^{anAddress first}, addr! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/20/2025 13:27:26'!
+!KPart methodsFor: 'inserting' stamp: 'DF 7/20/2025 13:27:26'!
 insertAtStart: aCharacter 
 
 	| cc addr |
@@ -518,86 +610,14 @@ insertAtStart: aCharacter
 
 	^{1}, addr! !
 
-!KPart methodsFor: 'interface' stamp: 'DF 7/19/2025 16:33:57'!
-length
-
-	^containers size! !
-
-!KPart methodsFor: 'interface' stamp: 'DF 7/22/2025 10:01:44'!
-resolve: anAddress  
-			
-	^containers at: anAddress first :: resolve: anAddress allButFirst ! !
-
-!KPart methodsFor: 'interface' stamp: 'DF 7/20/2025 11:38:06'!
-textInto: aWriteStream
-
-	containers do:[:each | each textInto: aWriteStream ].
-! !
-
-!KPart methodsFor: 'interface' stamp: 'DF 7/19/2025 15:58:39'!
-weight
-
-	^containers sum:[:each | each weight]! !
-
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 14:28:12'!
-initialize
-
-	containers := OrderedCollection new! !
-
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 10:15:16'!
-lastAddress
-
-	^ { containers size } , containers last lastAddress! !
-
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 11:31:44'!
-prev: anAddress  
-
-	| addr |
-	
-	addr := containers at: anAddress first :: prev: anAddress allButFirst.
-	
-	addr isEmpty
-		ifTrue:[
-			^anAddress first = 1
-				ifTrue:[
-					{}]
-				ifFalse:[
-					{ anAddress first - 1 } , (containers at: anAddress first - 1 :: lastAddress) ] ] .
-			
-	^{ anAddress first }, addr! !
-
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 22:17:37'!
+!KPart methodsFor: 'inserting' stamp: 'DF 7/19/2025 22:17:37'!
 push: anItem
 
 	self assert: (anItem isKindOf: KNode).
 	
 	containers add: anItem afterIndex:0 ! !
 
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 18:23:11'!
-shiftLeft: anIndex 
-
-	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
-	
-	| item ii  |
-	
-	ii := anIndex.
-	
-	[ii ~= containers size and:[ (containers at:ii) isUnderflow: self neighbour: (containers at:ii+1)] ]  
-		whileTrue:[
-
-			item := containers at: ii +1 :: removeFirst: (containers at:ii).
-	
-			containers at: ii  :: add: item.
-			
-			containers at: ii + 1 :: isEmpty 
-				ifTrue:[
-					containers removeAt: ii + 1].
-			
-			ii := ii + 1 ].
-	
-	! !
-
-!KPart methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:26:53'!
+!KPart methodsFor: 'inserting' stamp: 'DF 7/21/2025 08:26:53'!
 shiftRight: anIndex 
 
 	"Moves the last element of container at anIndex to the next container, creating a new container
@@ -624,38 +644,101 @@ shiftRight: anIndex
 	^{anIndex + 1 . 1 . item length }
 	! !
 
-!KDoc methodsFor: 'interface' stamp: 'DF 7/19/2025 16:05:31'!
+!KPart methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:08:55'!
+distanceFrom: aBeginAddr to: anEndAddr
+
+	| bb ii | 
+	
+	self assert: ( self precedes: aBeginAddr before: anEndAddr ).
+		
+	bb := aBeginAddr.
+	ii := 0.
+	
+	[bb ~= anEndAddr ] 
+		whileTrue:[
+			bb := self next:bb.
+			ii := ii + 1 ].
+		
+	^ii
+	
+	
+	! !
+
+!KPart methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:15:16'!
+lastAddress
+
+	^ { containers size } , containers last lastAddress! !
+
+!KPart methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:13:08'!
+next: anAddress
+
+	| addr cc |
+	
+	self assert: anAddress size > 1.
+	
+	cc := containers at: anAddress first .
+	
+	addr :=  cc next: anAddress allButFirst.
+	
+	^addr first = (cc length + 1)
+		ifTrue:[
+			{ anAddress first + 1 } , ( anAddress size - 1 copiesOf: 1 )]
+		ifFalse:[
+			{ anAddress first } , addr ]! !
+
+!KPart methodsFor: 'addressing' stamp: 'DF 7/22/2025 11:31:44'!
+prev: anAddress  
+
+	| addr |
+	
+	addr := containers at: anAddress first :: prev: anAddress allButFirst.
+	
+	addr isEmpty
+		ifTrue:[
+			^anAddress first = 1
+				ifTrue:[
+					{}]
+				ifFalse:[
+					{ anAddress first - 1 } , (containers at: anAddress first - 1 :: lastAddress) ] ] .
+			
+	^{ anAddress first }, addr! !
+
+!KPart methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:01:44'!
+resolve: anAddress  
+			
+	^containers at: anAddress first :: resolve: anAddress allButFirst ! !
+
+!KPart methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:57'!
+length
+
+	^containers size! !
+
+!KPart methodsFor: 'accessing' stamp: 'DF 7/20/2025 11:38:06'!
+textInto: aWriteStream
+
+	containers do:[:each | each textInto: aWriteStream ].
+! !
+
+!KPart methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:58:39'!
+weight
+
+	^containers sum:[:each | each weight]! !
+
+!KDoc methodsFor: 'testing' stamp: 'DF 7/19/2025 16:05:31'!
 isOverflow: aParentNode
 	
 	^false! !
 
-!KDoc methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
-isUnderflow: aParentNode neighbour: aKNode 
+!KDoc methodsFor: 'testing' stamp: 'DF 7/24/2025 21:12:42'!
+isUnderflow: aParentNode  
 	
 	^false! !
 
-!KDoc methodsFor: 'interface' stamp: 'DF 7/20/2025 10:23:52'!
+!KDoc methodsFor: 'factory' stamp: 'DF 7/20/2025 10:23:52'!
 newItem
 	^KPage new! !
 
-!KPage methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:14:10'!
-captures: anAddress 
-
-	"a page captures an address if the weight of all the lines up to the address exceeds the number of lines allowed in the page (that is its weight - overweight)."
-	
-	| sum parIndex lineIndex |
-	
-	parIndex := anAddress first. lineIndex := anAddress second.
-	
-	sum := 0.
-	
-	1 to: parIndex - 1 do:[:ii | sum := sum + (containers at:ii :: weight) ].
-	
-	sum := sum + lineIndex. 
-	
-	^sum > (self weight - self overweight)! !
-
-!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 15:42:04'!
+!KPage methodsFor: 'inserting' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
 
 	| addr |
@@ -706,26 +789,7 @@ insert: aCharacter after: anAddress
 	^addr
 ! !
 
-!KPage methodsFor: 'interface' stamp: 'DF 7/19/2025 16:40:42'!
-isOverflow: aParentNode
-
-	^self weight > 5! !
-
-!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
-isUnderflow: aParentNode neighbour: aKNode 
-
-	^self weight < 5! !
-
-!KPage methodsFor: 'interface' stamp: 'DF 7/20/2025 10:24:04'!
-newItem
-	^KParagraph new! !
-
-!KPage methodsFor: 'interface' stamp: 'DF 7/19/2025 16:23:00'!
-overweight
-
-	^self weight - 5! !
-
-!KPage methodsFor: 'interface' stamp: 'DF 7/21/2025 10:59:24'!
+!KPage methodsFor: 'inserting' stamp: 'DF 7/21/2025 10:59:24'!
 push: aKPar
 
 	self assert: (aKPar isKindOf: KParagraph).
@@ -735,12 +799,40 @@ push: aKPar
 		ifFalse:[
 			containers first addLinesOf: aKPar]! !
 
-!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:16:06'!
+!KPage methodsFor: 'testing' stamp: 'DF 7/24/2025 21:13:42'!
+invariant: aKDoc neighbour: aKPage
+
+	self assert: (super invariant: aKDoc neighbour: aKPage).
+	
+	aKPage
+		ifNil:[^true].
+		
+	self assert: (self isUnderflow: aKDoc :: not). 
+	
+	^true
+		! !
+
+!KPage methodsFor: 'testing' stamp: 'DF 7/19/2025 16:40:42'!
+isOverflow: aParentNode
+
+	^self weight > 5! !
+
+!KPage methodsFor: 'testing' stamp: 'DF 7/24/2025 21:12:42'!
+isUnderflow: aParentNode  
+
+	^self weight < 5! !
+
+!KPage methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:04'!
+newItem
+	^KParagraph new! !
+
+!KPage methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:53:13'!
 removeFirst: aPage
 
 	"if the weight of the first paragraph is less than the underweight (available space) in aPage
 	move the entire paragraph to aPage. Otherwise split the paragraph and move only enough
-	to fill aPage without overflowing it. "
+	to fill aPage without overflowing it. 
+	"
 	
 	| aPar |
 	
@@ -753,7 +845,7 @@ removeFirst: aPage
 			aPar splitAfter: aPage underweight].  
 			! !
 
-!KPage methodsFor: 'interface' stamp: 'DF 7/19/2025 22:18:42'!
+!KPage methodsFor: 'erasing' stamp: 'DF 7/19/2025 22:18:42'!
 removeLast: aDoc
 
 	| aPar |
@@ -769,20 +861,34 @@ removeLast: aDoc
 			aPar splitAfter: self overweight].  
 			! !
 
-!KPage methodsFor: 'interface' stamp: 'DF 7/24/2025 18:10:58'!
+!KPage methodsFor: 'addressing' stamp: 'DF 7/22/2025 12:14:10'!
+captures: anAddress 
+
+	"a page captures an address if the weight of all the lines up to the address exceeds the number of lines allowed in the page (that is its weight - overweight)."
+	
+	| sum parIndex lineIndex |
+	
+	parIndex := anAddress first. lineIndex := anAddress second.
+	
+	sum := 0.
+	
+	1 to: parIndex - 1 do:[:ii | sum := sum + (containers at:ii :: weight) ].
+	
+	sum := sum + lineIndex. 
+	
+	^sum > (self weight - self overweight)! !
+
+!KPage methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:23:00'!
+overweight
+
+	^self weight - 5! !
+
+!KPage methodsFor: 'accessing' stamp: 'DF 7/24/2025 18:10:58'!
 underweight
 
 	^5 - self weight ! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:58:33'!
-addLinesOf: aKPar
-
-	aKPar lines reverse do:[:each |
-		containers add: each afterIndex: 0 ].
-	
-	! !
-
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 22:36:04'!
+!KParagraph methodsFor: 'initialization' stamp: 'DF 7/19/2025 22:36:04'!
 initialize
 
 	super initialize.
@@ -791,7 +897,16 @@ initialize
 	
 	rightMargin := 6+8! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 16:33:34'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 7/24/2025 21:33:41'!
+addLinesOf: aKPar
+
+	aKPar lines reverse do:[:each |
+		containers add: each afterIndex: 0 ].
+	
+	self rebuild.
+	! !
+
+!KParagraph methodsFor: 'inserting' stamp: 'DF 7/24/2025 16:33:34'!
 insert: aCharacter after: anAddress
 
 	| addr  |
@@ -839,34 +954,7 @@ insert: aCharacter after: anAddress
 	
 	^addr! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:58:41'!
-lines
-	^containers! !
-
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 18:13:36'!
-rebuild
-
-	"reinsert the text of self from scratch. This will ensure that all the lines in self
-	are packed. "
-	
-	| text addr |
-	
-	text := self text.
-	
-	containers removeAll.
-	
-	addr := self insertAtStart: text first.
-	
-	text allButFirst do:[:each | addr := self insert: each after: addr].
-	
-	! !
-
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 15:14:04'!
-removeLinesFrom: anInteger
-
-	^containers removeLast: containers size - anInteger + 1! !
-
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/20/2025 17:58:20'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 7/20/2025 17:58:20'!
 shiftRight: anInteger 
 
 	| items ii addr |
@@ -887,7 +975,7 @@ shiftRight: anInteger
 		
 	^addr! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 20:12:22'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 7/19/2025 20:12:22'!
 splitAfter: anInt
 
 	| aPar |
@@ -899,30 +987,87 @@ splitAfter: anInt
 	
 	^aPar! !
 
-!KParagraph methodsFor: 'as yet unclassified' stamp: 'DF 7/19/2025 15:54:50'!
-width
-	^rightMargin - leftMargin! !
+!KParagraph methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:33:47'!
+eraseFrom: aBeginAddress to: anEndAddress
 
-!KParagraph methodsFor: 'interface' stamp: 'DF 7/19/2025 15:56:04'!
-isOverflow: aParentNode
+	| addr distance |
+	
+	addr := super eraseFrom: aBeginAddress to: anEndAddress.
+	
+	distance := self distanceFrom: #(1 1) to: addr.
+	
+	self rebuild.
+	
+	addr := #( 1 1).
+	
+	distance timesRepeat: [addr := self next: addr].
+	
+	^addr.! !
 
-	^false! !
+!KParagraph methodsFor: 'erasing' stamp: 'DF 7/22/2025 18:13:36'!
+rebuild
 
-!KParagraph methodsFor: 'interface' stamp: 'DF 7/24/2025 18:21:36'!
-isUnderflow: aParentNode neighbour: aKNode 
+	"reinsert the text of self from scratch. This will ensure that all the lines in self
+	are packed. "
+	
+	| text addr |
+	
+	text := self text.
+	
+	containers removeAll.
+	
+	addr := self insertAtStart: text first.
+	
+	text allButFirst do:[:each | addr := self insert: each after: addr].
+	
+	! !
 
-	^false! !
-
-!KParagraph methodsFor: 'interface' stamp: 'DF 7/20/2025 10:24:19'!
-newItem
-	^KLine new! !
-
-!KParagraph methodsFor: 'interface' stamp: 'DF 7/19/2025 20:38:29'!
+!KParagraph methodsFor: 'erasing' stamp: 'DF 7/19/2025 20:38:29'!
 removeLast: aPage
 
 	^containers removeLast.! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 16:33:19'!
+!KParagraph methodsFor: 'erasing' stamp: 'DF 7/24/2025 15:14:04'!
+removeLinesFrom: anInteger
+
+	^containers removeLast: containers size - anInteger + 1! !
+
+!KParagraph methodsFor: 'testing' stamp: 'DF 7/24/2025 21:07:30'!
+invariant: aKPage neighbour: aKParagraph
+
+	self assert: (super invariant: aKPage neighbour: aKParagraph).
+	
+	aKParagraph
+		ifNil:[^true].
+		
+	self assert: containers last text last = Character cr.	
+	
+	^true
+		! !
+
+!KParagraph methodsFor: 'testing' stamp: 'DF 7/19/2025 15:56:04'!
+isOverflow: aParentNode
+
+	^false! !
+
+!KParagraph methodsFor: 'testing' stamp: 'DF 7/24/2025 21:12:42'!
+isUnderflow: aParentNode  
+
+	^false! !
+
+!KParagraph methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:19'!
+newItem
+	^KLine new! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 7/21/2025 10:58:41'!
+lines
+	^containers! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:54:50'!
+width
+	^rightMargin - leftMargin! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:36:31'!
 testErase
 
 	| text aKDoc bb ee |
@@ -944,6 +1089,8 @@ testErase
 	bb := aKDoc eraseFrom:bb to: ee.
 	
 	self assert: aKDoc text = 'In olden times, when to wish was to have, thing whose daughters were all beautiful.'.
+
+	self assert: aKDoc invariant.
 	
 	bb := #(1 1 1 1).
 	
@@ -953,9 +1100,11 @@ testErase
 
 	self assert: aKDoc text = 'daughters were all beautiful.'.
 	
+	self assert: aKDoc invariant.
+	
 	! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 08:09:22'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:16:38'!
 testInsert
 
 	| text aKDoc addr |
@@ -968,14 +1117,17 @@ testInsert
 	
 	text allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
 	
-	self assert: aKDoc text = text.! !
+	self assert: aKDoc text = text.
+	
+	self assert: aKDoc invariant.
+	! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/21/2025 10:47:04'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:24:43'!
 testInsertInParts
 
 	| p1 p2 aKDoc addr |
 	
-	p1 := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'. 
+	p1 := 'In olden times, when to wisZ was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'. 
 	
 	p2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
@@ -983,15 +1135,18 @@ testInsertInParts
 	
 	addr := aKDoc insertAtStart: p2 first.
 	
-	p2 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
+	p2 allButFirst do:[:each | addr := aKDoc insert:each after: addr. self assert: aKDoc invariant. ].
 
 	addr := aKDoc insertAtStart: p1 first.
 	
-	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
+	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr. self assert: aKDoc invariant.  ].
 	
-	self assert: aKDoc text = (p1,p2).! !
+	self assert: aKDoc text = (p1,p2).
+	
+	self assert: aKDoc invariant.
+! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:26:04'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:16:48'!
 testInsertNewLines
 
 	| p1 p2 aKDoc addr |
@@ -1010,9 +1165,12 @@ testInsertNewLines
 	
 	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
 	
-	self assert: aKDoc text = (p1,p2).! !
+	self assert: aKDoc text = (p1,p2).
+	
+	self assert: aKDoc invariant.
+! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/22/2025 12:16:57'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:16:51'!
 testMakeParagraphs
 
 	| p1 aKDoc addr |
@@ -1026,6 +1184,8 @@ testMakeParagraphs
 	p1 allButFirst do:[:each | addr := aKDoc insert:each after: addr.  ].
 	
 	self assert: aKDoc text = (p1).
+
+	self assert: aKDoc invariant.
 ! !
 
 !Integer methodsFor: '*Kaeru-enumerating' stamp: 'DF 7/20/2025 11:09:43'!
