@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 24 July 2025 at 11:09:30 pm'!
+'From Cuis7.3 [latest update: #6895] on 25 July 2025 at 1:27:05 pm'!
 'Description '!
-!provides: 'Kaeru' 1 152!
+!provides: 'Kaeru' 1 153!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -343,6 +343,11 @@ firstTokenLength
 	"ii = chars size + 1 or:[ ii <= chars size and chars at:ii :: isSeparator] "
 	
 	^ ii - 1! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/25/2025 13:24:11'!
+lastCharacter
+
+	^chars last! !
 
 !KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
 length
@@ -737,6 +742,23 @@ isUnderflow: aParentNode
 !KDoc methodsFor: 'factory' stamp: 'DF 7/20/2025 10:23:52'!
 newItem
 	^KPage new! !
+
+!KPage methodsFor: 'inserting' stamp: 'DF 7/25/2025 13:25:52'!
+append: aParagraph
+
+	| cc |
+	
+	self assert: (aParagraph isKindOf: KParagraph).
+	
+	self halt.
+	
+	cc := containers last.
+	
+	cc lines last lastCharacter = Character cr
+		ifTrue:[
+			cc add: aParagraph]
+		ifFalse:[
+			cc lines addAll: aParagraph lines].! !
 
 !KPage methodsFor: 'inserting' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
