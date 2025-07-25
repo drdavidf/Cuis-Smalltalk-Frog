@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 25 July 2025 at 1:27:05 pm'!
+'From Cuis7.3 [latest update: #6895] on 25 July 2025 at 9:43:18 pm'!
 'Description '!
-!provides: 'Kaeru' 1 153!
+!provides: 'Kaeru' 1 170!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -44,6 +44,16 @@ KPart subclass: #KDoc
 KDoc class
 	instanceVariableNames: ''!
 
+!classDefinition: #KLibrary category: #Kaeru!
+KPart subclass: #KLibrary
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KLibrary class' category: #Kaeru!
+KLibrary class
+	instanceVariableNames: ''!
+
 !classDefinition: #KPage category: #Kaeru!
 KPart subclass: #KPage
 	instanceVariableNames: ''
@@ -64,6 +74,16 @@ KPart subclass: #KParagraph
 KParagraph class
 	instanceVariableNames: ''!
 
+!classDefinition: #KRepository category: #Kaeru!
+Object subclass: #KRepository
+	instanceVariableNames: 'root'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KRepository class' category: #Kaeru!
+KRepository class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKNode category: #Kaeru!
 TestCase subclass: #TestKNode
 	instanceVariableNames: ''
@@ -76,7 +96,13 @@ TestKNode class
 
 
 !KNode commentStamp: '<historical>' prior: 0!
-This is the interface for the KNode tree. The tree holds a structured representation of characters. Each level in the tree represents a structural element: documents hold pages; pages hold paragarphs; paragraphs hold lines, and lines holds characters. Each element in the tree is identified using an address. An address is a tuple of integers that mark the position in each level of the tree. The essential quality of this tree is that it manages overflow. When an element overflows (for example a page overflows when the number of lines in the page exceeds its limits) we move the last child in the element to the next element. 
+This is the interface for the KNode tree. 
+
+The tree holds a structured representation of characters. Each level in the tree represents a structural element: libraries hold documents; documents hold pages; pages hold paragarphs; paragraphs hold lines, and lines holds characters. 
+
+Each element in the tree is identified using an address. An address is a tuple of integers that mark the position in each level of the tree. 
+
+The essential quality of this tree is that it manages overflow and underflow. When an element overflows (for example a page overflows when the number of lines in the page exceeds its limits) we move the last child in the element to the next element. Similarly, when a an element underflows (e.g. a page has too few lines) we move the first child in the next element back to the underflowed element. 
 
 A few key properties: 
 
@@ -96,6 +122,14 @@ newItem
 
 Answers a new child object. For example, a paragraph answers a new line. A page answers a new paragraph.
 !
+
+!KLibrary commentStamp: '<historical>' prior: 0!
+A KLibrary holds a collection of KDocuments
+
+!
+
+!KRepository commentStamp: '<historical>' prior: 0!
+A KRepository is the object that holds the entire text and provides the operations to manipulate the text. !
 
 !KNode methodsFor: 'inserting' stamp: 'DF 7/19/2025 21:55:27'!
 insert: aCharacter after: anAddress
@@ -136,6 +170,14 @@ lastAddress
 resolve: anAddress  
 
 	^self subclassResponsibility! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:45:47'!
+first
+	^self subclassResponsibility ! !
+
+!KNode methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:45:49'!
+last
+	^self subclassResponsibility ! !
 
 !KNode methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:41'!
 length
@@ -326,6 +368,15 @@ insertAtStart: aCharacter
 	
 	^{1}! !
 
+!KLine methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:10:19'!
+first
+	
+	^ chars isEmpty
+		ifTrue:[
+			{0}]
+		ifFalse:[
+			{ 1 }]! !
+
 !KLine methodsFor: 'accessing' stamp: 'DF 7/24/2025 18:37:35'!
 firstTokenLength
 
@@ -343,6 +394,10 @@ firstTokenLength
 	"ii = chars size + 1 or:[ ii <= chars size and chars at:ii :: isSeparator] "
 	
 	^ ii - 1! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:34:53'!
+last
+	^{ chars size }! !
 
 !KLine methodsFor: 'accessing' stamp: 'DF 7/25/2025 13:24:11'!
 lastCharacter
@@ -367,10 +422,6 @@ weight
 initialize
 
 	chars := OrderedCollection new! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:14:45'!
-lastAddress
-	^ { chars size }! !
 
 !KLine methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:12:09'!
 next: anAddress
@@ -445,7 +496,11 @@ precedes: aBeginAddress before: anEndAddress
 		aBeginAddress first = anEndAddress first and:[
 			self precedes: aBeginAddress allButFirst before: anEndAddress allButFirst ] ]! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:26:23'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:19:32'!
+adjust: anAddress
+	^anAddress! !
+
+!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:19:48'!
 eraseFrom: aBeginAddress 
 
 	
@@ -465,10 +520,10 @@ eraseFrom: aBeginAddress
 	
 	containers := containers copyFrom: 1 to: aBeginAddress first.
 	
-	^ { aBeginAddress first } , addr
+	^ self adjust: { aBeginAddress first } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:32:31'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:19:59'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	| addr |
@@ -503,12 +558,12 @@ eraseFrom: aBeginAddress to: anEndAddress
 	
 					containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size) ] ].
 	
-	^ { aBeginAddress first } , addr
+	^ self adjust: { aBeginAddress first } , addr
 	
 	
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:38:31'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:20:07'!
 eraseTo: anEndAddress 
 
 	" Erase all the characters that are in addresses before anEndAddress. 
@@ -525,10 +580,10 @@ eraseTo: anEndAddress
 	
 	"the container at anEndAddress first is now located at index 1"
 	
-	^ { 1 } , addr
+	^ self adjust: { 1 } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/24/2025 23:04:08'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:06:53'!
 shiftLeft: anIndex 
 
 	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
@@ -540,13 +595,24 @@ shiftLeft: anIndex
 	[ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]  
 		whileTrue:[
 
-			item := containers at: ii +1 :: removeFirst: (containers at:ii).
-	
-			containers at: ii  :: append: item.
+			" It is possible that the container at ii is still underflow even after we append
+			to it the item from the next container (for example when we append a paragraph
+			it may rebuild itself and thus lose a line). 
 			
-			containers at: ii + 1 :: isEmpty 
-				ifTrue:[
-					containers removeAt: ii + 1].
+			Thus we must keep taking items from the next container until the current 
+			container (at ii) is not underflowed or until we have emptied all the containers after
+			ii."
+			
+			[ ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]
+				whileTrue:[
+					
+					item := containers at: ii +1 :: removeFirst: (containers at:ii).
+					
+					containers at: ii :: append: item.
+			
+					containers at: ii + 1 :: isEmpty 
+						ifTrue:[
+							containers removeAt: ii + 1] ].
 			
 			ii := ii + 1 ].
 	
@@ -669,11 +735,6 @@ distanceFrom: aBeginAddr to: anEndAddr
 	
 	! !
 
-!KPart methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:15:16'!
-lastAddress
-
-	^ { containers size } , containers last lastAddress! !
-
 !KPart methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:13:08'!
 next: anAddress
 
@@ -691,7 +752,7 @@ next: anAddress
 		ifFalse:[
 			{ anAddress first } , addr ]! !
 
-!KPart methodsFor: 'addressing' stamp: 'DF 7/22/2025 11:31:44'!
+!KPart methodsFor: 'addressing' stamp: 'DF 7/25/2025 21:38:34'!
 prev: anAddress  
 
 	| addr |
@@ -704,7 +765,7 @@ prev: anAddress
 				ifTrue:[
 					{}]
 				ifFalse:[
-					{ anAddress first - 1 } , (containers at: anAddress first - 1 :: lastAddress) ] ] .
+					{ anAddress first - 1 } , (containers at: anAddress first - 1 :: last) ] ] .
 			
 	^{ anAddress first }, addr! !
 
@@ -712,6 +773,43 @@ prev: anAddress
 resolve: anAddress  
 			
 	^containers at: anAddress first :: resolve: anAddress allButFirst ! !
+
+!KPart methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:36:01'!
+first
+
+	" Answers the address for the first character in this subtree. If the tree is empty answer
+	the address #(0)
+	
+	( (a b c) (x y z) ) begin = #(1 1)
+	
+	( () (x y z) ) begin = #(1 0)
+	
+	() begin = #(0)
+	
+	"
+	
+	containers isEmpty
+		ifTrue:[
+			^#(0)].
+	
+	^{ 1 } , containers first first	
+! !
+
+!KPart methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:46:51'!
+last
+
+	" Answers an address pointing at the last character in the tree. If the tree is empty answer the address #(0)
+	
+	( (a b c) (x y z) ) end = #(2 3)
+	
+	( ) end = #(0)
+	
+	"
+	containers isEmpty
+		ifTrue:[
+			^#(0)].
+		
+	^ { containers size } , containers last last.! !
 
 !KPart methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:57'!
 length
@@ -743,22 +841,42 @@ isUnderflow: aParentNode
 newItem
 	^KPage new! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 7/25/2025 13:25:52'!
+!KDoc methodsFor: 'erasing' stamp: 'DF 7/25/2025 19:35:28'!
+adjust: anAddress
+
+	| aPage |
+	
+	containers isEmpty
+		ifTrue:[
+			^anAddress].
+	
+	aPage  := containers at: anAddress first.
+	
+	aPage isUnderflow: self ::
+		ifTrue:[
+			self shiftLeft: anAddress first].
+		
+	" The address marks the character immediately after the erased text. shifting left may
+	bring more text to the container but only after this character so the address remains
+	valid "
+		
+	^anAddress! !
+
+!KPage methodsFor: 'inserting' stamp: 'DF 7/25/2025 13:57:57'!
 append: aParagraph
 
 	| cc |
 	
 	self assert: (aParagraph isKindOf: KParagraph).
-	
-	self halt.
-	
+		
 	cc := containers last.
 	
 	cc lines last lastCharacter = Character cr
 		ifTrue:[
-			cc add: aParagraph]
+			containers add: aParagraph]
 		ifFalse:[
-			cc lines addAll: aParagraph lines].! !
+			cc lines addAll: aParagraph lines.
+			cc rebuild ].! !
 
 !KPage methodsFor: 'inserting' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
@@ -848,12 +966,12 @@ isUnderflow: aParentNode
 newItem
 	^KParagraph new! !
 
-!KPage methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:53:13'!
+!KPage methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:45:08'!
 removeFirst: aPage
 
 	"if the weight of the first paragraph is less than the underweight (available space) in aPage
 	move the entire paragraph to aPage. Otherwise split the paragraph and move only enough
-	to fill aPage without overflowing it. 
+	lines from the beginning of aPar to fill aPage without overflowing it. 
 	"
 	
 	| aPar |
@@ -864,7 +982,7 @@ removeFirst: aPage
 		ifTrue:[
 			containers removeFirst]
 		ifFalse:[
-			aPar splitAfter: aPage underweight].  
+			aPar splitBefore: aPage underweight].  
 			! !
 
 !KPage methodsFor: 'erasing' stamp: 'DF 7/19/2025 22:18:42'!
@@ -1009,14 +1127,29 @@ splitAfter: anInt
 	
 	^aPar! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 7/24/2025 22:33:47'!
-eraseFrom: aBeginAddress to: anEndAddress
+!KParagraph methodsFor: 'inserting' stamp: 'DF 7/25/2025 14:42:45'!
+splitBefore: anInt
+
+	| aPar |
+	
+	aPar := KParagraph new.
+	
+	anInt timesRepeat:[
+		aPar lines add: containers removeFirst ] .
+	
+	^aPar! !
+
+!KParagraph methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:13:56'!
+adjust: anAddress
 
 	| addr distance |
 	
-	addr := super eraseFrom: aBeginAddress to: anEndAddress.
+	" As rebuilding may change the physical address of the character immediately after
+	the erase part in a way that is difficult to calculate in advance, we calculate the distance
+	from the paragraph's first character and use it to recalculate the physical address
+	that matches the same abstract position as before the rebuild procedure. "
 	
-	distance := self distanceFrom: #(1 1) to: addr.
+	distance := self distanceFrom: #(1 1) to: anAddress.
 	
 	self rebuild.
 	
@@ -1024,7 +1157,9 @@ eraseFrom: aBeginAddress to: anEndAddress
 	
 	distance timesRepeat: [addr := self next: addr].
 	
-	^addr.! !
+	^addr.
+
+	! !
 
 !KParagraph methodsFor: 'erasing' stamp: 'DF 7/22/2025 18:13:36'!
 rebuild
@@ -1089,7 +1224,131 @@ lines
 width
 	^rightMargin - leftMargin! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/24/2025 21:36:31'!
+!KRepository methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:39:01'!
+first
+	^root first! !
+
+!KRepository methodsFor: 'accessing' stamp: 'DF 7/25/2025 20:39:07'!
+last
+	^root last! !
+
+!KRepository methodsFor: 'accessing' stamp: 'DF 7/25/2025 21:43:15'!
+textFrom: aBeginAddr to: anEndAddr
+
+	| bb aWriteStream |
+	
+	bb := aBeginAddr.
+	
+	aWriteStream := WriteStream on: ''.
+	
+	[bb ~= anEndAddr]
+		whileTrue:[
+			aWriteStream nextPut: (root resolve:bb).
+			bb := root next: bb ].
+		
+	^aWriteStream contents! !
+
+!KRepository methodsFor: 'initialization' stamp: 'DF 7/25/2025 20:27:54'!
+initialize
+
+	root := KLibrary new! !
+
+!KRepository methodsFor: 'editing' stamp: 'DF 7/25/2025 20:50:00'!
+eraseFrom: aBeginAddr to: anEndAddr
+
+	^anEndAddr first > root length
+		ifTrue:[
+			root eraseFrom: aBeginAddr ]
+		ifFalse:[
+			root eraseFrom: aBeginAddr to: anEndAddr ]! !
+
+!KRepository methodsFor: 'editing' stamp: 'DF 7/25/2025 20:38:30'!
+insert: aCharacter after: anAddress
+
+	^anAddress = #(0)
+		ifTrue:[
+			root insertAtStart: aCharacter]
+		ifFalse:[
+			root insert: aCharacter after: anAddress].! !
+
+!KRepository methodsFor: 'searching' stamp: 'DF 7/25/2025 21:26:17'!
+match: aString at: anAddress end: anEndAddr
+
+	^self notMatch: aString at: anAddress end: anEndAddr  :: not! !
+
+!KRepository methodsFor: 'searching' stamp: 'DF 7/25/2025 21:22:55'!
+notMatch: aString at: anAddress end: anEndAddr
+
+	| begin ii |
+	
+	begin := anAddress.
+	
+	ii := 1.
+	
+	[begin ~= anEndAddr and:[ii <= aString size] and: [ (root resolve:begin) = aString at: ii ] ]
+		whileTrue:[
+			begin := root next: begin.
+			ii := ii + 1].
+		
+	^ ii ~= aString size + 1! !
+
+!KRepository methodsFor: 'searching' stamp: 'DF 7/25/2025 21:34:30'!
+searchFrom: anAddress backwardFor: aString
+
+	| end begin start |
+	
+	start := root first.
+	
+	end := root next: root last.
+	
+	begin := anAddress.
+	
+	[ ( self notMatch: aString at: begin end: end) and: [ begin ~= start ] ]
+		whileTrue:[
+			begin := root prev: begin ].
+		 
+	self match: aString at:begin end: end ::
+		ifTrue:[
+			^begin ].
+		
+	begin := self last.
+	
+	[begin ~= anAddress and: [self notMatch: aString at: begin end: end ] ]
+		whileTrue:[
+			begin := root prev: begin].
+		
+	^begin
+	
+	 ! !
+
+!KRepository methodsFor: 'searching' stamp: 'DF 7/25/2025 21:25:05'!
+searchFrom: anAddress forwardFor: aString
+
+	| end begin |
+	
+	end := root next: root last.
+	
+	begin := anAddress.
+	
+	[begin ~= end and: [self notMatch: aString at: begin end: end ] ]
+		whileTrue:[
+			begin := root next: begin ].
+		 
+	begin ~= end
+		ifTrue:[
+			^begin ].
+		
+	begin := self first.
+	
+	[begin ~= anAddress and: [self notMatch: aString at: begin end: end ] ]
+		whileTrue:[
+			begin := root next: begin].
+		
+	^begin
+	
+	 ! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/25/2025 14:50:59'!
 testErase
 
 	| text aKDoc bb ee |
@@ -1120,7 +1379,7 @@ testErase
 	
 	aKDoc eraseFrom:bb to: ee.
 
-	self assert: aKDoc text = 'daughters were all beautiful.'.
+	self assert: aKDoc text = 'all beautiful.'.
 	
 	self assert: aKDoc invariant.
 	
