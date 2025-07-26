@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 25 July 2025 at 9:43:18 pm'!
+'From Cuis7.3 [latest update: #6895] on 26 July 2025 at 11:52:09 pm'!
 'Description '!
-!provides: 'Kaeru' 1 170!
+!provides: 'Kaeru' 1 200!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -94,6 +94,16 @@ TestCase subclass: #TestKNode
 TestKNode class
 	instanceVariableNames: ''!
 
+!classDefinition: #TestKRepository category: #Kaeru!
+TestCase subclass: #TestKRepository
+	instanceVariableNames: 'repo'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'TestKRepository class' category: #Kaeru!
+TestKRepository class
+	instanceVariableNames: ''!
+
 
 !KNode commentStamp: '<historical>' prior: 0!
 This is the interface for the KNode tree. 
@@ -161,6 +171,26 @@ removeLast: aKNode
 captures: anAddress 
 
 	^anAddress first = self length! !
+
+!KNode methodsFor: 'addressing' stamp: 'DF 7/26/2025 18:42:59'!
+distanceFrom: aBeginAddr to: anEndAddr
+
+	| bb ii | 
+	
+	self assert: ( self precedes: aBeginAddr before: anEndAddr ).
+		
+	bb := aBeginAddr.
+	ii := 0.
+	
+	[bb ~= anEndAddr ] 
+		whileTrue:[
+			bb := self next:bb.
+			ii := ii + 1 ].
+		
+	^ii
+	
+	
+	! !
 
 !KNode methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:15:35'!
 lastAddress
@@ -243,7 +273,7 @@ isUnderflow: aParagraph neighbour: aKNode
 	
 	^aKNode firstTokenLength + self length <= aParagraph width  ! !
 
-!KLine methodsFor: 'erasing' stamp: 'DF 7/21/2025 10:12:19'!
+!KLine methodsFor: 'erasing' stamp: 'DF 7/26/2025 20:09:29'!
 eraseAfter: anIndex
 
 " 1234567 eraseAfter:3  = removeLast:4 = 4567 
@@ -251,6 +281,8 @@ eraseAfter: anIndex
  eraseAfter: k = removeLast: size - k
 "
 
+	self assert: anIndex > 0.
+	
 	^chars removeLast: chars size - anIndex! !
 
 !KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:24:55'!
@@ -463,13 +495,15 @@ invariant
 	
 	^true! !
 
-!KPart methodsFor: 'testing' stamp: 'DF 7/24/2025 21:06:24'!
+!KPart methodsFor: 'testing' stamp: 'DF 7/26/2025 18:54:01'!
 invariant: aKPage neighbour: aKParagraph
 
 	1 to: containers size - 1 do:[:ii |
 		self assert: (containers at:ii :: invariant: self neighbour: (containers at:ii+1)) ].
 	
-	self assert: (containers last invariant: self neighbour: nil).
+	containers notEmpty
+		ifTrue:[
+			self assert: (containers last invariant: self neighbour: nil)].
 	
 	^true
 		! !
@@ -500,7 +534,7 @@ precedes: aBeginAddress before: anEndAddress
 adjust: anAddress
 	^anAddress! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:19:48'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/26/2025 22:22:20'!
 eraseFrom: aBeginAddress 
 
 	
@@ -515,15 +549,25 @@ eraseFrom: aBeginAddress
 	self assert: (aBeginAddress anySatisfy:[:any | any > 1]). 
 	
 	self assert: aBeginAddress first <= containers size.
-		
-	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
 	
+	aBeginAddress allButFirst allSatisfy:[:each | each = 1 ] ::
+		ifTrue:[ 
+			" Necessarily the first member of begin address is greater than 1"
+			
+			containers := containers copyFrom: 1 to: aBeginAddress first - 1.
+			
+			addr := containers at: aBeginAddress first - 1 :: last.
+			
+			^ self adjust: { aBeginAddress first - 1 } , addr].
+	
+	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
+
 	containers := containers copyFrom: 1 to: aBeginAddress first.
 	
 	^ self adjust: { aBeginAddress first } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:19:59'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/26/2025 22:05:00'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	| addr |
@@ -536,28 +580,30 @@ eraseFrom: aBeginAddress to: anEndAddress
 	
 	aBeginAddress first = anEndAddress first
 		ifTrue:[ 
-			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst 
-		]
-		ifFalse:[
-
-			" Erasing more than one item, and starting from the first char in the first item, necessarily erases
-			the first item. "
+			addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst to: anEndAddress allButFirst.
+			^ self adjust: { aBeginAddress first } , addr].
 		
-			aBeginAddress allSatisfy:[:each | each = 1 ] :: 
-				ifTrue:[
-					addr := containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+	" Erasing more than one item, and starting from the first char in the first item, necessarily erases
+	the first item. "
 	
-					containers := containers copyFrom: anEndAddress first to: containers size ]
-				ifFalse:[
-					
-					" Otherwise the first item is not erased, only a part of it is erased. " 
+	aBeginAddress allButFirst allSatisfy:[:each | each = 1 ] :: 
+		ifTrue:[ 
+			addr := containers at: aBeginAddress first - 1 :: last.
 			
-					addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
-	
-					containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
-	
-					containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size) ] ].
-	
+			containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+
+			containers := (containers copyFrom: 1 to: aBeginAddress first - 1) , (containers copyFrom: anEndAddress first to: containers size).
+			
+			^ self adjust: { aBeginAddress first - 1 } , addr ].
+							
+	" Otherwise the first item is not erased, only a part of it is erased. " 
+
+	addr := containers at: aBeginAddress first :: eraseFrom: aBeginAddress allButFirst. 
+
+	containers at: anEndAddress first :: eraseTo: anEndAddress allButFirst.
+
+	containers := (containers copyFrom: 1 to: aBeginAddress first) , (containers copyFrom: anEndAddress first to: containers size).
+
 	^ self adjust: { aBeginAddress first } , addr
 	
 	
@@ -583,7 +629,7 @@ eraseTo: anEndAddress
 	^ self adjust: { 1 } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:06:53'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/26/2025 23:35:52'!
 shiftLeft: anIndex 
 
 	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
@@ -592,7 +638,7 @@ shiftLeft: anIndex
 	
 	ii := anIndex.
 	
-	[ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]  
+	[ii < containers size and:[ (containers at:ii) isUnderflow: self ] ]  
 		whileTrue:[
 
 			" It is possible that the container at ii is still underflow even after we append
@@ -607,6 +653,10 @@ shiftLeft: anIndex
 				whileTrue:[
 					
 					item := containers at: ii +1 :: removeFirst: (containers at:ii).
+					
+					"
+					TODO: if we are appending to the paragraph that the address references, then we must adjust
+					the address because rebuilding the paragraph may move the characters in the paragraph's lines."
 					
 					containers at: ii :: append: item.
 			
@@ -715,26 +765,6 @@ shiftRight: anIndex
 	^{anIndex + 1 . 1 . item length }
 	! !
 
-!KPart methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:08:55'!
-distanceFrom: aBeginAddr to: anEndAddr
-
-	| bb ii | 
-	
-	self assert: ( self precedes: aBeginAddr before: anEndAddr ).
-		
-	bb := aBeginAddr.
-	ii := 0.
-	
-	[bb ~= anEndAddr ] 
-		whileTrue:[
-			bb := self next:bb.
-			ii := ii + 1 ].
-		
-	^ii
-	
-	
-	! !
-
 !KPart methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:13:08'!
 next: anAddress
 
@@ -841,7 +871,7 @@ isUnderflow: aParentNode
 newItem
 	^KPage new! !
 
-!KDoc methodsFor: 'erasing' stamp: 'DF 7/25/2025 19:35:28'!
+!KDoc methodsFor: 'erasing' stamp: 'DF 7/26/2025 23:39:33'!
 adjust: anAddress
 
 	| aPage |
@@ -856,13 +886,25 @@ adjust: anAddress
 		ifTrue:[
 			self shiftLeft: anAddress first].
 		
+	" We must check the next page (if it is not the last) for underflow because when we erase a range
+	of pages the first page may not underflow but the last page may. After erasing, the last page in the
+	range becomes the next page after the first page in the range. "
+	
+	anAddress first + 1 < containers size and: [containers at: anAddress first + 1 :: isUnderflow: self ] :: 
+		ifTrue:[ 
+			self shiftLeft: anAddress first + 1].
+		
 	" The address marks the character immediately after the erased text. shifting left may
 	bring more text to the container but only after this character so the address remains
 	valid "
 		
 	^anAddress! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 7/25/2025 13:57:57'!
+!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:55:20'!
+newItem
+	^KDoc new! !
+
+!KPage methodsFor: 'inserting' stamp: 'DF 7/26/2025 20:46:22'!
 append: aParagraph
 
 	| cc |
@@ -876,7 +918,15 @@ append: aParagraph
 			containers add: aParagraph]
 		ifFalse:[
 			cc lines addAll: aParagraph lines.
-			cc rebuild ].! !
+			
+			"if the lines end with a newline character, rebuilding will create a spurious
+			empty line. We must therefore remove it. "
+			aParagraph lines last lastCharacter = Character cr
+				ifTrue:[ 
+					cc rebuild.
+					cc lines removeLast]
+				ifFalse:[
+					cc rebuild ] ].! !
 
 !KPage methodsFor: 'inserting' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
@@ -1232,6 +1282,10 @@ first
 last
 	^root last! !
 
+!KRepository methodsFor: 'accessing' stamp: 'DF 7/26/2025 18:52:34'!
+root
+	^root! !
+
 !KRepository methodsFor: 'accessing' stamp: 'DF 7/25/2025 21:43:15'!
 textFrom: aBeginAddr to: anEndAddr
 
@@ -1347,6 +1401,11 @@ searchFrom: anAddress forwardFor: aString
 	^begin
 	
 	 ! !
+
+!KRepository methodsFor: 'testing' stamp: 'DF 7/26/2025 18:48:15'!
+invariant
+
+	^root invariant! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/25/2025 14:50:59'!
 testErase
@@ -1468,6 +1527,137 @@ testMakeParagraphs
 
 	self assert: aKDoc invariant.
 ! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 19:03:50'!
+abstractIndexOf: anAddress base: anInitialAddress
+
+	^(repo root distanceFrom: anInitialAddress to: anAddress) + 1
+	! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:59:24'!
+goto: anIndex from: anAddress
+
+	| pp |
+	
+	pp := anAddress.
+	
+	anIndex - 1 timesRepeat:[
+		pp := repo root next: pp 
+	].
+
+	^pp! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:41:33'!
+setUp
+
+	repo := KRepository new.
+	
+! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 22:08:00'!
+testErase
+
+	| text  bb ptext |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	self assert: repo invariant.
+	
+	bb := repo first.
+	
+	text do:[:each | 
+		bb := repo insert: each after: bb].
+	
+	self assert: repo root text = text.
+
+	self assert: repo invariant.
+	
+	"select at random two indices ii, jj between 1 and text size + 1, "
+	
+	[ text isEmpty ] whileFalse:[ | ii jj ab ae cb ce pp |
+		
+		ii := (text size + 1) atRandom.
+		
+		jj := (text size + 1) atRandom.
+		
+		"move to the same location in both concrete and abstract systems. "
+		
+		ab :=  ii min: jj. ae := ii max: jj.
+		
+		cb := self goto:ab from: repo first.
+		
+		self assert: ab = (self abstractIndexOf: cb base: repo first). 
+		
+		ce := self goto: ae from: repo first.
+		
+		self assert: ae = (self abstractIndexOf: ce base: repo first).
+		
+		"erase the parts at both the abstract and concrete sytems. "
+		
+		pp := repo eraseFrom: cb to: ce.
+
+		self assert: repo invariant.
+		
+		ptext := text.
+			
+		text := text eraseFrom:ab to:ae.
+		
+		"check that the abstract and concrete systems correspond"
+		
+		self assert: text  = repo root text.
+		
+		self assert: (self abstractIndexOf: pp base: repo first) = (ab - 1). ]
+! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 22:24:36'!
+testError
+
+	| text  bb ab ae cb ce pp |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	
+	self assert: repo invariant.
+	
+	bb := repo first.
+	
+	text do:[:each | 
+		bb := repo insert: each after: bb].
+	
+	self assert: repo root text = text.
+
+	self assert: repo invariant.
+	
+	"move to the same location in both concrete and abstract systems. "
+		
+	ab :=  206. ae := 630.
+		
+	cb := self goto:ab from: repo first.
+		
+	self assert: ab = (self abstractIndexOf: cb base: repo first). 
+		
+	ce := self goto: ae from: repo first.
+		
+	self assert: ae = (self abstractIndexOf: ce base: repo first).
+		
+	"erase the parts at both the abstract and concrete sytems. "
+		
+	pp := repo eraseFrom: cb to: ce.
+
+	self assert: repo invariant.
+			
+	text := text eraseFrom:ab to:ae.
+		
+	"check that the abstract and concrete systems correspond"
+		
+	self assert: text  = repo root text.
+	
+	self assert: (self abstractIndexOf: pp base: repo first) = (ab - 1). 
+! !
+
+!CharacterSequence methodsFor: '*Kaeru-unittest' stamp: 'DF 6/19/2025 18:35:16'!
+eraseFrom: bIndex to: eIndex
+
+	^ self copyReplaceFrom: bIndex to: eIndex - 1 with: ''! !
 
 !Integer methodsFor: '*Kaeru-enumerating' stamp: 'DF 7/20/2025 11:09:43'!
 copiesOf: anObject
