@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 26 July 2025 at 11:52:09 pm'!
+'From Cuis7.3 [latest update: #6895] on 29 July 2025 at 3:28:48 pm'!
 'Description '!
-!provides: 'Kaeru' 1 200!
+!provides: 'Kaeru' 1 211!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -567,11 +567,12 @@ eraseFrom: aBeginAddress
 	^ self adjust: { aBeginAddress first } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/26/2025 22:05:00'!
+!KPart methodsFor: 'erasing' stamp: 'DF 7/29/2025 14:46:16'!
 eraseFrom: aBeginAddress to: anEndAddress
 
 	| addr |
 	
+	self assert: (aBeginAddress anySatisfy:[:any | any > 1 ]).
 	self assert: aBeginAddress first <= anEndAddress first.	
 	self assert: anEndAddress first <= containers size.
 
@@ -629,51 +630,14 @@ eraseTo: anEndAddress
 	^ self adjust: { 1 } , addr
 	! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 7/26/2025 23:35:52'!
-shiftLeft: anIndex 
-
-	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. "
-	
-	| item ii  |
-	
-	ii := anIndex.
-	
-	[ii < containers size and:[ (containers at:ii) isUnderflow: self ] ]  
-		whileTrue:[
-
-			" It is possible that the container at ii is still underflow even after we append
-			to it the item from the next container (for example when we append a paragraph
-			it may rebuild itself and thus lose a line). 
-			
-			Thus we must keep taking items from the next container until the current 
-			container (at ii) is not underflowed or until we have emptied all the containers after
-			ii."
-			
-			[ ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]
-				whileTrue:[
-					
-					item := containers at: ii +1 :: removeFirst: (containers at:ii).
-					
-					"
-					TODO: if we are appending to the paragraph that the address references, then we must adjust
-					the address because rebuilding the paragraph may move the characters in the paragraph's lines."
-					
-					containers at: ii :: append: item.
-			
-					containers at: ii + 1 :: isEmpty 
-						ifTrue:[
-							containers removeAt: ii + 1] ].
-			
-			ii := ii + 1 ].
-	
-	! !
-
-!KPart methodsFor: 'inserting' stamp: 'DF 7/24/2025 23:04:02'!
-append: anItem
+!KPart methodsFor: 'inserting' stamp: 'DF 7/29/2025 14:41:13'!
+append: anItem address: anAddr 
 
 	self assert: (anItem isKindOf: KNode).
 	
-	containers add: anItem ! !
+	containers add: anItem.
+	
+	^anAddr! !
 
 !KPart methodsFor: 'inserting' stamp: 'DF 7/24/2025 21:35:49'!
 insert: aCharacter after: anAddress
@@ -871,62 +835,136 @@ isUnderflow: aParentNode
 newItem
 	^KPage new! !
 
-!KDoc methodsFor: 'erasing' stamp: 'DF 7/26/2025 23:39:33'!
+!KDoc methodsFor: 'erasing' stamp: 'DF 7/29/2025 15:00:22'!
 adjust: anAddress
 
-	| aPage |
+	| aPage addr |
 	
 	containers isEmpty
 		ifTrue:[
 			^anAddress].
 	
+	addr := anAddress.
+	
 	aPage  := containers at: anAddress first.
+
+	" The address marks the character immediately after the erased text. shifting left may
+	bring more text to the container. If the last character (the one pointed to by the address)
+	is a word character and the next character in the shifted container is also a word character 
+	the entire word may have to move to the next container, invalidating the address. "
 	
 	aPage isUnderflow: self ::
 		ifTrue:[
-			self shiftLeft: anAddress first].
+			addr := self shiftLeft: anAddress first address: anAddress].
 		
 	" We must check the next page (if it is not the last) for underflow because when we erase a range
 	of pages the first page may not underflow but the last page may. After erasing, the last page in the
-	range becomes the next page after the first page in the range. "
+	range becomes the next page after the first page in the range. 
+	
+	We do not use the address computed by this second shift left because the address can never refer
+	to a character in the last page."
 	
 	anAddress first + 1 < containers size and: [containers at: anAddress first + 1 :: isUnderflow: self ] :: 
 		ifTrue:[ 
-			self shiftLeft: anAddress first + 1].
+			self shiftLeft: anAddress first + 1 address: anAddress].
 		
-	" The address marks the character immediately after the erased text. shifting left may
-	bring more text to the container but only after this character so the address remains
-	valid "
-		
-	^anAddress! !
+	^addr! !
+
+!KDoc methodsFor: 'erasing' stamp: 'DF 7/29/2025 15:14:50'!
+shiftLeft: anIndex address: anAddr  
+
+	" As long as self is not the last container, and self is underflow, move the first element of the next container to become the last container in self (perhaps splitting a part of it to avoid overflowing self) If the next container becomes empty, remove it. Answer a valid address to the last character before the erased part. "
+	
+	| item ii  addr |
+	
+	ii := anIndex.
+	
+	addr := anAddr.
+	
+	[ii < containers size and:[ (containers at:ii) isUnderflow: self ] ]  
+		whileTrue:[
+
+			" It is possible that the container at ii is still underflow even after we append
+			to it the item from the next container (for example when we append a paragraph
+			it may rebuild itself and thus lose a line). 
+			
+			Thus we must keep taking items from the next container until the current 
+			container (at ii) is not underflowed or until we have emptied all the containers after
+			ii."
+			
+			[ ii ~= containers size and:[ (containers at:ii) isUnderflow: self ] ]
+				whileTrue:[
+					
+					item := containers at: ii +1 :: removeFirst: (containers at:ii).
+					
+					addr first = ii 
+						ifTrue:[
+							"
+							If we are appending to the paragraph that the address references, then we must adjust
+							the address because rebuilding the paragraph may move the characters in the paragraph's lines."	
+					
+							addr := { addr first} , (containers at: ii :: append: item address: addr allButFirst).
+						]
+						ifFalse:[
+							(containers at: ii :: append: item address: #(0)) "use a fake address to prevent the append logic from trying to adjust the address"
+						].
+					containers at: ii + 1 :: isEmpty 
+						ifTrue:[
+							containers removeAt: ii + 1] ].
+			
+			ii := ii + 1 ].
+	
+	^addr
+	! !
 
 !KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:55:20'!
 newItem
 	^KDoc new! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 7/26/2025 20:46:22'!
-append: aParagraph
+!KPage methodsFor: 'inserting' stamp: 'DF 7/29/2025 14:57:42'!
+append: aParagraph address: anAddr 
 
-	| cc |
+	" Append aParagraph to the end of the page. If the paragraph ends with a new line then
+	just append the entire paragraph. Otherwise we must merge the lines of aParagraph with
+	the lines of the last paragraph, and rebuild the paragraph. If anAddr references a position
+	in the about-to-be-rebuilt paragraph we must recalculate it using adjust."
 	
-	self assert: (aParagraph isKindOf: KParagraph).
+	| cc addr |
 		
+	self assert: (aParagraph isKindOf: KParagraph).
+	
+	addr := anAddr.
+	
 	cc := containers last.
 	
 	cc lines last lastCharacter = Character cr
 		ifTrue:[
-			containers add: aParagraph]
+			containers add: aParagraph. ^addr].
+		
+	"The last paragraph does not end with an newline character, therefore we must extend it
+	with the lines in aParagaraph. Add all the lines from a paragraph to the end of the last paragraph 
+	in the page self"
+	
+	cc lines addAll: aParagraph lines.
+
+	" rebuild and adjust the address depending on wheter it is pointing to a position in the last
+	paragraph"
+	
+	addr first = containers size " addr points to the last paragraph "
+		ifTrue:[
+			addr := {addr first}, (cc adjust: addr allButFirst) "also rebuilds the last paragraph"]
 		ifFalse:[
-			cc lines addAll: aParagraph lines.
-			
-			"if the lines end with a newline character, rebuilding will create a spurious
-			empty line. We must therefore remove it. "
-			aParagraph lines last lastCharacter = Character cr
-				ifTrue:[ 
-					cc rebuild.
-					cc lines removeLast]
-				ifFalse:[
-					cc rebuild ] ].! !
+			cc rebuild].
+	
+	"if the lines in aParagraph end with a newline character, rebuilding will create a spurious
+	empty line. We must therefore remove it. "
+	
+	aParagraph lines last lastCharacter = Character cr
+		ifTrue:[ 
+			cc lines removeLast].
+				
+	^addr		
+! !
 
 !KPage methodsFor: 'inserting' stamp: 'DF 7/24/2025 15:42:04'!
 insert: aCharacter after: anAddress
@@ -1307,14 +1345,19 @@ initialize
 
 	root := KLibrary new! !
 
-!KRepository methodsFor: 'editing' stamp: 'DF 7/25/2025 20:50:00'!
+!KRepository methodsFor: 'editing' stamp: 'DF 7/29/2025 15:17:17'!
 eraseFrom: aBeginAddr to: anEndAddr
 
 	^anEndAddr first > root length
 		ifTrue:[
 			root eraseFrom: aBeginAddr ]
 		ifFalse:[
-			root eraseFrom: aBeginAddr to: anEndAddr ]! !
+			aBeginAddr allSatisfy:[:each | each = 1] ::
+				ifTrue:[
+					root eraseTo: anEndAddr
+				]
+				ifFalse:[
+					root eraseFrom: aBeginAddr to: anEndAddr ] ]! !
 
 !KRepository methodsFor: 'editing' stamp: 'DF 7/25/2025 20:38:30'!
 insert: aCharacter after: anAddress
@@ -1407,7 +1450,7 @@ invariant
 
 	^root invariant! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/25/2025 14:50:59'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 7/29/2025 14:46:49'!
 testErase
 
 	| text aKDoc bb ee |
@@ -1432,11 +1475,9 @@ testErase
 
 	self assert: aKDoc invariant.
 	
-	bb := #(1 1 1 1).
-	
 	ee := #(3 1 1 1).
 	
-	aKDoc eraseFrom:bb to: ee.
+	aKDoc eraseTo: ee.
 
 	self assert: aKDoc text = 'all beautiful.'.
 	
@@ -1609,12 +1650,12 @@ testErase
 		self assert: (self abstractIndexOf: pp base: repo first) = (ab - 1). ]
 ! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 22:24:36'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/29/2025 15:19:05'!
 testError
 
 	| text  bb ab ae cb ce pp |
 	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	text := 'Ia'.
 	
 	self assert: repo invariant.
 	
@@ -1629,7 +1670,7 @@ testError
 	
 	"move to the same location in both concrete and abstract systems. "
 		
-	ab :=  206. ae := 630.
+	ab :=  1. ae := 2.
 		
 	cb := self goto:ab from: repo first.
 		
