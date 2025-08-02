@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 5:45:13 pm'!
+'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 6:03:51 pm'!
 'Description '!
-!provides: 'Kaeru' 1 247!
+!provides: 'Kaeru' 1 249!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -1317,19 +1317,27 @@ initialize
 
 	root := KLibrary new! !
 
-!KRepository methodsFor: 'editing' stamp: 'DF 8/2/2025 17:24:08'!
+!KRepository methodsFor: 'editing' stamp: 'DF 8/2/2025 17:55:08'!
 eraseFrom: aBeginAddr to: anEndAddr
 
+	aBeginAddr = anEndAddr 
+		ifTrue:[
+			^aBeginAddr].
+		
 	^anEndAddr first > root length
 		ifTrue:[
-			root eraseFrom: aBeginAddr ]
+			
+			aBeginAddr allSatisfy:[:each | each = 1] ::
+				ifTrue:[
+					root := KLibrary new.
+					#(0 0 0 0 0) ]
+				ifFalse:[
+					root eraseFrom: aBeginAddr ] ]
 		ifFalse:[
 			aBeginAddr allSatisfy:[:each | each = 1] ::
 				ifTrue:[
 					root eraseTo: anEndAddr.
-					 
-					^#(1 1 1 1 0) 
-				]
+					#(1 1 1 1 0)  ]
 				ifFalse:[
 					root eraseFrom: aBeginAddr to: anEndAddr ] ]! !
 
@@ -1597,10 +1605,10 @@ setUp
 	
 ! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 16:20:34'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 18:03:38'!
 testErase
 
-	| text  bb ptext |
+	| text  bb ptext app |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
@@ -1649,8 +1657,13 @@ testErase
 		
 		self assert: text  = repo root text.
 		
-		self assert: (self abstractIndexOf: pp base: repo begin) = (ab - 1). ]
-! !
+		app := self abstractIndexOf: pp base: repo begin.
+		
+		self assert: (ab ~= ae
+					ifTrue:[ 
+						app = (ab - 1) ]
+					 ifFalse:[
+						app = ab ]) ]! !
 
 !TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 16:37:24'!
 testError
