@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 10:42:18 pm'!
+'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 10:58:17 pm'!
 'Description '!
-!provides: 'Kaeru' 1 275!
+!provides: 'Kaeru' 1 276!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -1034,9 +1034,17 @@ isOverflow: aParentNode
 
 	^self weight > 5! !
 
-!KPage methodsFor: 'testing' stamp: 'DF 8/2/2025 21:21:43'!
+!KPage methodsFor: 'testing' stamp: 'DF 8/2/2025 22:58:15'!
 isUnderflow  
 
+	containers isEmpty
+		ifTrue:[^true].
+	
+	"a page that ends with an explicit page separator never underflows"
+	
+	(self resolve: self lastAddress) isPageSeparator 
+		ifTrue:[^false].
+		
 	^self weight < 5! !
 
 !KPage methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:04'!
