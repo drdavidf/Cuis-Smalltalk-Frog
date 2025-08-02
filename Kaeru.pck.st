@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 10:58:17 pm'!
+'From Cuis7.3 [latest update: #6895] on 2 August 2025 at 11:37:03 pm'!
 'Description '!
-!provides: 'Kaeru' 1 276!
+!provides: 'Kaeru' 1 283!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -920,11 +920,26 @@ insert: aCharacter after: anAddress
 	
 	^addr! !
 
+!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 23:36:53'!
+insert: aCharacter after: anAddress
+
+	| addr |
+	
+	
+	addr := super insert: aCharacter after: anAddress.
+	
+	aCharacter isKDocSeparator 
+		ifTrue:[ | aNewDoc |
+			
+			aNewDoc := self splitAt: addr].
+		
+	^addr! !
+
 !KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:55:20'!
 newItem
 	^KDoc new! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 22:40:26'!
+!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 23:20:05'!
 append: aParagraph  
 
 	" Append aParagraph to the end of the page. If the page is empty or If the paragraph ends 
@@ -943,7 +958,7 @@ append: aParagraph
 			
 	cc := containers last.
 	
-	cc lines last lastCharacter isLineSeparator 
+	cc lines last lastCharacter isKLineSeparator 
 		ifTrue:[
 			^containers add: aParagraph].
 		
@@ -960,13 +975,13 @@ append: aParagraph
 	"if the lines in aParagraph end with a newline character, rebuilding will create a spurious
 	empty line. We must therefore remove it. "
 	
-	aParagraph lines last lastCharacter isLineSeparator
+	aParagraph lines last lastCharacter isKLineSeparator
 		ifTrue:[ 
 			cc lines removeLast].
 				
 ! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 22:12:07'!
+!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 23:20:10'!
 insert: aCharacter after: anAddress
 
 	| addr |
@@ -999,7 +1014,7 @@ insert: aCharacter after: anAddress
 	that the paragraph insert answers so we only have to move the lines to the new paragraph. 	
 	"
 	
-	aCharacter isLineSeparator 
+	aCharacter isKLineSeparator 
 		ifTrue:[
 			self splitAt: addr ].
 
@@ -1034,15 +1049,21 @@ isOverflow: aParentNode
 
 	^self weight > 5! !
 
-!KPage methodsFor: 'testing' stamp: 'DF 8/2/2025 22:58:15'!
+!KPage methodsFor: 'testing' stamp: 'DF 8/2/2025 23:24:19'!
 isUnderflow  
 
+	| addr |
+	
 	containers isEmpty
 		ifTrue:[^true].
+		
+	addr :=  self lastAddress.
 	
+	addr last = 0 ifTrue:[^true]. "the page has not characters in it"
+
 	"a page that ends with an explicit page separator never underflows"
 	
-	(self resolve: self lastAddress) isPageSeparator 
+	(self resolve: addr) isPageSeparator 
 		ifTrue:[^false].
 		
 	^self weight < 5! !
@@ -1157,7 +1178,7 @@ adjustOverflow: anInteger
 		
 	^addr! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/2/2025 21:47:50'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/2/2025 23:20:18'!
 insert: aCharacter after: anAddress
 
 	| addr  |
@@ -1186,7 +1207,7 @@ insert: aCharacter after: anAddress
 	
 	addr := super insert: aCharacter after: anAddress.
 
-	aCharacter isLineSeparator ifTrue:[ | aLine tail aNewLine index |
+	aCharacter isKLineSeparator ifTrue:[ | aLine tail aNewLine index |
 
 		aLine := containers at: addr first.
 	
@@ -1273,7 +1294,7 @@ removeLast: aPage
 
 	^containers removeLast.! !
 
-!KParagraph methodsFor: 'testing' stamp: 'DF 8/2/2025 22:42:05'!
+!KParagraph methodsFor: 'testing' stamp: 'DF 8/2/2025 23:20:22'!
 invariant: aKPage neighbour: aKParagraph
 
 	self assert: (super invariant: aKPage neighbour: aKParagraph).
@@ -1281,7 +1302,7 @@ invariant: aKPage neighbour: aKParagraph
 	aKParagraph
 		ifNil:[^true].
 		
-	self assert: containers last text last isLineSeparator .	
+	self assert: containers last text last isKLineSeparator .	
 	
 	^true
 		! !
@@ -1407,14 +1428,14 @@ eraseFrom: aBeginAddr to: anEndAddr
 				ifFalse:[
 					root eraseFrom: aBeginAddr to: anEndAddr ] ]! !
 
-!KRepository methodsFor: 'editing' stamp: 'DF 8/2/2025 21:48:17'!
+!KRepository methodsFor: 'editing' stamp: 'DF 8/2/2025 23:20:27'!
 insert: aCharacter after: anAddress
 
 	| addr |
 	
 	addr := root insert: aCharacter after: anAddress.
 	
-	( root resolve:addr ) isLineSeparator
+	( root resolve:addr ) isKLineSeparator
 		ifTrue:[ | naddr | 
 			naddr := root next:addr.
 			
@@ -1671,12 +1692,12 @@ setUp
 	
 ! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 21:50:13'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 23:19:25'!
 testErase
 
 	| text  bb ptext app |
 	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character cr) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. ',  (Character newPage) asString , 'When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.', (Character cr) asString, ' But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character newPage) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. ',  (Character escape) asString , 'When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 	
 	self assert: repo invariant.
 	
@@ -1795,7 +1816,17 @@ copiesOf: anObject
 	
 	^anOrderedCollection ! !
 
-!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 21:44:20'!
+!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:18:12'!
+isKDocSeparator
+	^self = Character escape ! !
+
+!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:18:06'!
+isKLineSeparator
+
+	^self isLineSeparator or:[self isKDocSeparator] ! !
+
+!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:34:43'!
 isPageSeparator
 
-	^self codePoint = 12 "form feed"! !
+	^self codePoint = 12 "form feed"
+	or: [self isKDocSeparator ]! !
