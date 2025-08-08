@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 6 August 2025 at 8:11:28 pm'!
+'From Cuis7.3 [latest update: #6895] on 8 August 2025 at 10:01:24 pm'!
 'Description '!
-!provides: 'Kaeru' 1 304!
+!provides: 'Kaeru' 1 338!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -84,6 +84,16 @@ Object subclass: #KRepository
 KRepository class
 	instanceVariableNames: ''!
 
+!classDefinition: #KTokenStream category: #Kaeru!
+Object subclass: #KTokenStream
+	instanceVariableNames: 'stream head'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KTokenStream class' category: #Kaeru!
+KTokenStream class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKNode category: #Kaeru!
 TestCase subclass: #TestKNode
 	instanceVariableNames: ''
@@ -102,6 +112,16 @@ TestCase subclass: #TestKRepository
 	category: 'Kaeru'!
 !classDefinition: 'TestKRepository class' category: #Kaeru!
 TestKRepository class
+	instanceVariableNames: ''!
+
+!classDefinition: #TestKTokenStream category: #Kaeru!
+TestCase subclass: #TestKTokenStream
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'TestKTokenStream class' category: #Kaeru!
+TestKTokenStream class
 	instanceVariableNames: ''!
 
 
@@ -237,10 +257,13 @@ isOverflow: aParentNode
 newItem
 	^self subclassResponsibility ! !
 
-!KLine methodsFor: 'testing' stamp: 'DF 7/24/2025 21:17:45'!
+!KLine methodsFor: 'testing' stamp: 'DF 8/8/2025 15:21:32'!
 invariant: aKParagraph neighbour: aKLine
 
 	self assert: (self isOverflow: aKParagraph :: not).
+	
+	self assert: (chars allButLast allSatisfy:[:each |
+		each isKLineSeparator not ]).
 	
 	aKLine 
 		ifNil:[^true].
@@ -381,18 +404,30 @@ removeLast: aParagraph
 	
 	! !
 
-!KLine methodsFor: 'inserting' stamp: 'DF 7/20/2025 11:14:29'!
-insert: aCharacter after: anAddress
+!KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:07:56'!
+buildFrom: aTokenStream limitBy: anIntegerWidth
 
-	| ii |
+	"build a line assuming that the token stream has no line separator or a single line separator at the end "
 	
-	self assert: anAddress size = 1.
+	| token  |
+		
+	token := aTokenStream first.
+		
+	[token notEmpty and: [ chars size + token size <= anIntegerWidth] ]
+		whileTrue:[
+			chars addAll: token.
+			aTokenStream nextUpTo: anIntegerWidth.
+			token := aTokenStream first ].
+	! !
+
+!KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 15:24:51'!
+insert: aCharacter after: anIndex
+
+	self assert: (anIndex = 0 or: [(chars at: anIndex) isKLineSeparator not]).
 	
-	ii := anAddress first.
-	
-	chars add:aCharacter afterIndex: ii .
-	
-	^{ii + 1}! !
+	chars add:aCharacter afterIndex: anIndex.
+
+	^anIndex + 1! !
 
 !KLine methodsFor: 'accessing' stamp: 'DF 7/24/2025 18:37:35'!
 firstTokenLength
@@ -629,33 +664,6 @@ eraseTo: anEndAddress
 removeItemsFrom: anInteger
 
 	^containers removeLast: containers size - anInteger + 1! !
-
-!KPart methodsFor: 'inserting' stamp: 'DF 8/1/2025 21:12:58'!
-adjustOverflow: anIndex 
-
-	"Moves the last element of container at anIndex to the next container, creating a new container
-	if anIndex is the last child. 
-	
-	Answers the address of the moved container.
-	"
-	
-	| item ii  |
-	
-	ii := anIndex.
-	
-	[(containers at:ii) isOverflow: self]
-		whileTrue:[
-			ii = containers size
-				ifTrue:[
-					containers add: self newItem ].
-
-			item := containers at: ii :: removeLast: self.
-	
-			containers at: ii + 1 :: push: item.
-			ii := ii + 1 ].
-	
-	^{anIndex + 1 . 1 . item length }
-	! !
 
 !KPart methodsFor: 'inserting' stamp: 'DF 8/2/2025 21:36:23'!
 append: anItem  
@@ -897,45 +905,114 @@ shiftLeft: anIndex
 	
 	! !
 
-!KDoc methodsFor: 'inserting' stamp: 'DF 8/2/2025 22:41:13'!
-insert: aCharacter after: anAddress
+!KDoc methodsFor: 'inserting' stamp: 'DF 8/8/2025 21:52:50'!
+adjustOverflow: anIndex 
 
-	| addr |
-
-	addr := super insert: aCharacter after: anAddress.
+	"Moves the last element of container at anIndex to the next container, creating a new container
+	if anIndex is the last child. 
 	
-	aCharacter isPageSeparator 
-		ifTrue:[ | aNewPage |
-						
-			aNewPage := self splitAt: addr.
-			
-			aNewPage isUnderflow
+	Answers the address of the moved container.
+	"
+	
+	| item ii  |
+	
+	ii := anIndex.
+	
+	[(containers at:ii) isOverflow]
+		whileTrue:[
+			ii = containers size
 				ifTrue:[
-					self adjustUnderflow: addr]
-			 ].
-	
-	^addr! !
+					containers add: self newItem ].
 
-!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 23:36:53'!
+			[(containers at:ii) isOverflow]
+				whileTrue:[
+					item := containers at: ii :: removeLast: self.
+					containers at: ii + 1 :: push: item ].
+				
+			ii := ii + 1 ].
+	
+	^{anIndex + 1 . 1 . item length }
+	! !
+
+!KDoc methodsFor: 'inserting' stamp: 'DF 8/8/2025 21:33:14'!
+insert: aCharacter after: anAddress
+
+	| addr ii page |
+	
+	"insert a character to the doc assuming that the character is not a document break character"
+
+	self assert: aCharacter isKDocSeparator not.
+
+	aCharacter isPageSeparator 
+		ifTrue:[
+			^self insertPageBreakAfter: anAddress].
+		
+	ii := anAddress first.
+	
+	page := containers at:ii.
+	
+	addr := page insert: aCharacter after: anAddress allButFirst .
+	
+	" a page can underflow due to an insert if we insert a space character that makes it possible
+	to squeez more tokens into the same line thus reducing the number of lines in the page. "
+	
+	page isUnderflow
+		ifTrue:[ 
+			^self adjustUnderflow: { anAddress first}, addr].
+		
+	page isOverflow 	
+		ifTrue:[
+			|  anchor distance faddr | 
+
+			" Set anchor to a stable address. 
+			
+			The address of the last character in the previous paragraph is always stable because
+			only the paragraph at addr can rebuild and shift to the next page.
+			
+			If cc is the first paragraph in the page then the address of its first character is stable
+			because the first line of the first paragraph in a page will never shift to the next page.
+			
+			"
+			anchor := page anchor: addr.
+				
+			distance := page distanceFrom: anchor to: addr.
+								
+			self adjustOverflow: ii. 
+			
+			faddr := {ii},anchor. distance timesRepeat:[faddr := self next:faddr].
+			
+			^ faddr ].
+	
+	^{ anAddress first} , addr	! !
+
+!KDoc methodsFor: 'inserting' stamp: 'DF 8/8/2025 22:01:16'!
+insertPageBreakAfter: anAddress
+		
+	| addr page aNewPage |
+		
+	page := containers at: anAddress first.
+	
+	addr := page insertBreakCharacter: (Character codePoint:12) after: anAddress allButFirst.
+	
+	aNewPage := self splitAt: { anAddress first}, addr.
+	
+	^self adjustUnderflow: { anAddress first } , addr
+	! !
+
+!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 14:59:29'!
 insert: aCharacter after: anAddress
 
 	| addr |
 	
-	
-	addr := super insert: aCharacter after: anAddress.
-	
-	aCharacter isKDocSeparator 
-		ifTrue:[ | aNewDoc |
-			
-			aNewDoc := self splitAt: addr].
+	addr := containers at: anAddress first :: insert: aCharacter after: anAddress allButFirst.
 		
-	^addr! !
+	^{ anAddress first}, addr! !
 
 !KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:55:20'!
 newItem
 	^KDoc new! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 23:20:05'!
+!KPage methodsFor: 'inserting' stamp: 'DF 8/7/2025 20:06:32'!
 append: aParagraph  
 
 	" Append aParagraph to the end of the page. If the page is empty or If the paragraph ends 
@@ -967,62 +1044,82 @@ append: aParagraph
 	" rebuild  the last paragraph"
 	
 	cc rebuild.
-	
-	"if the lines in aParagraph end with a newline character, rebuilding will create a spurious
-	empty line. We must therefore remove it. "
-	
-	aParagraph lines last lastCharacter isKLineSeparator
-		ifTrue:[ 
-			cc lines removeLast].
 				
 ! !
 
-!KPage methodsFor: 'inserting' stamp: 'DF 8/2/2025 23:20:10'!
+!KPage methodsFor: 'inserting' stamp: 'DF 8/8/2025 14:23:35'!
 insert: aCharacter after: anAddress
 
 	| addr |
+	
+	"insert a character to the page assuming that the character is not a break character"
 
-	addr := super insert: aCharacter after: anAddress.
+	aCharacter isKLineSeparator ifTrue:[
+		^self insertParagraphBreakAfter: anAddress. ].
+	
+	self assert: aCharacter isKLineSeparator not.
+	
+	addr := containers at: anAddress first :: insert: aCharacter after: anAddress allButFirst .
+	
+	^{ anAddress first} , addr	! !
 
-	" A newline character starts a new paragraph. If the newline happens in the middle of a line
-	then the part of the line after the new line (the tail) and all further lines in the paragraph move 
-	to the new paragraph. 
-	
-	line    text
-	1       abc
-	2      dexfg
-	3      12 34
-	4      xyz 
+!KPage methodsFor: 'inserting' stamp: 'DF 8/8/2025 21:28:33'!
+insertBreakCharacter: aCharacter after: anAddress
 
-       after inserting newline after address { 1 . 2 . 3 }
+	| newp1 newp2 par distance text stream1 stream2 |
 
-	line    text
-	1       abc
-	2      dex<nl>
+	self assert: aCharacter isKLineSeparator.
+			
+	par := containers at: anAddress first.
 	
-	1      fg
-	2      12 34
-	3      xyz 
+	distance := par distanceFrom: { 1 . 0 } to: anAddress allButFirst.
 	
-	the answer should be { 1 . 2 . 4 } marking the position of the newline character.
+	text := par text.
 	
-	In general we must answer an address that points to the newline character. Luckily this is the address
-	that the paragraph insert answers so we only have to move the lines to the new paragraph. 	
-	"
+	newp1 := self newItem.
 	
-	aCharacter isKLineSeparator 
+	stream1 := KTokenStream new.
+	
+	stream1 on: (text copyFrom: 1 to: distance) asOrderedCollection, {aCharacter}.
+	
+	stream1 nextUpTo: newp1 width.
+	
+	newp1 buildFrom: stream1.
+	 
+	newp2 := self newItem.
+
+	stream2 := KTokenStream new.
+	
+	stream2 on: (text copyFrom: distance + 1 to: text size).
+	
+	stream2 nextUpTo: newp2 width.
+	
+	newp2 buildFrom: stream2.
+	
+	newp2 isEmpty
 		ifTrue:[
-			self splitAt: addr ].
+			newp2 lines add: newp2 newItem ].
+		
+	containers removeAt: anAddress first.
+	
+	containers add: newp1 afterIndex: anAddress first - 1.
+	
+	containers add: newp2 afterIndex: anAddress first.
+	
+	^{ anAddress first } , newp1 lastAddress
+	! !
 
-	^addr
-! !
+!KPage methodsFor: 'inserting' stamp: 'DF 8/8/2025 21:28:54'!
+insertParagraphBreakAfter: anAddress
 
-!KPage methodsFor: 'inserting' stamp: 'DF 7/21/2025 10:59:24'!
+	^self insertBreakCharacter: Character cr after: anAddress! !
+
+!KPage methodsFor: 'inserting' stamp: 'DF 8/8/2025 15:26:37'!
 push: aKPar
 
 	self assert: (aKPar isKindOf: KParagraph).
 	
-	containers isEmpty 
+	containers isEmpty or: [ aKPar lastCharacter isKLineSeparator ] ::
 		ifTrue:[containers add: aKPar afterIndex:0]
 		ifFalse:[
 			containers first addLinesOf: aKPar]! !
@@ -1040,8 +1137,8 @@ invariant: aKDoc neighbour: aKPage
 	^true
 		! !
 
-!KPage methodsFor: 'testing' stamp: 'DF 7/19/2025 16:40:42'!
-isOverflow: aParentNode
+!KPage methodsFor: 'testing' stamp: 'DF 8/8/2025 12:58:17'!
+isOverflow
 
 	^self weight > 5! !
 
@@ -1087,23 +1184,21 @@ removeFirst: aPage
 			aPar splitBefore: aPage underweight].  
 			! !
 
-!KPage methodsFor: 'erasing' stamp: 'DF 7/19/2025 22:18:42'!
+!KPage methodsFor: 'erasing' stamp: 'DF 8/8/2025 21:51:09'!
 removeLast: aDoc
 
 	| aPar |
 	
 	aPar := containers last.
-
-	self assert: aPar weight >= self overweight.
 	
-	^aPar weight = self overweight 
+	^aPar weight <= self overweight 
 		ifTrue:[
 			containers removeLast]
 		ifFalse:[
 			aPar splitAfter: self overweight].  
 			! !
 
-!KPage methodsFor: 'addressing' stamp: 'DF 8/2/2025 16:02:43'!
+!KPage methodsFor: 'addressing' stamp: 'DF 8/8/2025 13:09:30'!
 anchor: anAddress
 
 	"answer a stable address that precedes anAddress but is close to it as possible. "
@@ -1114,7 +1209,7 @@ anchor: anAddress
 			" the address of the first character in the first paragraph is stable
 			because the first line of the first paragraph in a page will never shift to the next page."
 
-			#(1 1 1)]
+			#(1 1 0)]
 		ifFalse:[ 
 			
 			"Otherwise answer the address of the last character in the previous paragraph"
@@ -1144,9 +1239,11 @@ initialize
 	
 	rightMargin := 6+8! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 7/24/2025 21:33:41'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 15:21:21'!
 addLinesOf: aKPar
 
+	self assert: aKPar lastCharacter isKLineSeparator not.
+	
 	aKPar lines reverse do:[:each |
 		containers add: each afterIndex: 0 ].
 	
@@ -1174,62 +1271,49 @@ adjustOverflow: anInteger
 		
 	^addr! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/6/2025 20:09:17'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:11:29'!
+buildFrom: aTokenStream
+	
+	[aTokenStream first notEmpty ]
+		whileTrue:[
+			containers add: self newItem.
+			containers last buildFrom: aTokenStream limitBy: self width ].
+		
+	! !
+
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 13:31:02'!
 insert: aCharacter after: anAddress
 
-	| addr  |
+	"insert a character to the paragraph assuming that the character is not a line separator "
+	
+	| stream text  distance addr |
+	
+	self assert: aCharacter isKLineSeparator not.
+	
+	addr := containers at: anAddress first :: insert: aCharacter after: anAddress second.
 
-	"If aCharacter is a new line separator we must create a new line and 
-	move all the characters that appear after the address in the line to the next
-	line, or to a new line if this was the last line.
+	distance := self distanceFrom: `{ 1 . 0 }` to: { anAddress first .  addr}.
 	
-	for example
+	text := self text.
+		
+	stream := KTokenStream new.
 	
-	'abcdef
-	gh' insert: Character cr after: 3 
-	=>
-	'abc' , Character cr
-	'defgh' 
-	
-	and the index we return should be 4 on the first line.
-	
-	another example showing what happens when we put the newline at the end of a line:
-	
-	'abcde' insert: Character cr after: 5
-	=>
-	'abcde', Character cr
-	''
-	
-	and the index we return should be 6 on the first line. 
-	
-	
-	"
-	
-	addr := super insert: aCharacter after: anAddress.
+	stream on: text.
 
-	aCharacter isKLineSeparator ifTrue:[ | aLine tail theNextLine index |
-
-		aLine := containers at: addr first.
+	stream nextUpTo: self width.
 	
-		tail := aLine eraseAfter: addr second.  
-		
-		addr first = containers size 
-			ifTrue:[
-				containers add: self newItem  afterIndex: addr first].
-		
-		theNextLine := containers at: addr first + 1.
-		
-		index := {0}.
-		
-		tail do:[:each | index := theNextLine insert: each after: index].
-		
-		theNextLine isOverflow: self ::
-			ifTrue:[
-				self adjustOverflow: addr first +1] ].
+	containers removeAll.
 	
-	^addr! !
+	self buildFrom: stream.
+	
+	addr := `{ 1 . 0 }`.
+	
+	distance timesRepeat: [addr := self next: addr].
+	
+	^addr.
+! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 7/19/2025 20:12:22'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 13:12:00'!
 splitAfter: anInt
 
 	| aPar |
@@ -1237,8 +1321,8 @@ splitAfter: anInt
 	aPar := KParagraph new.
 	
 	anInt timesRepeat:[
-		aPar push: (self removeLast: nil) ] .
-	
+		aPar push: self removeLast ] .
+		
 	^aPar! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 7/25/2025 14:42:45'!
@@ -1275,28 +1359,30 @@ adjustUnderflow: anAddress
 
 	! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 8/2/2025 21:08:42'!
+!KParagraph methodsFor: 'erasing' stamp: 'DF 8/8/2025 14:27:39'!
 rebuild
 
 	"reinsert the text of self from scratch. This will ensure that all the lines in self
 	are packed. "
 	
-	| text addr |
+	| text stream |
 	
 	text := self text.
 	
 	containers removeAll.
 	
-	containers add: self newItem.
+	stream := KTokenStream new.
 	
-	addr := #(1 0).
+	stream on: text.
 	
-	text  do:[:each | addr := self insert: each after: addr].
+	stream nextUpTo: self width.
+	
+	self buildFrom: stream.
 	
 	! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 7/19/2025 20:38:29'!
-removeLast: aPage
+!KParagraph methodsFor: 'erasing' stamp: 'DF 8/8/2025 12:14:48'!
+removeLast
 
 	^containers removeLast.! !
 
@@ -1326,6 +1412,11 @@ isUnderflow
 !KParagraph methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:19'!
 newItem
 	^KLine new! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/8/2025 15:22:18'!
+lastCharacter
+
+	^containers last lastCharacter! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 7/21/2025 10:58:41'!
 lines
@@ -1434,25 +1525,26 @@ eraseFrom: aBeginAddr to: anEndAddr
 				ifFalse:[
 					root eraseFrom: aBeginAddr to: anEndAddr ] ]! !
 
-!KRepository methodsFor: 'editing' stamp: 'DF 8/2/2025 23:20:27'!
+!KRepository methodsFor: 'editing' stamp: 'DF 8/8/2025 20:04:16'!
 insert: aCharacter after: anAddress
 
 	| addr |
 	
-	addr := root insert: aCharacter after: anAddress.
-	
-	( root resolve:addr ) isKLineSeparator
-		ifTrue:[ | naddr | 
-			naddr := root next:addr.
+	addr := anAddress last ~= 0 and:[ ( root resolve:anAddress ) isKLineSeparator ] ::
+			ifTrue:[ | naddr | 
+				naddr := root next:anAddress.
 			
-			" naddr will point to the first character in the next line. We want the address
-			that points one place before the first character. Thus we replace the last 
-			component (the character's position) with 0."
+				" naddr will point to the first character in the next line. We want the address
+				that points one place before the first character. Thus we replace the last 
+				component (the character's position) with 0."
 			
-			naddr at: naddr size put: 0.
-			addr := naddr ].
+				naddr at: naddr size put: 0. naddr ]
+			ifFalse:[
+				anAddress].
 		
-	^addr! !
+	^root insert: aCharacter after: addr.
+	
+! !
 
 !KRepository methodsFor: 'searching' stamp: 'DF 7/25/2025 21:26:17'!
 match: aString at: anAddress end: anEndAddr
@@ -1535,6 +1627,103 @@ searchFrom: anAddress forwardFor: aString
 invariant
 
 	^root invariant! !
+
+!KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
+first
+	^head! !
+
+!KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:19:37'!
+nextUpTo: anIntegerLimit
+
+	| cc |
+	
+	head := OrderedCollection new.
+	
+	cc := stream next.
+	
+	cc isNil
+		ifTrue:[
+			^self].
+		
+	cc isKSeparator 
+		ifTrue:[
+			head add: cc. ^self ].
+		
+	[ cc notNil and:[ cc isKSeparator not ] and: [ head size < anIntegerLimit ] ]
+		whileTrue:[
+			head add: cc.
+			cc := stream next ].
+	
+	cc notNil
+		ifTrue:[
+			stream skipBack].
+		! !
+
+!KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:04:23'!
+on: anOrderedSequence
+
+	stream := ReadStream on: anOrderedSequence.
+! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:12:56'!
+testBuildKLine
+
+	| aKLine aTokenStream |
+	
+	aKLine := KLine new.
+	
+	aTokenStream := KTokenStream new.
+	
+	aTokenStream on: 'abb ba baa'.
+	
+	aTokenStream nextUpTo:8.
+	
+	aKLine buildFrom: aTokenStream limitBy: 8.
+	
+	self assert: aKLine text = 'abb ba '.
+	
+	aKLine := KLine new.
+	
+	aTokenStream := KTokenStream new.
+	
+	aTokenStream on: '1234567890'.
+	
+	aTokenStream nextUpTo:7.
+	
+	aKLine buildFrom: aTokenStream limitBy: 7.
+	
+	self assert: aKLine text = '1234567'.
+	
+	aKLine := KLine new.
+	
+	aTokenStream := KTokenStream new.
+	
+	aTokenStream on: 'ab',Character cr asString.
+	
+	aTokenStream nextUpTo:8.
+	
+	aKLine buildFrom: aTokenStream limitBy: 8.
+	
+	self assert: aKLine text = ('ab', Character cr asString).
+	! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:13:32'!
+testBuildKParagraph
+
+	| aKPar aTokenStream |
+	
+	aKPar := KParagraph new.
+	
+	aTokenStream := KTokenStream new.
+	
+	aTokenStream on: 'abb ba baa  babbbabb ab ab ba aaa b   a', Character cr asString.
+	
+	aTokenStream nextUpTo:8.
+	
+	aKPar buildFrom: aTokenStream.
+	
+	self assert: aKPar text = ('abb ba baa  babbbabb ab ab ba aaa b   a', Character cr asString).
+! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:09:27'!
 testErase
@@ -1634,7 +1823,7 @@ testInsertInParts
 	self assert: aKDoc invariant.
 ! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:08:44'!
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 14:40:29'!
 testInsertNewLines
 
 	| p1 p2 aKDoc page par line addr |
@@ -1672,6 +1861,31 @@ testInsertNewLines
 	
 	self assert: aKDoc invariant.
 ! !
+
+!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 13:14:47'!
+testInsertSmall
+
+	| text aKDoc page par line addr |
+	
+	text := 'In olden times, when to wish was to have'.
+
+	aKDoc := KDoc new.
+	page := KPage new.
+	par := KParagraph new.
+	line := KLine new.
+	
+	par push: line.
+	page push: par.
+	aKDoc push: page.
+
+	addr := #(1 1 1 0).
+	
+	text do:[:each | addr := aKDoc insert:each after: addr.  ].
+	
+	self assert: aKDoc text = text.
+	
+	self assert: aKDoc invariant.
+	! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:09:01'!
 testMakeParagraphs
@@ -1788,7 +2002,7 @@ doInsert: aGenerator
 	
 	! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:28:55'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:08:53'!
 drawCharacterFrom: aGenerator
 
 	"We a character to insert based on the following table
@@ -1820,7 +2034,7 @@ drawCharacterFrom: aGenerator
 						ifTrue:[
 							Character cr]
 						ifFalse:[
-	 						Character lf] ] ] ! !
+	 						Character codePoint: 12] ] ] ! !
 
 !TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 17:43:12'!
 goto: anIndex from: anAddress
@@ -1947,7 +2161,7 @@ testError
 	self assert: (self abstractIndexOf: pp base: repo begin) = (ab - 1). 
 ! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 17:21:21'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:10:07'!
 testEverything
 
 	| aGenerator iteration count maxErase countErase maxCount |
@@ -1972,7 +2186,7 @@ testEverything
 	
 	aGenerator := Random new.
 
-	1000 timesRepeat:[ | pp |  
+	2000 timesRepeat:[ | pp |  
 
 		" Select either to insert a character or to erase a range depending on how close we 
 		are to the maximal desired text size or if there is a debt from a previous erase 
@@ -2004,12 +2218,12 @@ testEverything
 		"(Delay forMilliseconds: 50) wait" ] "fork".
 	! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 20:11:24'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 20:25:44'!
 testInsertError
 
-	|  bb ab cb pp |
+	|  bb ab cb pp cc |
 	
-	text := 'a  babaa abbab  b  a aa a aaba b ababa'.
+	text := ' aaabaabaaaa bbaabbb abaabbabbabab aaaabba  aa bbaa bba abba bbbaaabaab aabbb b babbbbbbaaab a'.
 	
 	self assert: repo invariant.
 	
@@ -2024,23 +2238,137 @@ testInsertError
 	
 	"move to the same location in both concrete and abstract systems. "
 		
-	ab :=  0. 
+	ab :=  7. 
 		
 	cb := self goto:ab from: repo begin.
 		
 	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-				
-	pp := repo insert: Character cr after: cb.
+	
+	cc := Character space.
+	
+	self halt.
+	pp := repo insert: cc after: cb.
 
 	self assert: repo invariant.
 			
 	"check that the abstract and concrete systems correspond"
 	
-	text := text copyReplaceFrom:ab+1 to:ab with: Character cr asString. 
+	text := text copyReplaceFrom:ab+1 to:ab with: cc asString. 
 		
 	self assert: text  = repo root text.
 	
 ! !
+
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:36:16'!
+testInsertPageBreak
+
+	|  bb ab cb pp cc |
+	
+	text := ' aaabaabaaaa bbaabbb abaabbabbabab', (Character codePoint:12) asString, 'aaaabba  aa bbaa bba abba bbbaaabaab aabbb b babbbbbbaaab a'.
+	
+	self assert: repo invariant.
+	
+	bb := repo begin.
+	
+	text do:[:each | 
+		bb := repo insert: each after: bb].
+	
+	self assert: repo root text = text.
+
+	self assert: repo invariant.
+	
+	"move to the same location in both concrete and abstract systems. "
+		
+	ab :=  7. 
+		
+	cb := self goto:ab from: repo begin.
+		
+	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
+	
+	cc := Character space.
+	
+	self halt.
+	pp := repo insert: cc after: cb.
+
+	self assert: repo invariant.
+			
+	"check that the abstract and concrete systems correspond"
+	
+	text := text copyReplaceFrom:ab+1 to:ab with: cc asString. 
+		
+	self assert: text  = repo root text.
+	
+! !
+
+!TestKTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:21:33'!
+test
+
+	| aKTokenStream |
+	
+	aKTokenStream := KTokenStream new.
+	
+	aKTokenStream on: 'aa bba  aba' , Character cr asString, 'ab ', Character lf asString, 'bba ', 'ababbab'.
+
+	aKTokenStream nextUpTo:5.
+	
+	self assert: aKTokenStream first = 'aa' asOrderedCollection .
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character space} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'bba' asOrderedCollection .
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character space} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character space} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'aba' asOrderedCollection .
+	
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character cr} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'ab' asOrderedCollection .
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character space} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character lf} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'bba' asOrderedCollection .
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {Character space} asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'ababb' asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = 'ab' asOrderedCollection.
+
+	aKTokenStream nextUpTo:5.
+
+	self assert: aKTokenStream first = {} asOrderedCollection.
+	! !
 
 !CharacterSequence methodsFor: '*Kaeru-unittest' stamp: 'DF 6/19/2025 18:35:16'!
 eraseFrom: bIndex to: eIndex
@@ -2069,6 +2397,11 @@ isKDocSeparator
 isKLineSeparator
 
 	^self isLineSeparator or:[self isKDocSeparator] ! !
+
+!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/7/2025 16:00:20'!
+isKSeparator
+
+	^self isSeparator or:[self isKDocSeparator] ! !
 
 !Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:34:43'!
 isPageSeparator
