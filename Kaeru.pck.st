@@ -1,8 +1,38 @@
-'From Cuis7.3 [latest update: #6895] on 8 August 2025 at 10:01:24 pm'!
+'From Cuis7.3 [latest update: #6895] on 18 August 2025 at 4:46:25 pm'!
 'Description '!
-!provides: 'Kaeru' 1 338!
+!provides: 'Kaeru' 1 386!
 SystemOrganization addCategory: #Kaeru!
 
+
+!classDefinition: #KIterator category: #Kaeru!
+Object subclass: #KIterator
+	instanceVariableNames: 'pars parIndex lineIndex charIndex'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KIterator class' category: #Kaeru!
+KIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KLibrary category: #Kaeru!
+Object subclass: #KLibrary
+	instanceVariableNames: 'paragraphs border'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KLibrary class' category: #Kaeru!
+KLibrary class
+	instanceVariableNames: ''!
+
+!classDefinition: #KLine category: #Kaeru!
+Object subclass: #KLine
+	instanceVariableNames: 'chars'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KLine class' category: #Kaeru!
+KLine class
+	instanceVariableNames: ''!
 
 !classDefinition: #KNode category: #Kaeru!
 Object subclass: #KNode
@@ -12,16 +42,6 @@ Object subclass: #KNode
 	category: 'Kaeru'!
 !classDefinition: 'KNode class' category: #Kaeru!
 KNode class
-	instanceVariableNames: ''!
-
-!classDefinition: #KLine category: #Kaeru!
-KNode subclass: #KLine
-	instanceVariableNames: 'chars'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KLine class' category: #Kaeru!
-KLine class
 	instanceVariableNames: ''!
 
 !classDefinition: #KPart category: #Kaeru!
@@ -44,16 +64,6 @@ KPart subclass: #KDoc
 KDoc class
 	instanceVariableNames: ''!
 
-!classDefinition: #KLibrary category: #Kaeru!
-KPart subclass: #KLibrary
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KLibrary class' category: #Kaeru!
-KLibrary class
-	instanceVariableNames: ''!
-
 !classDefinition: #KPage category: #Kaeru!
 KPart subclass: #KPage
 	instanceVariableNames: ''
@@ -65,8 +75,8 @@ KPage class
 	instanceVariableNames: ''!
 
 !classDefinition: #KParagraph category: #Kaeru!
-KPart subclass: #KParagraph
-	instanceVariableNames: 'leftMargin rightMargin'
+Object subclass: #KParagraph
+	instanceVariableNames: 'leftMargin rightMargin lines'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru'!
@@ -94,6 +104,16 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
+!classDefinition: #TestKLibrary category: #Kaeru!
+TestCase subclass: #TestKLibrary
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'TestKLibrary class' category: #Kaeru!
+TestKLibrary class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKNode category: #Kaeru!
 TestCase subclass: #TestKNode
 	instanceVariableNames: ''
@@ -102,6 +122,16 @@ TestCase subclass: #TestKNode
 	category: 'Kaeru'!
 !classDefinition: 'TestKNode class' category: #Kaeru!
 TestKNode class
+	instanceVariableNames: ''!
+
+!classDefinition: #TestKParagraph category: #Kaeru!
+TestCase subclass: #TestKParagraph
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'TestKParagraph class' category: #Kaeru!
+TestKParagraph class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestKRepository category: #Kaeru!
@@ -124,6 +154,11 @@ TestCase subclass: #TestKTokenStream
 TestKTokenStream class
 	instanceVariableNames: ''!
 
+
+!KLibrary commentStamp: '<historical>' prior: 0!
+A KLibrary holds a collection of KDocuments
+
+!
 
 !KNode commentStamp: '<historical>' prior: 0!
 This is the interface for the KNode tree. 
@@ -153,13 +188,378 @@ newItem
 Answers a new child object. For example, a paragraph answers a new line. A page answers a new paragraph.
 !
 
-!KLibrary commentStamp: '<historical>' prior: 0!
-A KLibrary holds a collection of KDocuments
-
-!
-
 !KRepository commentStamp: '<historical>' prior: 0!
 A KRepository is the object that holds the entire text and provides the operations to manipulate the text. !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:44'!
+privCharIndex
+	^charIndex! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:39'!
+privLineIndex
+	^lineIndex! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:21:16'!
+privNextChar
+
+	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	charIndex := charIndex + 1! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:21:39'!
+privNextLine
+
+	self assert: lineIndex <  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	lineIndex := lineIndex + 1.
+	
+	charIndex := 1.! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:12'!
+privNextPar
+
+	self assert: lineIndex =  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	parIndex := parIndex + 1.
+	
+	lineIndex := 1.
+	
+	charIndex := 1.! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:31'!
+privParIndex
+	^parIndex! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:33:24'!
+privPars
+	^pars! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
+privPrevChar
+
+	self assert: charIndex > 1.
+	
+	charIndex := charIndex - 1! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:23:50'!
+privPrevLine
+
+	self assert: lineIndex >  1.
+
+	self assert: charIndex =  1.
+	
+	lineIndex := lineIndex - 1.
+	
+	charIndex := (pars at: parIndex :: lineAt: lineIndex :: length ).
+! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:25:48'!
+privPrevPar
+
+	self assert: parIndex > 1.
+	
+	self assert: lineIndex =  1.
+
+	self assert: charIndex =  1.
+	
+	parIndex := parIndex - 1.
+	
+	lineIndex := 	pars at: parIndex :: numLines.
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+! !
+
+!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:35:32'!
+= aKIterator
+
+	aKIterator isKindOf: self class :: ifFalse:[^false].
+	
+	pars == aKIterator privPars ifFalse:[^false].
+	
+	parIndex = aKIterator privParIndex ifFalse:[^false].
+	
+	lineIndex = aKIterator privLineIndex ifFalse:[^false].
+	
+	^ charIndex = aKIterator privCharIndex ! !
+
+!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:40:41'!
+~= aKIterator
+
+	^( self = aKIterator ) not
+! !
+
+!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:40:09'!
+hash
+
+	^pars hash bitXor: ( parIndex hash bitXor: ( lineIndex hash bitXor: charIndex hash ) )! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:44'!
+char
+
+	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:28:35'!
+next
+
+	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
+		ifTrue:[
+			^self privNextChar ].
+		
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:07:53'!
+pars: anOrderedCollection
+
+	pars := anOrderedCollection.
+! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:29:17'!
+prev
+
+	charIndex >  1
+		ifTrue:[
+			^self privPrevChar ].
+		
+	lineIndex >  1
+		ifTrue:[
+			^self privPrevLine ].
+	
+	self privPrevPar! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:15:41'!
+setAtEnd
+	parIndex := pars size + 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:15:41'!
+setAtStart
+	parIndex := 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 16:31:34'!
+begin
+
+	| anIterator |
+	
+	anIterator := KIterator new.
+	
+	anIterator pars: paragraphs ; setAtStart.
+	
+	^anIterator ! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 11:06:35'!
+charIndexToParIndex: anIndex
+
+	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex "
+	
+	| ii pp |
+	
+	ii := anIndex. pp := 1.
+	
+	[ii > ((paragraphs at:pp) length) ]
+		whileTrue:[
+			ii := ii - ((paragraphs at:pp) length).
+			pp := pp + 1].
+
+	^ { pp . ii }! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 16:31:44'!
+end
+
+	| anIterator |
+	
+	anIterator := KIterator new.
+	
+	anIterator pars: paragraphs ; setAtEnd.
+	
+	^anIterator ! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:53:49'!
+insert: aCharacter after: anIndex
+
+	aCharacter isKLineSeparator 
+		ifTrue:[
+			self insertBreakCharacter: aCharacter after: anIndex]
+		ifFalse:[
+			self insertLetter: aCharacter after: anIndex]
+		
+	! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 8/18/2025 11:11:16'!
+insertBreakCharacter: aCharacter after: anIndex
+
+	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
+	the index references a character in one of the paragraphs (that is, it is not larger than the total characters
+	in the library.
+	
+	Split the paragraph's text at the offset. Add the break character to the end of the first part and rebuild the paragraph just from the first part. Create a new paragraph and build it from the second part. Add the new paragraph after the current paragraph.
+	"
+	
+	| pi ii pp text left right newPar |
+	
+	pi := self charIndexToParIndex: anIndex.
+	
+	pp := pi first. ii := pi second. 
+		
+	text := (paragraphs at:pp) text.
+	
+	left := text copyFrom:1 to: ii.
+	right := text copyFrom: ii+1 to: text size.
+	
+	(paragraphs at:pp) rebuildFromText: left asOrderedCollection, {aCharacter}.
+	
+	newPar := self newItem.
+	
+	newPar rebuildFromText: right.
+	
+	paragraphs add: newPar afterIndex: pp.
+	
+	! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 8/18/2025 12:17:49'!
+insertLetter: aCharacter after: anIndex
+
+	"find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
+	the index references a character in one of the paragraphs (that is, it is not larger than the total characters
+	in the library."
+	
+	| pi ii pp par |
+	
+	pi := self charIndexToParIndex: anIndex.
+	
+	pp := pi first. ii := pi second. 
+	
+	"if the address references a line breaking character we must insert the character at the beginning of the 
+	next paragraph."
+	
+	par := paragraphs at:pp.
+	
+	ii > 0 and: [par notEmpty] and:[ par charAt: ii :: isKLineSeparator ] ::
+		ifTrue: [
+			pp := pp + 1. 
+			ii := 0.
+	
+			pp = (paragraphs size + 1)
+				ifTrue:[
+					paragraphs add: self newItem] ].
+		
+	(paragraphs at:pp) insert: aCharacter after: ii! !
+
+!KLibrary methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:52:22'!
+text
+
+	| aWriteStream |
+	
+	aWriteStream := WriteStream on:''.
+	
+	self textInto: aWriteStream.
+	
+	^aWriteStream contents.! !
+
+!KLibrary methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:52:13'!
+textInto: aWriteStream
+
+	paragraphs do:[:each | each textInto: aWriteStream ].
+! !
+
+!KLibrary methodsFor: 'initialization' stamp: 'DF 8/16/2025 21:43:46'!
+initialize
+
+	paragraphs := OrderedCollection new.
+	
+	paragraphs add: self newItem.
+	
+	border := 1.! !
+
+!KLibrary methodsFor: 'factory' stamp: 'DF 8/16/2025 21:42:29'!
+newItem
+	^KParagraph new! !
+
+!KLibrary methodsFor: 'erasing' stamp: 'DF 8/18/2025 11:44:37'!
+eraseFrom: aBeginIndex to: anEndIndex
+
+	| beginPi endPi headText tailText par |
+	
+	beginPi := self charIndexToParIndex: aBeginIndex .
+	
+	endPi := self charIndexToParIndex: anEndIndex .
+	
+	headText := paragraphs at: beginPi first :: textFrom: 1 to: beginPi second.
+	
+	par := paragraphs at: endPi first.
+	
+	tailText := par textFrom: endPi second.
+	
+	par rebuildFromText: headText, tailText.
+	
+	paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size).
+	
+	
+	
+! !
+
+!KLibrary methodsFor: 'testing' stamp: 'DF 8/18/2025 11:56:28'!
+invariant
+
+	paragraphs allButLastDo: [:each |
+		self assert: each isLineBreaking ].
+	
+	^true! !
+
+!KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:07:56'!
+buildFrom: aTokenStream limitBy: anIntegerWidth
+
+	"build a line assuming that the token stream has no line separator or a single line separator at the end "
+	
+	| token  |
+		
+	token := aTokenStream first.
+		
+	[token notEmpty and: [ chars size + token size <= anIntegerWidth] ]
+		whileTrue:[
+			chars addAll: token.
+			aTokenStream nextUpTo: anIntegerWidth.
+			token := aTokenStream first ].
+	! !
+
+!KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:19'!
+isLineSeparating
+
+	^chars size > 0 and: [chars last isKLineSeparator ]
+	! !
+
+!KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 12:13:59'!
+notEmpty
+	^chars notEmpty ! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:03:58'!
+charAt: anIndex
+	^chars at: anIndex! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
+length
+
+	^chars size! !
+
+!KLine methodsFor: 'accessing' stamp: 'DF 7/20/2025 11:37:37'!
+textInto: aWriteStream
+
+	aWriteStream nextPutAll: chars.! !
+
+!KLine methodsFor: 'initialization' stamp: 'DF 7/19/2025 15:42:54'!
+initialize
+
+	chars := OrderedCollection new! !
 
 !KNode methodsFor: 'inserting' stamp: 'DF 7/19/2025 21:55:27'!
 insert: aCharacter after: anAddress
@@ -257,260 +657,6 @@ isOverflow: aParentNode
 newItem
 	^self subclassResponsibility ! !
 
-!KLine methodsFor: 'testing' stamp: 'DF 8/8/2025 15:21:32'!
-invariant: aKParagraph neighbour: aKLine
-
-	self assert: (self isOverflow: aKParagraph :: not).
-	
-	self assert: (chars allButLast allSatisfy:[:each |
-		each isKLineSeparator not ]).
-	
-	aKLine 
-		ifNil:[^true].
-		
-	self assert: (self isUnderflow: aKParagraph neighbour: aKLine :: not).
-	
-	^true
-		! !
-
-!KLine methodsFor: 'testing' stamp: 'DF 7/19/2025 16:40:32'!
-isOverflow: aParagraph
-
-	^aParagraph width < chars size ! !
-
-!KLine methodsFor: 'testing' stamp: 'DF 7/24/2025 18:37:55'!
-isUnderflow: aParagraph neighbour: aKNode 
-
-	"check if the first token in the next line can be inserted at the end of self
-	without overflowing self"
-	
-	^aKNode firstTokenLength + self length <= aParagraph width  ! !
-
-!KLine methodsFor: 'testing' stamp: 'DF 8/1/2025 23:07:54'!
-precedes: aBeginAddress before: anEndAddress
-
-	self assert: aBeginAddress size = anEndAddress size.
-	self assert: aBeginAddress size = 1.
-	
-	^ aBeginAddress first <= anEndAddress first
-! !
-
-!KLine methodsFor: 'erasing' stamp: 'DF 7/26/2025 20:09:29'!
-eraseAfter: anIndex
-
-" 1234567 eraseAfter:3  = removeLast:4 = 4567 
-
- eraseAfter: k = removeLast: size - k
-"
-
-	self assert: anIndex > 0.
-	
-	^chars removeLast: chars size - anIndex! !
-
-!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 14:24:55'!
-eraseFrom: aBeginAddress
-
-	" Erase all the characters from the begin index (inclusive). begin must not be 1. 
-	
-	answers the address that points to the last character not erase.
-		
-	Line chars: 'abcde' :: eraseFrom: {3} = 'ab'
-	
-	  will answer 2
-	
-	"
-
-	self assert: aBeginAddress size = 1.
-
-	self assert: aBeginAddress first > 1.
-	
-	self assert: aBeginAddress first <= chars size.
-	
-	chars := chars copyFrom: 1 to: aBeginAddress first - 1.
-	
-	^ { aBeginAddress first - 1 }.
-	! !
-
-!KLine methodsFor: 'erasing' stamp: 'DF 8/2/2025 16:27:45'!
-eraseFrom: aBeginAddress to: anEndAddress
-
-	"Erase a part of the characters in this line. Never erase all the characters. 
-	
-		Line chars: 'abcdefg' :: eraseFrom: {2} to: {4} = 'adefg' , addr = #(1)
-				
-	Note that eraseFrom: aa to: aa is a skip
-	"
-	
-	self assert: aBeginAddress size = 1.
-	self assert: anEndAddress size = 1.
-	
-	self assert: aBeginAddress first > 1.
-	
-	self assert: aBeginAddress first <= anEndAddress first.
-		
-	self assert: anEndAddress first <= chars size.
-	
-	" note that copyFrom:to: is an inclusive copy "
-	
-	chars := (chars copyFrom: 1 to: aBeginAddress first - 1) , (chars copyFrom: anEndAddress first to: chars size).
-	
-	^ { aBeginAddress first - 1 }
-	! !
-
-!KLine methodsFor: 'erasing' stamp: 'DF 8/2/2025 17:03:31'!
-eraseTo: anEndAddress
-
-	" Erase all the characters upto end (not including the character at end). 
-	
-	Does not answer an address. Any call to eraseTo: must determine the address without expecting
-	any help from eraseTo: because we must answer an address one place _before_ the first character
-	that was erase, and this would mean {0} which is an invalid address to answer.
-	
-	Line chars: 'abcde' :: eraseTo: {3} = 'cde'
-	
-	"
-	
-	self assert: anEndAddress size = 1.
-	
-	self assert: 1 <= anEndAddress first.
-		
-	self assert: anEndAddress first <= chars size.
-	
-	chars := chars copyFrom: anEndAddress first to: chars size.
-	
-	! !
-
-!KLine methodsFor: 'erasing' stamp: 'DF 7/22/2025 09:25:44'!
-removeLast: aParagraph
-
-	|  ii |
-		
-	chars last isSeparator
-		ifTrue:[ 
-			^chars removeLast asString].
-
-	"moving backwards find the position of the first separator. If none exist this means that the line is a single word so cut off the tail that overflows the line and return that tail"
-	
-	ii := chars size.
-	
-	[ii > 0 and: [chars at:ii :: isSeparator not] ] whileTrue:[ii := ii - 1].
-	
-	ii = 0 
-		ifTrue:[ " n = chars size. n := n - (n - w) => n = w " 
-			^ chars removeLast: chars size - aParagraph width  ].
-	
-	^chars removeLast: chars size - ii. "let n =  chars size. n := n - (n - ii) => n = ii. thus after this operation the last character in chars is the separator as required. "
-	
-	
-	! !
-
-!KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:07:56'!
-buildFrom: aTokenStream limitBy: anIntegerWidth
-
-	"build a line assuming that the token stream has no line separator or a single line separator at the end "
-	
-	| token  |
-		
-	token := aTokenStream first.
-		
-	[token notEmpty and: [ chars size + token size <= anIntegerWidth] ]
-		whileTrue:[
-			chars addAll: token.
-			aTokenStream nextUpTo: anIntegerWidth.
-			token := aTokenStream first ].
-	! !
-
-!KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 15:24:51'!
-insert: aCharacter after: anIndex
-
-	self assert: (anIndex = 0 or: [(chars at: anIndex) isKLineSeparator not]).
-	
-	chars add:aCharacter afterIndex: anIndex.
-
-	^anIndex + 1! !
-
-!KLine methodsFor: 'accessing' stamp: 'DF 7/24/2025 18:37:35'!
-firstTokenLength
-
-	| ii |
-	
-	chars first isSeparator
-		ifTrue:[^1].
-		
-	ii := 1.
-	
-	[ii <= chars size and:[chars at:ii :: isSeparator not] ]
-		whileTrue:[
-			ii := ii + 1].
-		
-	"ii = chars size + 1 or:[ ii <= chars size and chars at:ii :: isSeparator] "
-	
-	^ ii - 1! !
-
-!KLine methodsFor: 'accessing' stamp: 'DF 7/25/2025 13:24:11'!
-lastCharacter
-
-	^chars last! !
-
-!KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
-length
-
-	^chars size! !
-
-!KLine methodsFor: 'accessing' stamp: 'DF 7/20/2025 11:37:37'!
-textInto: aWriteStream
-
-	aWriteStream nextPutAll: chars.! !
-
-!KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:57:24'!
-weight
-	^1! !
-
-!KLine methodsFor: 'initialization' stamp: 'DF 7/19/2025 15:42:54'!
-initialize
-
-	chars := OrderedCollection new! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 8/1/2025 22:40:30'!
-anchor: anAddress
-	^#(1)! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 8/2/2025 18:49:03'!
-firstAddress
-	^ { 1 }! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 8/1/2025 22:05:29'!
-lastAddress
-	^ { chars size }! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 7/24/2025 22:12:09'!
-next: anAddress
-
-	self assert: anAddress size = 1.
-	
-	^ { anAddress first + 1 }.
-! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:11:30'!
-prev: anAddress  
-
-	self assert: anAddress size = 1.
-	
-	anAddress first = 0
-		ifTrue:[
-			^{} ].
-	
-	^ { anAddress first - 1 } ! !
-
-!KLine methodsFor: 'addressing' stamp: 'DF 7/22/2025 10:01:44'!
-resolve: anAddress  
-
-	self assert: anAddress size = 1.
-	
-	self assert: anAddress first > 0.
-	
-	^chars at: anAddress first! !
-
 !KPart methodsFor: 'initialization' stamp: 'DF 7/19/2025 14:28:12'!
 initialize
 
@@ -556,8 +702,9 @@ precedes: aBeginAddress before: anEndAddress
 		aBeginAddress first = anEndAddress first and:[
 			self precedes: aBeginAddress allButFirst before: anEndAddress allButFirst ] ]! !
 
-!KPart methodsFor: 'erasing' stamp: 'DF 8/2/2025 15:52:27'!
+!KPart methodsFor: 'erasing' stamp: 'DF 8/9/2025 12:47:36'!
 adjustUnderflow: anAddress
+			
 	^anAddress! !
 
 !KPart methodsFor: 'erasing' stamp: 'DF 8/2/2025 21:19:01'!
@@ -934,11 +1081,11 @@ adjustOverflow: anIndex
 	^{anIndex + 1 . 1 . item length }
 	! !
 
-!KDoc methodsFor: 'inserting' stamp: 'DF 8/8/2025 21:33:14'!
+!KDoc methodsFor: 'inserting' stamp: 'DF 8/9/2025 10:48:25'!
 insert: aCharacter after: anAddress
 
 	| addr ii page |
-	
+		
 	"insert a character to the doc assuming that the character is not a document break character"
 
 	self assert: aCharacter isKDocSeparator not.
@@ -956,7 +1103,7 @@ insert: aCharacter after: anAddress
 	" a page can underflow due to an insert if we insert a space character that makes it possible
 	to squeez more tokens into the same line thus reducing the number of lines in the page. "
 	
-	page isUnderflow
+	ii < containers size and:[page isUnderflow] :: "the last page is allowed to underflow "
 		ifTrue:[ 
 			^self adjustUnderflow: { anAddress first}, addr].
 		
@@ -999,27 +1146,21 @@ insertPageBreakAfter: anAddress
 	^self adjustUnderflow: { anAddress first } , addr
 	! !
 
-!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 14:59:29'!
-insert: aCharacter after: anAddress
-
-	| addr |
-	
-	addr := containers at: anAddress first :: insert: aCharacter after: anAddress allButFirst.
-		
-	^{ anAddress first}, addr! !
-
-!KLibrary methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:55:20'!
-newItem
-	^KDoc new! !
-
-!KPage methodsFor: 'inserting' stamp: 'DF 8/7/2025 20:06:32'!
+!KPage methodsFor: 'inserting' stamp: 'DF 8/9/2025 13:20:52'!
 append: aParagraph  
 
 	" Append aParagraph to the end of the page. If the page is empty or If the paragraph ends 
 	with a new line then just append the entire paragraph. 
 	
 	Otherwise we must merge the lines of aParagraph with the lines of the last paragraph, 
-	and rebuild the paragraph. "
+	and rebuild the paragraph. 
+
+	if the last token in the last paragraph and the first token in the appended paragraph are
+	both word tokens then the resulting larger token may require a line by itself thus overflowing
+	the page. 
+	
+	
+	"
 	
 	| cc |
 		
@@ -1044,6 +1185,8 @@ append: aParagraph
 	" rebuild  the last paragraph"
 	
 	cc rebuild.
+	
+	self assert: self isOverflow not.
 				
 ! !
 
@@ -1124,10 +1267,12 @@ push: aKPar
 		ifFalse:[
 			containers first addLinesOf: aKPar]! !
 
-!KPage methodsFor: 'testing' stamp: 'DF 8/2/2025 21:23:37'!
+!KPage methodsFor: 'testing' stamp: 'DF 8/9/2025 10:28:19'!
 invariant: aKDoc neighbour: aKPage
 
 	self assert: (super invariant: aKDoc neighbour: aKPage).
+	
+	self assert: (self isOverflow not).
 	
 	aKPage
 		ifNil:[^true].
@@ -1164,6 +1309,48 @@ isUnderflow
 !KPage methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:04'!
 newItem
 	^KParagraph new! !
+
+!KPage methodsFor: 'erasing' stamp: 'DF 8/9/2025 12:47:55'!
+adjustUnderflow: anAddress
+
+	" The address points to a paragraph that had some of its lines erased. if the paragraph was terminated with a
+	page break we must join it with the next paragraph. "
+	
+	anAddress first < containers size and:[ containers at: anAddress first :: lastCharacter isKLineSeparator not] ::
+		ifTrue:[ | par1 par2 aNewPar stream distance addr |
+			
+			par1 := containers at: anAddress first.
+			par2 := containers at: anAddress first + 1.
+			
+			distance := par1 distanceFrom: #(1 0) to:  anAddress allButFirst.
+
+			"this is not the last paragraph but it does not end with a line separator so we must join it with the
+			next paragraph"
+			
+			stream := KTokenStream new.
+			
+			stream on: (par1 text) asOrderedCollection , (par2 text) asOrderedCollection.
+			
+			stream nextUpTo: par1 width.
+			
+			aNewPar := KParagraph new.
+			
+			aNewPar buildFrom: stream.
+			
+			" remove the two paragraphs and insert the new one instead "
+			
+			containers removeAt: anAddress first.
+			containers removeAt: anAddress first.
+			
+			containers add: aNewPar afterIndex: anAddress first - 1.
+			
+			addr := { anAddress first . 1 . 0 }.
+			
+			distance timesRepeat:[ addr := self next: addr ].
+			
+			^addr ].
+			
+	^anAddress! !
 
 !KPage methodsFor: 'erasing' stamp: 'DF 7/25/2025 14:45:08'!
 removeFirst: aPage
@@ -1230,197 +1417,145 @@ underweight
 
 	^5 - self weight ! !
 
-!KParagraph methodsFor: 'initialization' stamp: 'DF 7/19/2025 22:36:04'!
+!KParagraph methodsFor: 'initialization' stamp: 'DF 8/16/2025 21:29:11'!
 initialize
 
-	super initialize.
+	lines := OrderedCollection new.
 		
 	leftMargin := 6.
 	
 	rightMargin := 6+8! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 15:21:21'!
-addLinesOf: aKPar
-
-	self assert: aKPar lastCharacter isKLineSeparator not.
-	
-	aKPar lines reverse do:[:each |
-		containers add: each afterIndex: 0 ].
-	
-	self rebuild.
-	! !
-
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/1/2025 21:12:58'!
-adjustOverflow: anInteger 
-
-	| items ii addr |
-
-	 ii := anInteger.
-
-	ii = containers size
-		ifTrue:[
-			containers add: self newItem ].
-	
-	items := containers at: ii :: removeLast: self.
-	
-	self assert: items size > 0.
-	
-	addr := { ii + 1 . 0 }.
-	
-	items do:[:each | addr := self insert: each after: addr ].
-		
-	^addr! !
-
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:11:29'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:30:48'!
 buildFrom: aTokenStream
 	
 	[aTokenStream first notEmpty ]
 		whileTrue:[
-			containers add: self newItem.
-			containers last buildFrom: aTokenStream limitBy: self width ].
+			lines add: self newItem.
+			lines last buildFrom: aTokenStream limitBy: self width ].
 		
 	! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 13:31:02'!
-insert: aCharacter after: anAddress
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:04:12'!
+insert: aCharacter after: anIndex
 
 	"insert a character to the paragraph assuming that the character is not a line separator "
 	
-	| stream text  distance addr |
+	| text  |
 	
 	self assert: aCharacter isKLineSeparator not.
+	 
+	text := self text asOrderedCollection.
 	
-	addr := containers at: anAddress first :: insert: aCharacter after: anAddress second.
-
-	distance := self distanceFrom: `{ 1 . 0 }` to: { anAddress first .  addr}.
-	
-	text := self text.
+	text add: aCharacter afterIndex: anIndex.
 		
+	self rebuildFromText: text.! !
+
+!KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:03:56'!
+rebuildFromText: aString
+
+	| stream |
+	
 	stream := KTokenStream new.
 	
-	stream on: text.
+	stream on: aString.
 
 	stream nextUpTo: self width.
 	
-	containers removeAll.
-	
+	lines removeAll.
+
 	self buildFrom: stream.
-	
-	addr := `{ 1 . 0 }`.
-	
-	distance timesRepeat: [addr := self next: addr].
-	
-	^addr.
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/8/2025 13:12:00'!
-splitAfter: anInt
+!KParagraph methodsFor: 'erasing' stamp: 'DF 8/18/2025 11:01:41'!
+eraseFrom: abeginIndex to: anEndIndex
 
-	| aPar |
+	| text left right |
 	
-	aPar := KParagraph new.
-	
-	anInt timesRepeat:[
-		aPar push: self removeLast ] .
-		
-	^aPar! !
-
-!KParagraph methodsFor: 'inserting' stamp: 'DF 7/25/2025 14:42:45'!
-splitBefore: anInt
-
-	| aPar |
-	
-	aPar := KParagraph new.
-	
-	anInt timesRepeat:[
-		aPar lines add: containers removeFirst ] .
-	
-	^aPar! !
-
-!KParagraph methodsFor: 'erasing' stamp: 'DF 8/2/2025 17:29:51'!
-adjustUnderflow: anAddress
-
-	| addr distance |
-	
-	" As rebuilding may change the physical address of the character immediately after
-	the erase part in a way that is difficult to calculate in advance, we calculate the distance
-	from the paragraph's first character and use it to recalculate the physical address
-	that matches the same abstract position as before the rebuild procedure. "
-	
-	distance := self distanceFrom: `{ 1 . 1 }` to: anAddress.
-	
-	self rebuild.
-	
-	addr := `{ 1 . 1 }`.
-	
-	distance timesRepeat: [addr := self next: addr].
-	
-	^addr.
-
-	! !
-
-!KParagraph methodsFor: 'erasing' stamp: 'DF 8/8/2025 14:27:39'!
-rebuild
-
-	"reinsert the text of self from scratch. This will ensure that all the lines in self
-	are packed. "
-	
-	| text stream |
+	self assert: abeginIndex > 1.
 	
 	text := self text.
 	
-	containers removeAll.
+	left := text copyFrom: 1 to: abeginIndex - 1.
 	
-	stream := KTokenStream new.
+	right := text copyFrom: anEndIndex to: text size.
 	
-	stream on: text.
-	
-	stream nextUpTo: self width.
-	
-	self buildFrom: stream.
-	
+	self rebuildFromText: left, right.
 	! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 8/8/2025 12:14:48'!
-removeLast
+!KParagraph methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:35'!
+isLineBreaking
 
-	^containers removeLast.! !
+	^ lines size > 0 and: [lines last isLineSeparating ]! !
 
-!KParagraph methodsFor: 'testing' stamp: 'DF 8/2/2025 23:20:22'!
-invariant: aKPage neighbour: aKParagraph
-
-	self assert: (super invariant: aKPage neighbour: aKParagraph).
-	
-	aKParagraph
-		ifNil:[^true].
-		
-	self assert: containers last text last isKLineSeparator .	
-	
-	^true
-		! !
-
-!KParagraph methodsFor: 'testing' stamp: 'DF 7/19/2025 15:56:04'!
-isOverflow: aParentNode
-
-	^false! !
-
-!KParagraph methodsFor: 'testing' stamp: 'DF 8/2/2025 21:21:43'!
-isUnderflow  
-
-	^false! !
+!KParagraph methodsFor: 'testing' stamp: 'DF 8/18/2025 12:13:05'!
+notEmpty
+	^lines notEmpty and: [lines first notEmpty]! !
 
 !KParagraph methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:19'!
 newItem
 	^KLine new! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 8/8/2025 15:22:18'!
-lastCharacter
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
+charAt: anIndex
 
-	^containers last lastCharacter! !
+	| ii jj |
+	
+	jj := anIndex.
+	
+	ii := 1.
+	
+	[jj > (lines at:ii) length] 
+		whileTrue:[
+			jj := jj - (lines at:ii) length.
+			ii := ii + 1 ].
+	
+	^lines at:ii :: charAt: jj
+	
+! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 7/21/2025 10:58:41'!
-lines
-	^containers! !
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:47:46'!
+length
+	^ lines sum:[:each | each length ] ifEmpty:0! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:21:04'!
+lineAt: anIndex
+	^ lines at: anIndex! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:20:18'!
+numLines
+	^lines size! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:31:29'!
+text
+
+	| aWriteStream |
+	
+	aWriteStream := WriteStream on:''.
+	
+	self textInto: aWriteStream.
+	
+	^aWriteStream contents.! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 11:34:09'!
+textFrom: aBeginIndex 
+
+	| text |
+	
+	text := self text.
+	
+	^self text copyFrom: aBeginIndex to: text size! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 11:33:50'!
+textFrom: aBeginIndex to: anEndIndex
+
+	^self text copyFrom: aBeginIndex to: anEndIndex - 1! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:31:19'!
+textInto: aWriteStream
+
+	lines do:[:each | each textInto: aWriteStream ].
+! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:54:50'!
 width
@@ -1664,6 +1799,180 @@ on: anOrderedSequence
 
 	stream := ReadStream on: anOrderedSequence.
 ! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 14:59:55'!
+testEraseBetweenParagraphs
+
+	| t1 t2 text index lib |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	index := 0.
+	
+	t2 do:[:each | lib insert:each after: index. index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | lib insert:each after: index. index := index + 1 ]. 
+	
+	text := t1,t2.
+	
+	self assert: lib text = text.
+	
+	self assert: lib invariant.
+	
+	" erase in the same paragraph "
+	
+	lib eraseFrom: 12 to: 56.
+	
+	self assert: lib text = ( (text copyFrom: 1 to:11), (text copyFrom: 56 to: text size) ).
+	
+	self assert: lib invariant.
+! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 15:00:36'!
+testEraseInParagraph
+
+	| t1 t2 text index lib |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	index := 0.
+	
+	t2 do:[:each | lib insert:each after: index. index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | lib insert:each after: index. index := index + 1 ]. 
+	
+	text := t1,t2.
+	
+	self assert: lib text = text.
+	
+	" erase in the same paragraph "
+	
+	lib eraseFrom: 18 to: 81.
+	
+	self assert: lib text = ( (text copyFrom: 1 to:17), (text copyFrom: 81 to: text size) ).
+	
+	self assert: lib invariant.
+! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 12:15:04'!
+testInsert
+
+	| text lib |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+
+	self assert: lib invariant.
+	
+	0 to: text size - 1 do:[:ii | lib insert: (text at:ii + 1) after: ii.  ].
+	
+	self assert: lib text = text.
+	
+	self assert: lib invariant.
+	
+! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:04'!
+testInsertBreaks
+
+	| t1 t2 index lib |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain.', (Character codePoint:12) asString, 'When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	self assert: lib invariant.
+	
+	index := 0.
+	
+	t2 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1 ]. 
+	
+	self assert: lib text = (t1,t2).
+	
+	self assert: lib invariant.
+! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:46:16'!
+testIterators
+
+	| t1 t2 text index lib bb ee |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain.', (Character codePoint:12) asString, 'When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	self assert: lib invariant.
+	
+	index := 0.
+	
+	t2 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1 ]. 
+	
+	text := t1,t2.
+	
+	self assert: lib text = text.
+	
+	self assert: lib invariant.
+
+	bb := lib begin.
+	
+	ee := lib end.
+	
+	index := 1.
+	
+	[bb ~= ee]
+		whileTrue:[
+			self assert: (bb char = (text at: index)).
+			bb next.
+			index := index + 1 ].
+	
+	bb := lib begin.
+	
+	index := text size + 1.
+	
+	[ee ~= bb] 
+		whileTrue:[
+			ee prev.
+			index := index - 1.
+			self assert: (ee char = (text at: index)) ].
+	
+	! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:12:56'!
 testBuildKLine
@@ -1922,13 +2231,45 @@ testMakeParagraphs
 	self assert: aKDoc invariant.
 ! !
 
+!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 11:03:21'!
+testErase
+
+	| text par |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	par := KParagraph new.
+	
+	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
+	
+	self assert: par text = text.
+
+	par eraseFrom: 5 to: 173.
+	
+	self assert: par text = ((text copyFrom:1 to: 4) , (text copyFrom: 173 to: text size)).
+	! !
+
+!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 8/16/2025 21:39:42'!
+testInsert
+
+	| text par |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	par := KParagraph new.
+	
+	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
+	
+	self assert: par text = text.
+! !
+
 !TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 17:42:38'!
 abstractIndexOf: anAddress base: anInitialAddress
 
 	^(repo root distanceFrom: anInitialAddress to: anAddress) 
 	! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 17:21:08'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 09:41:19'!
 doErase: aGenerator
 
 	|  len ab ae cb ce pp app ptext |
@@ -1937,7 +2278,7 @@ doErase: aGenerator
 	
 	ab := (text size + 1) atRandom.
 	
-	ae := ab + len max: text size + 1.
+	ae := ab + len min: text size + 1.
 		
 	"move to the same location in both concrete and abstract systems. "
 	
@@ -2116,19 +2457,29 @@ testErase
 					 ifFalse:[
 						app = ab ]) ]! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:57:55'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 11:54:21'!
 testError
 
-	|  bb ab ae cb ce pp |
+	|  stream bb ab ae cb ce pp |
 	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+	text := ' 
+bb  a baba aabbabbabbaabbabbbabb aaaaa
+ babbbababbbbaa   babbbbbbbabbabbbb  bb  baaab ba
+a aaabaabbaaabaaba b aba  bbbaaa b
+a abb'.
 	
+	stream := WriteStream on: ''.
+	
+	text do:[:each | each = Character lf ifTrue:[stream nextPut: Character cr] ifFalse:[stream nextPut:each] ].
+	
+	text := stream contents.
+		
 	self assert: repo invariant.
 	
 	bb := repo begin.
 	
 	text do:[:each | 
-		bb := repo insert: each after: bb].
+		bb := repo insert: each after: bb. self assert: repo invariant. ].
 	
 	self assert: repo root text = text.
 
@@ -2136,7 +2487,7 @@ testError
 	
 	"move to the same location in both concrete and abstract systems. "
 		
-	ab :=  1. ae := 43.
+	ab :=  124. ae := 127.
 		
 	cb := self goto:ab from: repo begin.
 		
@@ -2161,7 +2512,7 @@ testError
 	self assert: (self abstractIndexOf: pp base: repo begin) = (ab - 1). 
 ! !
 
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:10:07'!
+!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 09:38:54'!
 testEverything
 
 	| aGenerator iteration count maxErase countErase maxCount |
@@ -2180,7 +2531,7 @@ testEverything
 	
 	countErase := 1. "the number of characters that were erased and not inserted yet. This is used to ensure that after we erase k characters we insert k - 1 characters "
 	
-	maxCount := 25000. "the maximal number of characters in the repository during the test."
+	maxCount := 1000. "the maximal number of characters in the repository during the test."
 	
 	self assert: count = text size.
 	

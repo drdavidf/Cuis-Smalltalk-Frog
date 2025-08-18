@@ -1,0 +1,794 @@
+\documentclass{article}
+\usepackage{zed-csp}
+\title{A data structure for representing text}
+\author{David Faitelson}
+
+\begin{document}
+
+\maketitle
+
+\section{Characters} 
+
+A character can be either a printable character (that we call
+a letter) or a line separator. There are three kinds of line separators:
+a new line separator, a page separator, and a document separator.
+
+\begin{zed}
+  Char ::= A | B | SPACE | NEWL | NEWP | NEWD 
+\end{zed}
+
+\begin{zed}
+  Letter == \{ A, B, SPACE \} \also
+  LineSeparator == \{ NEWL, NEWP, NEWD \}
+\end{zed}
+
+\section{Lines and paragraphs}
+
+A line is a sequence of characters. If the line is not empty then all its characters, except possibly the last character, are not line separators.
+
+\begin{schema}{NonEmptyLine}
+  chars : \seq Char 
+\where
+  \# chars > 0 \\
+  \forall c : \ran (front~chars) @ c \notin LineSeparator  
+ \end{schema}
+
+\begin{schema}{EmptyLine}
+  chars : \seq Char 
+\where
+  \# chars = 0 \\
+ \end{schema}
+
+\begin{zed}
+	Line \defs EmptyLine \lor NonEmptyLine
+\end{zed} 
+ 
+A line is a separator line if it ends with a line separator.
+ 
+\begin{axdef}
+   SeparatingLine : \power Line
+   \where
+   \forall x : Line @ x \in SeparatingLine \iff \\
+   \t1 x \in NonEmptyLine \land ( last~(x.chars) \in LineSeparator )
+\end{axdef}
+
+A paragraph is a non empty sequence of lines. All the lines except the last must not be separating lines. The last line may be a separating line. In addition, a paragraph has a configuration and a cache. The configuration consists of a left and a right margin. These determine the width of the lines in the paragraph. In addition, the configuration holds a line height given in half line units. That is, for a height of one line the line height will be 2.
+
+\begin{schema}{ParConfig}
+  leftm : \nat \\
+  rightm : \nat \\
+  lineh : \nat
+\where
+  leftm < rightm \\
+\end{schema}
+
+The paragraph's cache holds the absolute character position, line number, and the page number and offset of its first line. The purpose of the cache will be explained in later sections.
+
+\begin{schema}{ParCache}
+	absoluteCharIndex : \nat \\
+	absoluteLineNum : \nat \\
+	pageNum : \nat \\
+	pageLineNum : \nat
+\end{schema}
+
+\begin{schema}{Par}
+  lines : \seq Line \\
+  ParConfig \\
+  ParCache 
+\where
+  \# lines > 0 \\
+  \forall xx : \ran (front~lines) @ xx \notin SeparatingLine
+ \end{schema}
+
+The text of a paragraph is the sequence of characters formed by concatenating the content of its lines in order.
+
+\begin{axdef}
+	concatLines : \seq Line \fun \seq Char
+\where
+	concatLines ~\langle\rangle = \langle\rangle \\
+	\forall hh : Line ; tt : \seq Line @ \\
+	\t1 concatLines~(\langle hh\rangle \cat tt) = hh.chars \cat (concatLines~tt)
+\end{axdef}
+
+The length of a paragraph is the number of characters it has in its lines (the length of its text)
+
+\begin{axdef}
+	plen : Par \fun \nat
+\where
+	\forall pp : Par @ \\
+	\t1 plen~pp = \# (concatLines~pp.lines)
+\end{axdef}
+
+A paragraph is a page breaking paragraph if it is not empty and its last line ends with a page break or a document break.
+
+\begin{axdef}
+	PageBreakingPar : \power Par
+\where
+	PageBreakingPar = \{ pp : Par | \# pp.lines > 0 \land \# (last~pp.lines).chars > 0 \land {} \\
+	\t1 last~(last~pp.lines).chars \in \{ NEWP, NEWD \} \}
+\end{axdef}
+
+A paragraph is a document breaking paragraph if it is not empty and its last line ends with a document break.
+
+\begin{axdef}
+	DocumentBreakingPar : \power Par
+\where
+	DocumentBreakingPar = \{ pp : Par | \# pp.lines > 0 \land \# (last~pp.lines).chars > 0 \land {} \\
+	\t1 last~(last~pp.lines).chars = NEWD \}
+\end{axdef}
+
+The function $buildp$ builds a sequence of lines from a paragraph (taking its margins into account) and a sequence of characters. We demand that the sequence of characters is nice, that is, all the characters except the last are letters and the last character is a line separator:
+
+\begin{axdef}
+	Nice : \power (\seq Char) 
+\where
+	\forall cs : \seq Char @ \\
+	\t1 cs \in Nice \iff \ran (front~cs) \subseteq Letter \land last~cs \in LineSeparator
+\end{axdef}
+
+\begin{axdef}
+	buildp : Par \fun \seq Char \pfun \seq Line
+\where
+	\forall pp : Par ; cs :\seq Char | cs \in Nice @ \\
+	\t1 concatLines~(buildp~pp~cs) = cs 
+\end{axdef}
+
+A library is a non empty sequence of paragraphs. All the paragraphs except the last must be non empty and end with a separator. In addition the library maintains an index $border$ that marks the boundary between paragraphs whose cache is valid and those whose cache is not certain to be valid. 
+
+\begin{schema}{Library}
+	pars : \seq Par \\
+	border : \nat
+\where
+	\# pars > 0 \\
+	border \leq \# pars \\
+	\forall pp : \ran (front~pars) @ \# pp.lines > 0 \land last~pp.lines \in SeparatingLine 
+\end{schema}
+
+\section{Addressing}
+
+The interface to the data structure is given in terms of character positions from the beginning of the library. Therefore we need to translate these positions to the appropriate location in the library, that is to find the paragraph, line, and line offset that correspond to the position. 
+
+The function $lpos$ calculates the position of an index in sequence of lines. If the index is in the range of the first line then the line is the first line and the offset is just the position. Otherwise we recursively move along the lines decreasing the offset by each line length we pass by.
+
+\begin{axdef}
+	lpos : \seq Line \pfun \nat \fun (\nat \cross \nat)
+\where
+	\forall lines : \seq Line ; ii : \nat | ii \leq \# (head~lines).chars @ \\
+	\t1 lpos~lines~ii = (0,ii) \\
+	\forall lines : \seq Line ; ii : \nat | ii > \# (head~lines).chars @ \\
+	\t1 \LET rr == lpos~(tail~lines)~(ii-\# (head~lines).chars) @ \\
+	\t2   lpos~lines~ii = (1+first~rr, second~rr)
+\end{axdef}
+
+We follow a similar pattern to find the paragraph that corresponds to the character position, using the line function once we find the paragraph.
+
+\begin{axdef}
+	ppos : \seq Par \pfun \nat \fun (\nat \cross (\nat \cross \nat))
+\where
+	\forall pars : \seq Par ; ii : \nat | ii \leq (plen~(head~pars)) @ \\
+	\t1 ppos ~pars ~ii = (0, lpos~(head~pars).lines ~ ii) \\
+	\forall pars : \seq Par ; ii : \nat | ii > (plen~(head~pars)) @ \\
+	\t1 \LET rr == ppos~(tail~pars)~(ii-plen~(head~pars)) @ \\
+	\t2    ppos~pars~ii = (1+first~rr, second~rr)
+\end{axdef}
+
+Actually we can do without this precise pinpointing because most operations will modify the entire paragraph. The function $qpos$ finds the paragraph and the offset in the paragraph's text:
+
+\begin{axdef}
+	qpos : \seq Par \pfun \nat \fun (\nat \cross \nat)
+\where
+	\forall pars : \seq Par ; ii : \nat | ii \leq (plen~(head~pars)) @ \\
+	\t1 qpos ~pars ~ii = (0, ii) \\
+	\forall pars : \seq Par ; ii : \nat | ii > (plen~(head~pars)) @ \\
+	\t1 \LET rr == qpos~(tail~pars)~(ii-plen~(head~pars)) @ \\
+	\t2    qpos~pars~ii = (1+first~rr, second~rr)
+\end{axdef}
+
+If we happen to know the absolute character index that corresponds to a particular paragraph $pp$ and we wish to know the paragraph and offset that correspond to a larger character index then we can start the search from $pp$ instead of from the first paragraph in the library. 
+
+\begin{axdef}
+	sum : \seq \num \fun \num
+\where
+	sum~\langle\rangle = 0 
+\also
+	\forall k : \num ; ks : \seq \num @ \\
+	\t1 sum~(\langle k\rangle \cat ks) = k + (sum~ks)
+\end{axdef}
+
+\begin{gendef}[T,U]
+	map : \seq T \fun (T \fun U) \fun \seq U
+\where
+	\forall f : T \fun U @ \\
+	\t1 map~(\langle\rangle) ~ f = \langle\rangle
+\also
+	\forall t : T ; ts : \seq T ; f : T \fun U @ \\
+	\t1 map~(\langle t \rangle \cat ts)~f = \langle f~t\rangle\cat (map~ts~f)
+\end{gendef}
+
+The character position of a paragraph at index $ii$ in a sequence of at least $ii$ paragraphs is the sum of the lengths of all the paragraphs before $ii$.
+
+\begin{axdef}
+	cpos : \seq Par \fun \nat \pfun \nat
+\where
+	\forall ps : \seq Par ; ii : \nat | ii < \# ps @ \\
+	\t1 (\exists qs : \seq Par @ qs \prefix ps \land \#qs = ii \land {} \\
+	\t2    cpos ~ ps ~ ii = sum~(map~ps~(\lambda q:Par @ \# q.lines)))
+\end{axdef}
+
+Let $ps = u \cat v$. If $cpos~(u\cat v)~\#u = jj$ then $qpos~(u\cat v)~(\#u+kk) = (\#u + ii, jj)$ where $(ii, jj) = qpos~v~kk$. 
+
+This means that it is worthwhile to keep the absolute character index of the paragraph in the paragraph's cache. 
+
+If an absolute character position falls below the absolute character position of the border paragraph then we can find the paragraph that holds this character position with a binary search. 
+
+
+
+To further improve the system's efficiency we can start by checking if the absolute character index falls inside the border paragraph. This will always be true in the most common case where we add characters to the same paragraph. 
+
+If the character index is larger than the border then we will recompute all the caches from the border up to the paragraph that holds the character. Then we can move the border forward to the paragraph that holds the character index.
+
+\section{Initializing the system}
+
+Initially the library has a single paragraph with a single, empty line. We initialize its cache to correct values and therefore the border is set one past the end of the paragraphs sequence to indicate that all the paragraphs have a valid cache.
+
+\begin{schema}{Init}
+	Library'
+\where
+	\# pars' = 1 \\
+	\# (pars'~0).lines = 1 \\
+	(pars'~0).absoluteCharIndex = 0 \\
+	(pars'~0).absoluteLineNum = 0 \\
+	(pars'~0).pageNum = 0 \\
+	(pars'~0).pageLineNum = 0 \\
+	((pars'~0).lines~0) \in EmptyLine \\
+	border' = 1 \\
+\end{schema}
+
+\section{Inserting letters}
+
+An insert operation takes a letter or a space $cc$ and a character position in the library $ii$ and inserts $cc$ after the character at position $ii$. The position of the first character in the text is 1, thus to insert a character at the beginning of the library we use the index 0. 
+
+To insert a letter at position $ii?$ we calculate the text held in the paragraph, add the letter after position $ii?$ and rebuild the paragraph from the result.
+
+The function $insert$ inserts a letter into a position in a sequence of characters.
+
+\begin{axdef}
+	insert : Char \fun \nat \fun \seq Char \pfun \seq Char
+\where
+	\forall cc : Char ; ii : \nat ; cs : \seq Char | ii \leq \# cs @ \\
+	\t1 \exists u,v : \seq Char @ \#u = ii \land \#v = \#cs - ii \land u \cat v = cs \land {}\\
+	\t2 insert~cc~ii~cs = u \cat \langle cc \rangle \cat v 
+\end{axdef}
+
+
+The insert operation modifies exactly one paragraph and thus is described using a free promotion. 
+
+\begin{schema}{PromotePar}
+	\Delta Library \\
+	\Delta Par \\
+	pi? : \nat
+\where
+	\theta Par = pars~pi? \\
+	pars' = pars \oplus \{ pi? \mapsto \theta Par' \}
+\end{schema}
+
+The basic operation $ParBuild$ builds a paragraph from a sequence of characters. Note that the precondition for this operation is that all the characters except the last are letters and the last character is a line separator.
+
+\begin{schema}{ParBuild}
+	\Delta Par \\
+	\Xi ParConfig \\
+	\Xi ParCache \\
+	text? : \seq Char \\
+\where
+	lines' = buildp~(\theta Par) ~text? \\
+\end{schema}
+
+\begin{schema}{ParInsertLetter}
+	ParBuild \\
+	cc? : Letter \\
+	ii? : \nat
+\where
+	text? = insert~cc?~ii?~(concatLines~lines) \\
+\end{schema}
+
+For the entire operation we must convert the absolute position to the paragraph index and offset in the paragraph
+
+\begin{schema}{InsertLetter\_0}
+	PromotePar \\
+	ParInsertLetter \\
+	index? : \nat
+\where
+	(pi?,ii?) = qpos~pars~index? 
+\end{schema}
+
+We hide the private variables that are not a part of the system level interface
+
+\begin{zed}
+InsertLetter \defs \exists Par @ InsertLetter\_0 \hide (text?,pi?,ii?)
+\end{zed}
+
+\section{Inserting breaks}
+
+When we insert a line separator we break a paragraph in two. The text before the separator and the separator remain with the original paragraph, all the rest goes into the new paragraph. 
+
+This operation can be described in terms of existing operations as follows: extract the text of the paragraph. Select all the text up to and including the line separator, append to its end the line separator and use it to rebuild the original paragraph. Select the remaining text and use it to build a new paragraph. Finally insert the new paragraph after the original paragraph.
+
+We define two functions that help us to specify this behavior. The function $prefix~cs~ii$ takes a prefix of length $ii$ from the beginning of the character sequence $cs$.
+
+\begin{axdef}
+	prefix : \seq Char \fun \nat \pfun \seq Char
+\where
+	\forall cs : \seq Char ; ii : \nat | ii \leq \# cs @ \\
+	\t1 \exists u,v : \seq Char @ \# u = ii \land \# v = \# cs - ii \land {} \\
+	\t2		cs = u \cat v \land prefix~cs~ii = u
+\end{axdef}
+
+And the function $suffix~cs~ii$ takes a suffix of length $ii$ from the end of the character sequence $cs$.
+
+\begin{axdef}
+	suffix : \seq Char \fun \nat \pfun \seq Char
+\where
+	\forall cs : \seq Char ; ii : \nat | ii \leq \# cs @ \\
+	\t1 \exists u,v : \seq Char @ \# u = ii \land \# v = \# cs - ii \land {} \\
+	\t2		cs = u \cat v \land suffix~cs~ii = v
+\end{axdef}
+
+Note that if the original paragraph ended with a separator then both will end with a separator. If the original did not end with a separator then it means that it was the last paragraph in the library. After the operation the new paragraph will be the last, and the original paragraph will end with a separator, thus maintaining the rule that only the last paragraph can end with no separator.
+
+The specification of paragraph break is unusual in that it uses two paragraph schemas to specify the effect on the paragraph that we break and the new paragraph that we create as a result.
+
+\begin{schema}{ParBreak}
+	ParBuild \\
+	\Xi ParConfig \\
+	\Xi ParCache \\
+	Par'' \\
+	cc? : LineSeparator \\
+	ii? : \nat \\
+	pi? : \nat
+\where
+	text? = ((prefix~(concatLines~lines)~ii?) \cat \langle cc? \rangle) \\
+	lines'' = buildp~(\theta Par) ~ ((suffix~(concatLines~lines))~ii?) \\
+	\theta ParConfig'' = \theta ParConfig 
+\end{schema}
+
+The variables $u$ and $v$ are private variables that represent the parts before and after the paragraph that we break. We use them to describe the effect of replacing the paragraph that we break and adding the new paragraph in a single operation.
+
+\begin{schema}{Break\_0}
+	\Delta Library \\
+	ParBreak \\
+	index? : \nat \\
+	u : \seq Par \\
+	v : \seq Par 
+\where
+	(pi?,ii?) = qpos~pars~index? \\
+	\# u = pi? \\
+	\# v = \#pars - pi? - 1 \\
+	pars = u \cat \langle \theta Par \rangle \cat v \\
+	pars' = u \cat \langle \theta Par' , \theta Par'' \rangle \cat v 
+\end{schema}
+
+And we hide the parts that are not a part of the system level interface
+
+\begin{zed}
+Break \defs \exists \Delta Par ; Par'' @ Break\_0 \hide (u,v,text?,pi?,ii?)
+\end{zed}
+
+\section{Erasing}
+
+To erase a range $[b,e)$ we split the analysis into several case. First, when $b$ and $e$ reside entirely in the same paragraph. In this case we extract the text, recompose it from $[0,b)$ and $[e, \#text)$ and build the paragraph from the result. Note that in this case the paragraph can never become empty because its last character can never be erased. Thus this operation will not invalidate the structure (if the last character is a line separator it will remain so).
+
+\begin{schema}{ParEraseInside}
+	ParBuild \\
+	bb? : \nat \\
+	ee? : \nat \\
+\where
+	bb? > 0 \\
+	text? = (prefix~(concatLines~lines)~(bb? - 1)) \cat (suffix~(concatLines~lines)~ee?) \\
+\end{schema}
+
+\begin{schema}{EraseInside\_0}
+	\Delta Library \\
+	PromotePar \\
+	ParEraseInside \\
+	ii? : \nat \\
+	jj? : \nat 
+	\where
+	ii? \leq jj? \\
+	(pi?,bb?) = qpos~pars~ii? \\
+	(pi?,ee?) = qpos~pars~jj? \\
+\end{schema}
+
+\begin{zed}
+	EraseInside \defs \exists \Delta Par @ EraseInside\_0 \hide (pi?,bb?,ee?,text?)
+\end{zed}
+
+When $[b,e)$ spans more than one paragraph, we again split into two cases. First, the case where $b$ is the first character in its paragraph. This means that we must erase the paragraph entirely. Then we continue like in the next case.
+
+\begin{schema}{EraseFirstPar}
+	\Delta Library \\
+	PromotePar \\
+	ParEraseInside \\
+	ii? : \nat \\
+	jj? : \nat \\
+	pb? : \nat \\
+	pe? : \nat \\
+	u,v,w : \seq Par \\
+	\where
+	ii? \leq jj? \\
+	(pb?,1) = qpos~pars~ii? \\
+	pi? = pe? \\
+	bb? = 1 \\
+	(pe?,ee?) = qpos~pars~jj? \\
+	pars = u \cat v \cat \langle \theta Par \rangle \cat w \\
+	\# u = pb? \\
+	\# u + \# v = pe? \\
+	pars' = u \cat \langle \theta Par' \rangle \cat w 
+\end{schema}
+
+In the third case we divide the range into three areas (either the second or the third may be empty but not both): the part from $b$ up to the end of the paragraph that holds $b$; the paragraphs between the next paragraph and the last paragraph before the paragraph that holds $e$; the paragraph that holds $e$. Thus we have to erase areas in the first and last paragraphs and remove all the paragraphs in between. As a result the first and the last paragraphs will become neighbors. and the last character in the first paragraph will be removed. Therefore we must merge the paragraphs. The simplest way to achieve this is to take the text from the first paragraph and the next paragraph, rebuild the next paragraph from the text and remove the first paragraph. 
+
+So we remove the first paragraph in both cases. This means we can specify the behavior for both cases in a single description: copy the text that should remain in the first paragraph (this could be an empty string). Erase the first paragraph and all the following paragraphs until the last paragraph (not including the last paragraph). Rebuild the last paragraph with the text salvaged from the first paragraph as the prefix of the text salvaged from the last paragraph.
+
+\begin{schema}{EraseMany\_0}
+	\Delta Library \\
+	ParBuild \\
+	ii? : \nat \\
+	jj? : \nat \\
+	pi : \nat \\
+	pj : \nat \\
+	bb : \nat \\
+	ee : \nat \\
+	start : \seq Char \\
+	end : \seq Char \\
+	u : \seq Par \\
+	v : \seq Par \\
+	w : \seq Par 
+\where
+	ii? \leq jj? \\
+	(pi,bb) = qpos~pars~ii? \\
+	(pj,ee) = qpos~pars~jj? \\
+	(pi < pj \lor pi = pj \land bb = 0) \\
+	pars~pj = \theta Par \\
+	start = prefix~(concatLines~(pars~pi).lines)~(bb - 1) \\
+	end = suffix~(concatLines~lines)~ee \\
+	text? = start \cat end \\
+	pars = u \cat v \cat w \\
+	\# u = pi \\
+	\# v = pj \\
+	pars' = front~u \cat \langle \theta Par' \rangle \cat w \\
+\end{schema}
+
+\begin{zed}
+EraseMany \defs \exists \Delta Par @ EraseMany\_0 \hide (pi,bb,pj,ee,text?,u,v,start,end)
+\end{zed}
+
+Actually a careful analysis of $EraseMany\_0$ reveals that it also covers the case where we erase in a single paragraph. Therefore we can use this specification as the single specification for the erase operation.
+
+\section{Calculating page and line numbers}
+
+An important part of the system is to display the page number and the line number in the page. A page is a sequence of no more than $K$ line units. 
+
+\begin{axdef}
+	K : \nat
+	\where
+	K > 0
+\end{axdef}
+
+In the most simple case each page is exactly $K$ line units high and all the paragraphs use a line height of 1 line unit. In this case the page number of a line index $ii$ is simply $ii \div K = \lfloor ii / K\rfloor$ and its line number (in the page) is $ii \mod K$. However, two things complicate this situation. First, paragraphs may use a different line height, and second, we may insert explicit page breaks into the text. This means that we must use a more involved calculation.
+
+The idea is that as long as we have to skip a non page breaking paragraph all we have to do is to add its number of lines times its line height to the current page offset and move to a new page if this offset overflows the page size. But when we skip a page breaking paragraph then we have to increment the page number and reset the page offset.
+
+For example, let $K=3$, with a line height of $1$, and $pars = \langle 2,6\star,2\rangle$. Then we have $2+6+2=10$ lines arranged as follows:
+
+\begin{tabular}{cccc}
+	% paragraph number, line number , page number , page offset 
+	paragraph num. & line number & page number & page line num. \\
+	0 &	0	&	0 	&	0 \\
+	0 &	1	& 	0	& 	1 \\
+	1 &	2	& 	0	& 	2 \\
+	1 &	3	& 	1	& 	0 \\
+	1 & 4	& 	1 	&  	1 \\
+	1 & 5	&	1	& 	2 \\
+	1 & 6	&	2	&  	0 \\
+	1 & 7	&	2	&   1 \\
+	2 & 8	&	3	& 	0 \\
+	2 &	9	& 	3	& 	1 \\
+\end{tabular}
+
+Notice that line $7$ is the last line in page $2$ because it is the last line in the second paragraph which is a page breaking paragraph. 
+
+Given a sequence of paragraphs $pars$, the absolute address of the first line in the paragraph $ai$, the page number $pn$ and offset $pi$ of the said line, and an absolute address $ii$ greater than or equal to $ai$, we can calculate the page number and offset of $ii$ as follows:
+
+\begin{axdef}
+	pageNumber : Par \cross \nat \fun \nat
+\where
+	\forall pp : Par ; pi : \nat @ \\
+	\t1 pageNumber~(pp,pi) = (pi + \# pp.lines * pp.lineh) \div K
+\end{axdef}
+
+\begin{axdef}
+	pageLineNum : Par \cross \nat \fun \nat
+\where
+	\forall pp : Par ; pi : \nat @ \\
+	\t1 pageLineNum~(pp,pi) = (pi + \# pp.lines * pp.lineh) \mod K
+\end{axdef}
+
+\begin{axdef}
+	page : (\seq Par \cross \nat \cross \nat \cross \nat \cross \nat) \pfun (\nat \cross \nat)
+\where
+	\forall pp : Par ; pars : \seq Par ; ai : \nat; ii: \nat ; pn : \nat ; pi : \nat | \\
+	\t1 ai \leq ii \land ii < ai + \# pp.lines @ \\
+	\t2  page~(\langle pp \rangle \cat pars, ai, pn, pi, ii) = \\
+	\t3   ( pn + (pi + (ii - ai) * pp.lineh) \div K, (pi + (ii - ai) * pp.lineh) \mod K) \\
+
+	\forall pp : Par \setminus PageBreakingPar ; pars : \seq Par ; ai : \nat ; ii: \nat ; pn : \nat ; pi : \nat | \\
+	\t1 ii \geq ai + \# pp.lines @ \\
+	\t2  page~(\langle pp \rangle \cat pars, ai, pn, pi, ii) = \\
+	\t3   page~(pars, ai + \# pp.lines, pn + pageNumber~(pp,pi), pageLineNum~(pp,pi), ii) \\
+
+	\forall pp : PageBreakingPar ; pars : \seq Par ; ai : \nat ; ii: \nat ; pn : \nat ; pi : \nat | \\
+	\t1 ii \geq ai + \# pp.lines @ \\
+	\t2  page~(\langle pp \rangle \cat pars, ai, pn, pi, ii) = \\
+	\t3   page~(pars, ai + \# pp.lines, pn + 1 + pageNumber~(pp,pi), 0, ii) \\	
+\end{axdef}
+
+We demonstrate $page$ by calculating the page numbers for the previous table.
+
+\begin{argue}
+page~(\langle 2,6,2\rangle,0,0,0,4) \\
+= page~(\langle 6,2\rangle,2,0+0,2,4) \\
+= (0+ (2+(4-2)*1) \div 3, (2 + (4-2)*1 \mod 3) \\
+= (0 + 4 \div 3, 4 \mod 3) \\
+= (1 , 1 )
+\end{argue}
+
+And when we skip over a page breaking paragraph.
+
+\begin{argue}
+page~(\langle 2,6,2\rangle,0,0,0,8) \\
+= page~(\langle 6,2\rangle,2,0+0,2,8) \\
+= page~(\langle 2\rangle,8,0+1+(2+6*1) \div 3,0,8) \\
+= page~(\langle 2\rangle,8,1+ 8 \div 3,0,8) \\
+= page~(\langle 2\rangle,8,1+ 2,0,8) \\
+= page~(\langle 2\rangle,8,3,0,8) \\
+= (3 + 0 + 0 \div 3, 0 + (0 * 2) \mod 3) \\
+= (3, 0)
+\end{argue}
+
+This definition means that to calculate the page and offset of an absolute line number $ii$ we can use any paragraph whose absolute start address line is smaller than or equal to $ii$. This property is the basis of the boundary mechanism we now present. 
+
+The idea is to add a boundary index $bi$ to the repository. This index marks the first paragraph whose address details may be incorrect. The address details of a paragraph include: the absolute line number of its first line and the page and offset of this line. 
+
+Therefore we maintain foro each paragraph a set of variables that hold its address details. This is the paragraph's cache. If we need the address details of a paragraph and its index $jj$ is below $bi$ then we can use the cache directly. If its index is $bi$ or greater, we will recalculate the address details of all the paragraphs from $pars~bi$ up to $pars~jj$, and set $bi$ to $jj$.
+
+Therefore we never need to calculate $page$ explicitly, all we need to do is to calculate the address details for the next page, assuming that the current page has correct address details). Here $Par_0$ represents the current paragraph and $\Delta Par$ the next paragraph.
+
+\begin{schema}{UpdateAddressDetailsNoBreakingPar}
+	Par_0 \\
+	\Delta Par \\
+	\Xi ParConfig \\
+\where
+	\theta Par_0 \in Par \setminus PageBreakingPar \\
+	absoluteCharIndex' = absoluteCharIndex_0 + plen~\theta Par_0 \\
+	absoluteLineNum' = absoluteLineNum_0 + \# lines_0 \\
+	pageNum' = pageNum_0 + ((pageLineNum_0 + \# lines_0) * lineh_0) \div K \\
+	pageLineNum' = ((pageLineNum_0 + \# lines_0) * lineh_0 ) \mod K \\
+	lines' = lines \\
+\end{schema}
+
+\begin{schema}{UpdateAddressDetailsPageBreakingPar}
+	Par_0 \\
+	\Delta Par \\
+	\Xi ParConfig \\
+\where
+	\theta Par_0 \in PageBreakingPar \setminus DocumentBreakingPar \\
+	absoluteCharIndex' = absoluteCharIndex_0 + plen~\theta Par_0 \\
+	absoluteLineNum' = absoluteLineNum_0 + \# lines_0 \\
+	pageNum' = 1 + pageNum_0 + ((pageLineNum_0 + \# lines_0) * lineh_0) \div K \\
+	pageLineNum' = 0 \\
+	lines' = lines \\
+\end{schema}
+
+A document break resets the page count.
+
+\begin{schema}{UpdateAddressDetailsDocBreakingPar}
+	Par_0 \\
+	\Delta Par \\
+	\Xi ParConfig \\
+\where
+	\theta Par_0 \in DocumentBreakingPar \\
+	absoluteCharIndex' = absoluteCharIndex_0 + plen~\theta Par_0 \\
+	absoluteLineNum' = absoluteLineNum_0 + \# lines_0 \\
+	pageNum' = 0 \\
+	pageLineNum' = 0 \\
+	lines' = lines \\
+\end{schema}
+
+\section{Searching}
+
+There are two operations to search for a substring in the text. The operation $SearchForward$ finds the position of the first occurrence of the substring if one moves to the right. The search continues from the beginning of the text if it is not found. The search terminates when it reaches the original position. 
+
+
+\begin{axdef}
+	text : \seq Par \fun \seq Char
+\where
+	text~\langle\rangle = \langle\rangle \\
+	\forall pp : Par; pars : \seq Par @ \\
+	\t1 text~(\langle pp\rangle \cat pars) = concatLines~pp.lines \cat (text~pars) 
+\end{axdef}
+
+\begin{axdef}
+	match: \power (\seq Char \cross \nat \cross \seq Char)
+\where
+	match = \{ chars : \seq Char ; ii : \nat ; str : \seq Char | \\
+\t1	(\exists u,v : \seq Char @ \#u = ii \land u \cat str \cat v = chars) \} 
+\end{axdef}
+
+\begin{axdef}
+	searchToEnd : \seq Par \fun \seq Char \fun \nat \fun \nat
+\where
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat ; jj : \nat @ \\
+	\t1 searchToEnd ~ pars ~str ~ii = jj \iff \\
+	\t2 ii < jj \land jj < \# (text~pars) \land {} \\
+	\t2  (text~pars , jj, str) \in match \land {} \\
+	\t2  (\forall kk : \nat | ii \leq kk \land kk < jj @ (text~pars , kk, str) \notin match) \\
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat @ \\
+	\t1 searchToEnd ~ pars ~str ~ii = \# (text~pars) \iff \\
+	\t2  (\forall kk : \nat | ii \leq kk \land kk < \# (text~pars) @ (text~pars , kk, str) \notin match) \\
+\end{axdef}
+
+\begin{axdef}
+	searchForwardToIndex : \seq Par \fun \seq Char \fun \nat \fun \nat
+\where
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat ; jj: \nat @ \\
+	\t1 searchForwardToIndex ~ pars ~str ~ii = jj \iff \\
+	\t2 jj < ii \land {} \\
+	\t2  (text~pars , jj, str) \in match \land {} \\
+	\t2  (\forall kk : \nat | 0 \leq kk \land kk < jj @ (text~pars , kk, str) \notin match) \\
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat @ \\
+	\t1 searchForwardToIndex ~ pars ~str ~ii = ii \iff \\
+	\t2  (\forall kk : \nat | 0 \leq kk \land kk < ii @ (text~pars , kk, str) \notin match)
+\end{axdef}
+
+\begin{axdef}
+	searchForward : \seq Par \fun \seq Char \fun \nat \fun \nat
+\where
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat | \\
+	\t1 searchToEnd ~ pars ~str ~ii \neq \# (text~pars) @ \\
+	\t2  searchForward ~ pars ~str ~ii = searchToEnd~pars~str~ii \\
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat | \\
+	\t1 searchToEnd ~ pars ~str ~ii = \# (text~pars) @ \\
+	\t2  searchForward ~ pars ~str ~ii = searchForwardToIndex~pars~str~ii 
+\end{axdef}
+
+\begin{axdef}
+	searchToBeginning : \seq Par \fun \seq Char \fun \nat \fun \num
+\where
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat ; jj : \nat @ \\
+	\t1 searchToBeginning ~ pars ~str ~ii = jj \iff \\
+	\t2 0 \leq jj \land jj < ii \land {} \\
+	\t2  (text~pars , jj, str) \in match \land {} \\
+	\t2  (\forall kk : \nat | 0 \leq kk \land kk < jj @ (text~pars , kk, str) \notin match) \\
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat @ \\
+	\t1 searchToBeginning ~ pars ~str ~ii = -1 \iff \\
+	\t2  (\forall kk : \nat | 0 \leq kk \land kk < ii @ (text~pars , kk, str) \notin match)
+\end{axdef}
+
+\begin{axdef}
+	searchBackwardsToIndex : \seq Par \fun \seq Char \fun \nat \fun \num
+\where
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat ; jj : \nat @ \\
+	\t1 searchBackwardsToIndex ~ pars ~str ~ii = jj \iff \\
+	\t2  ii < jj \land jj < \# (text ~ pars) \land {} \\
+	\t2  (text~pars , jj, str) \in match \land {} \\
+	\t2  (\forall kk : \nat | jj < kk \land kk \leq \# (text ~ pars) @ (text~pars , kk, str) \notin match) \\
+	\forall pars : \seq Par ; str : \seq Char ; ii : \nat ; jj : \nat @ \\
+	\t1 searchBackwardsToIndex ~ pars ~str ~ii = ii \iff \\
+	\t2  (\forall kk : \nat | ii < kk \land kk \leq \# (text ~ pars) @ (text~pars , kk, str) \notin match) \\
+\end{axdef}
+
+\section{Iterating over the structure}
+
+An iterator represents a location in the data structure. It provides operations to move forward or backwards one or more characters.
+
+\begin{schema}{Iterator}
+	pars : \seq Par \\
+	pi : \nat \\
+	li : \nat \\
+	ci : \nat
+	\where
+	0 \leq pi \\
+	pi \leq \# pars \\
+	0 \leq li \\
+	li < \# (pars~pi).lines \\
+	0 \leq ci \\
+	ci < \# ((pars~pi).lines~li).chars
+\end{schema}
+
+\begin{schema}{IteratorNextChar}
+	\Delta Iterator 
+\where
+	ci < \# ((pars~pi).lines~li).chars - 1 \\
+	pi' = pi \\
+	li' = li \\
+	ci' = ci + 1
+\end{schema}
+
+\begin{schema}{IteratorNextLine}
+	\Delta Iterator 
+\where
+	ci = \# ((pars~pi).lines~li).chars - 1 \\
+	li < \# (pars~pi).lines - 1 \\
+	pi' = pi \\
+	li' = li + 1 \\
+	ci' = 0
+\end{schema}
+
+\begin{schema}{IteratorNextPar}
+	\Delta Iterator 
+\where
+	pi < \# pars - 1 \\
+	ci = \# ((pars~pi).lines~li).chars - 1 \\
+	li = \# (pars~pi).lines - 1 \\
+	pi' = pi + 1 \\
+	li' = 0 \\
+	ci' = 0
+\end{schema}
+
+\begin{zed}
+IteratorNext \defs IteratorNextChar \lor IteratorNextLine \lor IteratorNextPar
+\end{zed}
+
+\begin{schema}{IteratorPrevChar}
+	\Delta Iterator 
+\where
+	ci > 0 \\
+	pi' = pi \\
+	li' = li \\
+	ci' = ci - 1
+\end{schema}
+
+\begin{schema}{IteratorPrevLine}
+	\Delta Iterator 
+\where
+	ci = 0 \\
+	li > 0 \\
+	pi' = pi \\
+	li' = li - 1 \\
+	ci' = \# (((pars~pi).lines~(li - 1)).chars) - 1 
+\end{schema}
+
+\begin{schema}{IteratorPrevPar}
+	\Delta Iterator 
+\where
+	pi > 0 \\
+	ci = 0 \\
+	li = 0 \\
+	pi' = pi - 1 \\
+	li' = \# (pars~(pi - 1)).lines - 1 \\
+	ci' = \# ((pars~(pi - 1)).lines~li').chars - 1
+\end{schema}
+
+\begin{zed}
+IteratorPrev \defs IteratorPrevChar \lor IteratorPrevLine \lor IteratorPrevPar
+\end{zed}
+
+\begin{schema}{IteratorAccess}
+	\Xi Iterator \\
+	char! : Char
+\where
+	pi < \# pars \\
+	char! = ((pars~pi).lines~li).chars~ci
+\end{schema}
+
+\section{Searching using iterators}
+
+Iterators are useful because there is an efficient and simple way to translate between absolute character indices and iterators. This translation relies on the paragraph's caches. 
+
+
+\section{Displaying}
+
+We display a window into the text. The window is a rectangular area whose width is suited for displaying the widest paragraph line. But its height is limited to a maximal number of line units. Thus we may specify the window using an integer that holds the number of line units from the beginning of text, and a constant that represents the window's height in line units. To display the text we must calculate the paragraphs that fall inside the window. This is easy to do if we know for each paragraph the number of line units that correspond to its first line. 
+
+
+\end{document}
