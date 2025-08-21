@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 18 August 2025 at 4:46:25 pm'!
+'From Cuis7.3 [latest update: #6895] on 18 August 2025 at 5:02:21 pm'!
 'Description '!
-!provides: 'Kaeru' 1 386!
+!provides: 'Kaeru' 1 388!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -195,9 +195,19 @@ A KRepository is the object that holds the entire text and provides the operatio
 privCharIndex
 	^charIndex! !
 
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:59:45'!
+privCharIndex: anIndex
+
+	charIndex := anIndex ! !
+
 !KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:39'!
 privLineIndex
 	^lineIndex! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:59:54'!
+privLineIndex: anIndex
+
+	lineIndex := anIndex! !
 
 !KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:21:16'!
 privNextChar
@@ -233,6 +243,11 @@ privNextPar
 !KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:31'!
 privParIndex
 	^parIndex! !
+
+!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 17:00:16'!
+privParIndex: anIndex
+
+	parIndex := anIndex! !
 
 !KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:33:24'!
 privPars
@@ -356,6 +371,21 @@ begin
 	anIterator pars: paragraphs ; setAtStart.
 	
 	^anIterator ! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 17:02:10'!
+charIndexToIterator: anIndex
+
+	| pi li iterator |
+	
+	pi := self charIndexToParIndex: anIndex.
+	
+	li := paragraphs at: pi first :: charIndexToLineIndex: pi second.
+	
+	iterator := KIterator new.
+	
+	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
+	
+	^iterator! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 11:06:35'!
 charIndexToParIndex: anIndex
@@ -515,6 +545,28 @@ invariant
 		self assert: each isLineBreaking ].
 	
 	^true! !
+
+!KLibrary methodsFor: 'searching' stamp: 'DF 8/18/2025 16:52:37'!
+match: aString at: anIterator
+
+	| bb ee ii | 
+	
+	bb := anIterator copy.
+	
+	ee := self end.
+	
+	ii := 1.	
+
+	self assert: aString size > 0.
+	
+	[ bb ~= ee and: [ii <= aString size] and: [ bb char = (aString at: ii) ] ]
+		whileTrue:[
+			bb next.
+			ii := ii + 1 ].
+		
+	^ii = aString size
+	
+	! !
 
 !KLine methodsFor: 'inserting' stamp: 'DF 8/8/2025 12:07:56'!
 buildFrom: aTokenStream limitBy: anIntegerWidth
@@ -1514,6 +1566,20 @@ charAt: anIndex
 	
 ! !
 
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:57:45'!
+charIndexToLineIndex: anIndex
+
+	| ii pp |
+	
+	ii := anIndex. pp := 1.
+	
+	[ii > ((lines at:pp) length) ]
+		whileTrue:[
+			ii := ii - ((lines at:pp) length).
+			pp := pp + 1].
+
+	^ { pp . ii }! !
+
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:47:46'!
 length
 	^ lines sum:[:each | each length ] ifEmpty:0! !
@@ -1917,7 +1983,7 @@ testInsertBreaks
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:46:16'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 17:01:36'!
 testIterators
 
 	| t1 t2 text index lib bb ee |
@@ -1972,6 +2038,9 @@ testIterators
 			index := index - 1.
 			self assert: (ee char = (text at: index)) ].
 	
+	1 to: text size do:[:each | 
+		bb := lib charIndexToIterator: each.
+		self assert: bb char = (text at:each) ].
 	! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:12:56'!
