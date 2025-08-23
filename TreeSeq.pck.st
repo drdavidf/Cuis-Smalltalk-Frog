@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 21 August 2025 at 7:44:50 pm'!
+'From Cuis7.3 [latest update: #6895] on 23 August 2025 at 5:46:24 pm'!
 'Description '!
-!provides: 'TreeSeq' 1 58!
+!provides: 'TreeSeq' 1 78!
 SystemOrganization addCategory: #TreeSeq!
 
 
@@ -45,7 +45,34 @@ TSTree class
 	instanceVariableNames: ''!
 
 
-!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:39:16'!
+!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:43:49'!
+testErase
+
+	| aTree aSeq |
+	
+	aSeq := 1 to:10 :: asOrderedCollection.
+	
+	aTree := TSTree new.
+	
+	self assert: aTree asOrderedCollection = {}.
+	
+	1 to:10 do:[:ii |
+		aTree insert: (aSeq at:ii) at: ii ].
+	
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
+	
+	1 to:10 do:[:ii |
+		self assert: (aTree at:ii) = ii ].
+
+
+	aTree eraseFrom: 3 to:7.
+	
+	self assert: aTree invariant.
+	
+	self assert: (aTree asOrderedCollection = { 1 . 2 . 7 . 8 . 9 . 10 }).
+		! !
+
+!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
 testInsert
 
 	| aTree aSeq |
@@ -54,57 +81,19 @@ testInsert
 	
 	aTree := TSTree new.
 	
-	self assert: aTree items = {}.
+	self assert: aTree asOrderedCollection = {}.
 	
 	1 to:10 do:[:ii |
 		aTree insert: (aSeq at:ii) at: ii ].
 	
-	self assert: aTree items asOrderedCollection = aSeq.
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
 	
 	1 to:10 do:[:ii |
 		self assert: (aTree at:ii) = ii ].
 
 	! !
 
-!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/21/2025 19:40:05'!
-testInsertAndAltSplay
-
-	| aTree aSeq |
-	
-	aSeq := 1 to:10 :: asOrderedCollection.
-	
-	aTree := TSTree new.
-	
-	self assert: aTree items = {}.
-	
-	self assert: aTree invariant.
-	
-	1 to:10 do:[:ii |
-		aTree insert: (aSeq at:ii) at: ii. 
-		self assert: aTree invariant.
-		aTree altSplayAt:ii.
-		self assert: aTree invariant ].
-	
-	self assert: aTree items asOrderedCollection = aSeq.
-	
-	1 to:10 do:[:ii |
-		self assert: (aTree at:ii) = ii ].
-
-	aTree altSplayAt:5.
-	
-	self assert: aTree invariant.
-	
-	self assert: aTree items asOrderedCollection = aSeq.
-	
-	self halt.
-	aTree altSplayAt: 7.
-
-	self assert: aTree invariant.
-	
-	self assert: aTree items asOrderedCollection = aSeq.
-	! !
-
-!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/21/2025 10:03:41'!
+!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
 testInsertAndSplay
 
 	| aTree aSeq |
@@ -113,7 +102,7 @@ testInsertAndSplay
 	
 	aTree := TSTree new.
 	
-	self assert: aTree items = {}.
+	self assert: aTree asOrderedCollection = {}.
 	
 	self assert: aTree invariant.
 	
@@ -123,14 +112,25 @@ testInsertAndSplay
 		aTree splayAt:ii.
 		self assert: aTree invariant ].
 	
-	self assert: aTree items asOrderedCollection = aSeq.
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
 	
 	1 to:10 do:[:ii |
 		self assert: (aTree at:ii) = ii ].
 
+	aTree splayAt:5.
+	
+	self assert: aTree invariant.
+	
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
+	
+	aTree splayAt: 7.
+
+	self assert: aTree invariant.
+	
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
 	! !
 
-!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:33:59'!
+!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
 testInsertLeaf
 
 	| aLeaf aNode |
@@ -139,54 +139,54 @@ testInsertLeaf
 	
 	aLeaf item: $b.
 	
-	self assert: aLeaf items = { $b }.
+	self assert: aLeaf asOrderedCollection = { $b }.
 	
 	aNode := aLeaf insert: $a at: 1.
 	
-	self assert: aNode items = {$a . $b}.
+	self assert: aNode asOrderedCollection = {$a . $b}.
 	
 	
 
 	! !
 
-!TSBranch methodsFor: 'splaying' stamp: 'DF 8/21/2025 19:37:51'!
-altSplayAt: anIndex
+!TestTreeSeq methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:40:46'!
+testSplit
 
-	"move the parent of anIndex to be the root of this subtree"
+	| aTree aSeq parts tt |
 	
-	self isParentOf: anIndex ::
-		ifTrue:[
-			^self].
+	aSeq := 1 to:10 :: asOrderedCollection.
+	
+	aTree := TSTree new.
+	
+	self assert: aTree asOrderedCollection = {}.
+	
+	1 to:10 do:[:ii |
+		aTree insert: (aSeq at:ii) at: ii ].
+	
+	self assert: aTree asOrderedCollection asOrderedCollection = aSeq.
+	
+	1 to:10 do:[:ii |
+		self assert: (aTree at:ii) = ii ].
 
-	anIndex <= self key
-		ifTrue:[
-			
-			left isParentOf: anIndex ::
-				ifTrue:[			
-					^self rotateLeftChild].
-			
-			anIndex <= left key
-				ifTrue:[ 
-					^self rotateLeftChild rotateLeftChild altSplayAt: anIndex].
-				
-			left := left rotateRightChild.	
-			
-			^self rotateLeftChild splayAt: anIndex ].
+	parts := aTree splitAt: 5.
 	
-	" now for the symmetric case "
-	
-	right isParentOf: anIndex - self key ::
-	ifTrue:[			
-		^self rotateRightChild].
+	self assert: (parts first asOrderedCollection asOrderedCollection = (1 to: 5) asOrderedCollection ).
 
-	anIndex - self key > right key
-		ifTrue:[			
-			^self rotateRightChild rotateRightChild altSplayAt: anIndex ].
-
-	right := right rotateLeftChild.	
+	self assert: (parts second asOrderedCollection asOrderedCollection = (6 to: 10) asOrderedCollection ).
 	
-	^self rotateRightChild altSplayAt: anIndex
-		! !
+	parts := TSTree new root: parts first ; splitAt:1.
+	
+	self assert: (parts first asOrderedCollection = { 1 } ).
+
+	self assert: (parts second asOrderedCollection = { 2 . 3 . 4 . 5} ).
+
+	tt := TSTree new root: parts second.
+	
+	tt splitAt: 4.
+	
+
+	
+! !
 
 !TSBranch methodsFor: 'splaying' stamp: 'DF 8/21/2025 10:14:46'!
 rotateLeftChild
@@ -232,7 +232,7 @@ rotateRightChild
 	^rr
 	! !
 
-!TSBranch methodsFor: 'splaying' stamp: 'DF 8/21/2025 09:51:09'!
+!TSBranch methodsFor: 'splaying' stamp: 'DF 8/21/2025 20:14:53'!
 splayAt: anIndex
 
 	"move the parent of anIndex to be the root of this subtree"
@@ -243,17 +243,38 @@ splayAt: anIndex
 
 	anIndex <= self key
 		ifTrue:[
-			left := left splayAt: anIndex.
-			^self rotateLeftChild].
-		
-	right := right splayAt: anIndex - self key.
+			
+			left isParentOf: anIndex ::
+				ifTrue:[			
+					^self rotateLeftChild].
+			
+			anIndex <= left key
+				ifTrue:[ 
+					^self rotateLeftChild rotateLeftChild splayAt: anIndex].
+				
+			left := left rotateRightChild.	
+			
+			^self rotateLeftChild splayAt: anIndex ].
 	
-	^self rotateRightChild.! !
+	" now for the symmetric case "
+	
+	right isParentOf: anIndex - self key ::
+	ifTrue:[			
+		^self rotateRightChild].
 
-!TSBranch methodsFor: 'testing' stamp: 'DF 8/21/2025 10:03:04'!
+	anIndex - self key > right key
+		ifTrue:[			
+			^self rotateRightChild rotateRightChild splayAt: anIndex ].
+
+	right := right rotateLeftChild.	
+	
+	^self rotateRightChild splayAt: anIndex
+		! !
+
+!TSBranch methodsFor: 'testing' stamp: 'DF 8/23/2025 17:21:40'!
 invariant
 
-	self assert: itemCount = self items size.
+	self assert: itemCount = self asOrderedCollection size.
 	
 	left ifNotNil:[
 		self assert: left invariant].
@@ -286,6 +307,17 @@ isParentOf: anIndex
 	
 	^false
 ! !
+
+!TSBranch methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
+asOrderedCollection
+	
+	| xx yy |
+	
+	xx := left isNil ifTrue:[{}] ifFalse:[left asOrderedCollection].
+	
+	yy := right isNil ifTrue:[{}] ifFalse:[right asOrderedCollection].
+	
+	^ xx, yy! !
 
 !TSBranch methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:50:41'!
 at: anIndex
@@ -341,17 +373,6 @@ insert: anObject at: anIndex
 itemCount: anInteger
 	itemCount := anInteger! !
 
-!TSBranch methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:08:04'!
-items
-	
-	| xx yy |
-	
-	xx := left isNil ifTrue:[{}] ifFalse:[left items].
-	
-	yy := right isNil ifTrue:[{}] ifFalse:[right items].
-	
-	^ xx, yy! !
-
 !TSBranch methodsFor: 'as yet unclassified' stamp: 'DF 8/21/2025 10:14:26'!
 recount
 
@@ -405,6 +426,10 @@ left: xLeaf right: yLeaf
 	^aBranch
 	! !
 
+!TSLeaf methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
+asOrderedCollection
+	^{item}! !
+
 !TSLeaf methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:39:26'!
 at: anIndex
 
@@ -436,10 +461,6 @@ item: anObject
 itemCount
 	^1! !
 
-!TSLeaf methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:08:12'!
-items
-	^{item}! !
-
 !TSLeaf methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 11:53:37'!
 key
 	^0! !
@@ -457,15 +478,116 @@ isBranch
 isLeaf
 	^true! !
 
-!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/21/2025 16:49:49'!
-altSplayAt: anIndex
+!TSTree methodsFor: 'private' stamp: 'DF 8/23/2025 17:20:40'!
+splayAt: anIndex
 	
-	root := root altSplayAt: anIndex.! !
+	self assert: anIndex > 0.
+	
+	self assert: anIndex <= self size.
+	
+	root := root splayAt: anIndex.
+! !
+
+!TSTree methodsFor: 'private' stamp: 'DF 8/23/2025 17:42:30'!
+splitAt: anIndex
+
+	"
+	
+	Split the tree into two subtrees, the first, t1, holds all the items at indices 1.. anIndex, 
+	the second, t2, holds all the items at indices anIndex+1 .. itemCount.
+	
+	Answers a tuple { t1, t2 }
+	
+	 "
+	
+	self assert: anIndex >= 0.
+	
+	self assert: anIndex <= self size.
+
+	self splayAt: anIndex.
+	
+	anIndex = 0
+		ifTrue:[
+			^{ nil . root }].
+		
+	anIndex = root itemCount
+		ifTrue:[
+			^ { root . nil }].
+		
+	"the possible cases after splay could be:
+	
+	(leaf) - but then anIndex = rootItemCount = 1
+	
+	(t , leaf) - we answer {left, right} because anIndex < itemCount
+	
+	(t , branch) - if anIndex > t key then it must be in the left child of the branch
+	so right rotate the root to transfer it to the left branch, then answer { left, right} "
+	
+	root right isBranch and:[anIndex > root key] ::
+		ifTrue:[
+			root := root rotateRightChild ].
+		
+	^{ root left  . root right }
+	
+	! !
+
+!TSTree methodsFor: 'accessing' stamp: 'DF 8/23/2025 17:20:57'!
+size
+	
+	root isNil ifTrue:[^0].
+	
+	^root itemCount! !
+
+!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:21:40'!
+asOrderedCollection
+
+	^root isNil
+		ifTrue:[{}]
+		ifFalse:[root asOrderedCollection]! !
 
 !TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:37:21'!
 at: anIndex
 
 	^root at: anIndex! !
+
+!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 17:45:23'!
+eraseFrom: aBeginIndex to: anEndIndex
+
+	| left right aBranch |
+	
+	self assert: 0 < aBeginIndex.
+	self assert: aBeginIndex <= anEndIndex.
+	self assert: anEndIndex <= (self size + 1).
+	
+	" Erase the subsequence between aBeginIndex (inclusive) and enEndIndex (exclusive) 
+	
+	For example
+	
+	{ a . b . c .d } asTSTree eraseFrom: 2 to:4 :: asOrderedCollection = { a . d }
+	
+	{ a . b . c . d} asTSTree eraseFrom: 1 to:5 :: asOrderedCollection = { }
+	
+	"
+	left := (self splitAt: aBeginIndex - 1) first.
+	right := (self splitAt: anEndIndex - 1) second.
+	
+	root := left isNil
+		ifTrue:[
+			right isNil
+				ifTrue:[nil]
+				ifFalse:[right ] ]
+		ifFalse:[
+			right isNil
+				ifTrue:[left]
+				ifFalse:[
+					aBranch := TSBranch new.
+					
+					aBranch left: left ; right: right.
+					
+					aBranch itemCount: left itemCount + right itemCount.
+		
+					aBranch] ].
+	! !
 
 !TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:26:47'!
 insert: anObject at: anIndex
@@ -485,14 +607,6 @@ invariant
 	
 	^true! !
 
-!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/20/2025 12:27:04'!
-items
-
-	^root isNil
-		ifTrue:[{}]
-		ifFalse:[root items]! !
-
-!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/21/2025 10:04:50'!
-splayAt: anIndex
-	
-	root := root splayAt: anIndex.! !
+!TSTree methodsFor: 'as yet unclassified' stamp: 'DF 8/23/2025 14:01:08'!
+root: aTSNode
+	root := aTSNode! !
