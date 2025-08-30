@@ -1,8 +1,28 @@
-'From Cuis7.3 [latest update: #6895] on 18 August 2025 at 5:02:21 pm'!
+'From Cuis7.3 [latest update: #6895] on 30 August 2025 at 6:00:07 pm'!
 'Description '!
-!provides: 'Kaeru' 1 388!
+!provides: 'Kaeru' 1 404!
 SystemOrganization addCategory: #Kaeru!
 
+
+!classDefinition: #KBackwardStream category: #Kaeru!
+Object subclass: #KBackwardStream
+	instanceVariableNames: 'kiterator'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KBackwardStream class' category: #Kaeru!
+KBackwardStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #KForwardStream category: #Kaeru!
+Object subclass: #KForwardStream
+	instanceVariableNames: 'kiterator'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KForwardStream class' category: #Kaeru!
+KForwardStream class
+	instanceVariableNames: ''!
 
 !classDefinition: #KIterator category: #Kaeru!
 Object subclass: #KIterator
@@ -191,6 +211,83 @@ Answers a new child object. For example, a paragraph answers a new line. A page 
 !KRepository commentStamp: '<historical>' prior: 0!
 A KRepository is the object that holds the entire text and provides the operations to manipulate the text. !
 
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:53:53'!
+atEnd
+
+	^ kiterator isAtStart! !
+
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:54:23'!
+next
+
+	kiterator prev.
+	^ kiterator char.
+! !
+
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:54:57'!
+peek
+
+	^kiterator isAtStart
+		ifTrue:[ nil ] ifFalse:[ kiterator copy prev char ]! !
+
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:51:45'!
+position
+	^kiterator copy! !
+
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:51:45'!
+position: aKIterator
+	kiterator := aKIterator ! !
+
+!KBackwardStream class methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:59:46'!
+on: aKIterator
+
+	| aKStream |
+	
+	aKStream := KBackwardStream new.
+	
+	aKStream position: aKIterator.
+	
+	^aKStream! !
+
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:15:36'!
+atEnd
+
+	^ kiterator isAtEnd! !
+
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:24:36'!
+next
+
+	| cc |
+	
+	cc := kiterator char.
+	kiterator next.
+	
+	^cc! !
+
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:32:35'!
+peek
+
+	^kiterator isAtEnd
+		ifTrue:[ nil ] ifFalse:[ kiterator char ]! !
+
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:46:04'!
+position
+	^kiterator copy! !
+
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:37:57'!
+position: aKIterator
+	kiterator := aKIterator ! !
+
+!KForwardStream class methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:50:38'!
+on: aKIterator
+
+	| aKStream |
+	
+	aKStream := KForwardStream new.
+	
+	aKStream position: aKIterator.
+	
+	^aKStream! !
+
 !KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:44'!
 privCharIndex
 	^charIndex! !
@@ -311,6 +408,16 @@ privPrevPar
 hash
 
 	^pars hash bitXor: ( parIndex hash bitXor: ( lineIndex hash bitXor: charIndex hash ) )! !
+
+!KIterator methodsFor: 'testing' stamp: 'DF 8/30/2025 17:21:15'!
+isAtEnd
+	^parIndex = (pars size + 1)
+! !
+
+!KIterator methodsFor: 'testing' stamp: 'DF 8/30/2025 17:53:28'!
+isAtStart
+	
+	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 1]! !
 
 !KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:44'!
 char
@@ -2041,6 +2148,113 @@ testIterators
 	1 to: text size do:[:each | 
 		bb := lib charIndexToIterator: each.
 		self assert: bb char = (text at:each) ].
+	! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:50:38'!
+testRegex
+
+	| t1 t2 text index lib aKStream aMatcher |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain.', (Character codePoint:12) asString, 'When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	self assert: lib invariant.
+	
+	index := 0.
+	
+	t2 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1 ]. 
+	
+	text := t1,t2.
+	
+	self assert: lib text = text.
+	
+	self assert: lib invariant.
+
+	aKStream := KForwardStream on: lib begin.
+	
+	aMatcher := RxMatcher forString: '.*himself'.
+	
+	self assert: (aMatcher matchesStreamPrefix: aKStream).
+	
+	
+	! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 18:00:04'!
+testStream
+
+	| t1 t2 text index lib aKStream aStream |
+	
+	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
+	
+	t2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain.', (Character codePoint:12) asString, 'When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	lib := KLibrary new.
+	
+	self assert: lib invariant.
+	
+	index := 0.
+	
+	t2 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1.  ].
+
+	index := 0.
+	
+	t1 do:[:each | 
+		lib insert:each after: index. 
+		self assert: lib invariant.
+		index := index + 1 ]. 
+	
+	text := t1,t2.
+	
+	self assert: lib text = text.
+	
+	self assert: lib invariant.
+
+	aKStream := KForwardStream on: lib begin.
+	
+	aStream := ReadStream on: text.
+	
+	[aKStream atEnd]
+		whileFalse:[ | cc kc |
+			self assert: aStream atEnd not.
+			cc := aStream next.
+			kc := aKStream next.
+			self assert: cc = kc.
+			cc := aStream peek.
+			kc := aKStream peek.
+			self assert: cc = kc.
+			 ].
+		
+	self assert: aStream atEnd.
+
+	aKStream := KBackwardStream on: lib end.
+	
+	index := text size.
+	
+	[aKStream atEnd]
+		whileFalse:[ | cc |
+			self assert: index > 0.
+			cc := aKStream next.
+			self assert: cc = (text at:index).
+			index := index - 1].
+	
+	self assert: index = 0.
+
 	! !
 
 !TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:12:56'!
