@@ -1,6 +1,7 @@
-'From Cuis7.3 [latest update: #6895] on 30 August 2025 at 6:00:07 pm'!
+'From Cuis7.3 [latest update: #7041] on 5 September 2025 at 9:49:19 pm'!
 'Description '!
-!provides: 'Kaeru' 1 404!
+!provides: 'Kaeru' 1 412!
+!requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 
 
@@ -124,6 +125,16 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
+!classDefinition: #ExhaustiveTestKLibrary category: #Kaeru!
+TestCase subclass: #ExhaustiveTestKLibrary
+	instanceVariableNames: 'lib text'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'ExhaustiveTestKLibrary class' category: #Kaeru!
+ExhaustiveTestKLibrary class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKLibrary category: #Kaeru!
 TestCase subclass: #TestKLibrary
 	instanceVariableNames: ''
@@ -134,16 +145,6 @@ TestCase subclass: #TestKLibrary
 TestKLibrary class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestKNode category: #Kaeru!
-TestCase subclass: #TestKNode
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'TestKNode class' category: #Kaeru!
-TestKNode class
-	instanceVariableNames: ''!
-
 !classDefinition: #TestKParagraph category: #Kaeru!
 TestCase subclass: #TestKParagraph
 	instanceVariableNames: ''
@@ -152,16 +153,6 @@ TestCase subclass: #TestKParagraph
 	category: 'Kaeru'!
 !classDefinition: 'TestKParagraph class' category: #Kaeru!
 TestKParagraph class
-	instanceVariableNames: ''!
-
-!classDefinition: #TestKRepository category: #Kaeru!
-TestCase subclass: #TestKRepository
-	instanceVariableNames: 'repo text'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'TestKRepository class' category: #Kaeru!
-TestKRepository class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestKTokenStream category: #Kaeru!
@@ -494,16 +485,23 @@ charIndexToIterator: anIndex
 	
 	^iterator! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 11:06:35'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/5/2025 20:10:55'!
 charIndexToParIndex: anIndex
 
-	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex "
+	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
+	If anIndex exceeds the number of characters in the library, answer the remainder. For example,
+	
+	if there are 3 paragraphs each with 10 characters then
+	
+	self charIndexToParIndex: 31 = { 4 . 1 }.
+	
+	This behavior gives the correct result when we pass anIndex that is marks one position past the end of the text in the library. "
 	
 	| ii pp |
 	
 	ii := anIndex. pp := 1.
 	
-	[ii > ((paragraphs at:pp) length) ]
+	[ pp <= paragraphs size and: [ii > ((paragraphs at:pp) length) ] ]
 		whileTrue:[
 			ii := ii - ((paragraphs at:pp) length).
 			pp := pp + 1].
@@ -622,7 +620,7 @@ initialize
 newItem
 	^KParagraph new! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 8/18/2025 11:44:37'!
+!KLibrary methodsFor: 'erasing' stamp: 'Df 9/5/2025 20:26:22'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi headText tailText par |
@@ -632,15 +630,29 @@ eraseFrom: aBeginIndex to: anEndIndex
 	endPi := self charIndexToParIndex: anEndIndex .
 	
 	headText := paragraphs at: beginPi first :: textFrom: 1 to: beginPi second.
+
+	" If endPi exceeds the number of paragraphs in the text it means that we erase all the text after beginPi until the end of text
+	therefore just keep the text before beginPi. Otherwise we have to erase the beginning of the paragraph marked by endPi and
+	keep the text that follows."
 	
-	par := paragraphs at: endPi first.
+	endPi first <= paragraphs size
+		ifTrue:[
+			par := paragraphs at: endPi first.
 	
-	tailText := par textFrom: endPi second.
+			tailText := par textFrom: endPi second.
 	
-	par rebuildFromText: headText, tailText.
+			par rebuildFromText: headText, tailText.
 	
-	paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size).
-	
+			paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) ]
+
+		ifFalse:[ 
+			paragraphs := paragraphs copyFrom:1 to: beginPi first - 1.
+			
+			headText isEmpty
+				ifFalse:[
+					par := KParagraph new.
+					par rebuildFromText: headText.
+					paragraphs add: par ] ].
 	
 	
 ! !
@@ -1973,6 +1985,158 @@ on: anOrderedSequence
 	stream := ReadStream on: anOrderedSequence.
 ! !
 
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
+doErase: aGenerator
+
+	|  len ab ae pp ptext |
+	
+	len := (1/ ( (1/text size) + aGenerator next)) ceiling.
+	
+	ab := (text size + 1) atRandom.
+	
+	ae := ab + len min: text size + 1.
+			
+	"erase the parts at both the abstract and concrete sytems. "
+	
+	pp := lib eraseFrom: ab to: ae.
+
+	self assert: lib invariant.
+	
+	ptext := text.
+		
+	text := text eraseFrom:ab to:ae.
+	
+	"check that the abstract and concrete systems correspond"
+	
+	self assert: text  = lib text.
+	
+	^ae - ab
+! !
+
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 19:59:29'!
+doInsert: aGenerator
+
+	| cc  ii |
+		
+	"We draw at random two numbers. one is the character to insert, the other the position after
+	which we insert the character."
+	
+	cc := self drawCharacterFrom: aGenerator.
+	
+	" Select an abstract index and a concrete address that corresponds to this index "
+	
+	ii := (aGenerator next * text size) floor. "we use floor to have a chance to insert a character at the very start of the text (index 0)"
+	
+	lib insert: cc after: ii.
+	
+	text := text copyReplaceFrom:ii+1 to:ii with: cc asString. 
+		
+	self assert: lib text = text.
+
+	self assert: lib invariant.
+
+
+	
+	! !
+
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 19:57:54'!
+drawCharacterFrom: aGenerator
+
+	"We a character to insert based on the following table
+	
+	word character (a , b)			0.8
+	space 						0.1889
+	new line 					0.01
+	new page 					0.001
+	
+	"
+
+	|  xx |
+	
+	xx := aGenerator next. "a number drawn randomlly from [0,1)"
+
+	^xx < 0.8 
+		ifTrue:[
+			aGenerator next < 0.5
+				ifTrue:[
+					$a]
+				ifFalse:[
+					$b] ] 
+		ifFalse:[
+			xx < (0.8  + 0.1889)
+				ifTrue:[
+					Character space]
+				ifFalse:[
+					xx < (0.8 + 0.1889 + 0.01)
+						ifTrue:[
+							Character cr]
+						ifFalse:[
+	 						Character codePoint: 12] ] ] ! !
+
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 19:58:18'!
+setUp
+
+
+	lib := KLibrary new.
+	
+	text := ''. "the abstract representation of the text in the repository"
+! !
+
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 19:55:34'!
+testEverything
+
+	| aGenerator iteration count maxErase countErase maxCount |
+
+	self assert: lib text = text.
+
+	self assert: lib invariant.
+	
+	iteration := 0. "keeps track of how many iterations the test did"
+	
+	count := 0. "the number of characters in the repository"
+	
+	maxErase := 1. "the largest subsequence that was erased so far"
+	
+	countErase := 1. "the number of characters that were erased and not inserted yet. This is used to ensure that after we erase k characters we insert k - 1 characters "
+	
+	maxCount := 1000. "the maximal number of characters in the repository during the test."
+	
+	self assert: count = text size.
+	
+	aGenerator := Random new.
+
+	2000 timesRepeat:[ | pp |  
+
+		" Select either to insert a character or to erase a range depending on how close we 
+		are to the maximal desired text size or if there is a debt from a previous erase 
+		operation. If an erase operation erased k characters then we have a debt of k-1 characters
+		to insert before we can consider erasing again."
+		
+		pp := (0 - (2 ln * count/ maxCount) ) exp.
+		
+		aGenerator next < pp or:[countErase > 1] ::
+			ifTrue:[
+				self doInsert: aGenerator.
+				
+				count := count + 1. 
+				
+				countErase > 1 
+					ifTrue:[countErase := countErase - 1] ]
+			ifFalse:[ 
+
+				countErase := self doErase: aGenerator.
+
+				maxErase := countErase max: maxErase.
+				
+				count := count - countErase.].
+
+		self assert: count = text size.
+		
+		iteration := iteration + 1.
+
+		"(Delay forMilliseconds: 50) wait" ] "fork".
+	! !
+
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 14:59:55'!
 testEraseBetweenParagraphs
 
@@ -2257,263 +2421,6 @@ testStream
 
 	! !
 
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:12:56'!
-testBuildKLine
-
-	| aKLine aTokenStream |
-	
-	aKLine := KLine new.
-	
-	aTokenStream := KTokenStream new.
-	
-	aTokenStream on: 'abb ba baa'.
-	
-	aTokenStream nextUpTo:8.
-	
-	aKLine buildFrom: aTokenStream limitBy: 8.
-	
-	self assert: aKLine text = 'abb ba '.
-	
-	aKLine := KLine new.
-	
-	aTokenStream := KTokenStream new.
-	
-	aTokenStream on: '1234567890'.
-	
-	aTokenStream nextUpTo:7.
-	
-	aKLine buildFrom: aTokenStream limitBy: 7.
-	
-	self assert: aKLine text = '1234567'.
-	
-	aKLine := KLine new.
-	
-	aTokenStream := KTokenStream new.
-	
-	aTokenStream on: 'ab',Character cr asString.
-	
-	aTokenStream nextUpTo:8.
-	
-	aKLine buildFrom: aTokenStream limitBy: 8.
-	
-	self assert: aKLine text = ('ab', Character cr asString).
-	! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 12:13:32'!
-testBuildKParagraph
-
-	| aKPar aTokenStream |
-	
-	aKPar := KParagraph new.
-	
-	aTokenStream := KTokenStream new.
-	
-	aTokenStream on: 'abb ba baa  babbbabb ab ab ba aaa b   a', Character cr asString.
-	
-	aTokenStream nextUpTo:8.
-	
-	aKPar buildFrom: aTokenStream.
-	
-	self assert: aKPar text = ('abb ba baa  babbbabb ab ab ba aaa b   a', Character cr asString).
-! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:09:27'!
-testErase
-
-	| text aKDoc page par line bb ee |
-	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.'.
-
-	aKDoc := KDoc new.
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-
-	bb := #(1 1 1 0).
-	
-	text  do:[:each | bb := aKDoc insert:each after: bb.  ].
-	
-	self assert: aKDoc text = text.
-	
-	bb := #(2 1 2 3).
-
-	ee := #(2 1 4 2).
-		
-	bb := aKDoc eraseFrom:bb to: ee.
-	
-	self assert: aKDoc text = 'In olden times, when to wish was to have, thing whose daughters were all beautiful.'.
-
-	self assert: aKDoc invariant.
-	
-	ee := #(3 1 1 1).
-	
-	aKDoc eraseTo: ee.
-
-	self assert: aKDoc text = 'all beautiful.'.
-	
-	self assert: aKDoc invariant.
-	
-	! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:06:20'!
-testInsert
-
-	| text aKDoc page par line addr |
-	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-
-	aKDoc := KDoc new.
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-
-	addr := #(1 1 1 0).
-	
-	text do:[:each | addr := aKDoc insert:each after: addr.  ].
-	
-	self assert: aKDoc text = text.
-	
-	self assert: aKDoc invariant.
-	! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:08:14'!
-testInsertInParts
-
-	| p1 p2 aKDoc page par line addr |
-	
-	p1 := 'In olden times, when to wisZ was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'. 
-	
-	p2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-
-	aKDoc := KDoc new.
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-	
-	addr := #( 1 1 1 0 ).
-	
-	p2 do:[:each | addr := aKDoc insert:each after: addr. self assert: aKDoc invariant. ].
-
-	addr := #( 1 1 1 0 ).
-		
-	p1 do:[:each | addr := aKDoc insert:each after: addr. self assert: aKDoc invariant.  ].
-	
-	self assert: aKDoc text = (p1,p2).
-	
-	self assert: aKDoc invariant.
-! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 14:40:29'!
-testInsertNewLines
-
-	| p1 p2 aKDoc page par line addr |
-	
-	p1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
-	
-	p2 := ' Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-
-	aKDoc := KDoc new.
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-
-	addr := #(1 1 1 0).
-	
-	p2 do:[:each | addr := aKDoc insert:each after: addr.  ].
-
-	addr := #(1 1 1 0).
-	
-	p1 do:[:each | addr := aKDoc insert:each after: addr. 
-		( aKDoc resolve:addr ) == Character cr
-			ifTrue:[ | naddr | 
-				naddr := aKDoc next:addr.
-				" naddr will point to the first character in the next line. We want the address
-				that points one place before the first character. Thus we replace the last 
-				component (the character's position with 0)."
-				naddr at: naddr size put: 0.
-				addr := naddr ] ].
-	
-	self assert: aKDoc text = (p1,p2).
-	
-	self assert: aKDoc invariant.
-! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 13:14:47'!
-testInsertSmall
-
-	| text aKDoc page par line addr |
-	
-	text := 'In olden times, when to wish was to have'.
-
-	aKDoc := KDoc new.
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-
-	addr := #(1 1 1 0).
-	
-	text do:[:each | addr := aKDoc insert:each after: addr.  ].
-	
-	self assert: aKDoc text = text.
-	
-	self assert: aKDoc invariant.
-	! !
-
-!TestKNode methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:09:01'!
-testMakeParagraphs
-
-	| p1 aKDoc page par line addr |
-	
-	p1 := 'In olden times, when to wish was to have, there lived a King whose Xaughters were all beautiful.', Character cr asString, Character cr asString, 'But the youngest was so',Character cr asString, Character cr asString,'fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
-
-	aKDoc := KDoc new.
-	
-	page := KPage new.
-	par := KParagraph new.
-	line := KLine new.
-	
-	par push: line.
-	page push: par.
-	aKDoc push: page.
-
-	addr := #(1 1 1 0).
-	
-	p1 do:[:each | addr := aKDoc insert:each after: addr.  
-		
-			( aKDoc resolve:addr ) == Character cr
-						ifTrue:[ | naddr | 
-							naddr := aKDoc next:addr.
-							" naddr will point to the first character in the next line. We want the address
-							that points one place before the first character. Thus we replace the last 
-							component (the character's position with 0)."
-							naddr at: naddr size put: 0.
-							addr := naddr ] ].
-	
-	self assert: aKDoc text = (p1).
-
-	self assert: aKDoc invariant.
-! !
-
 !TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 11:03:21'!
 testErase
 
@@ -2544,394 +2451,6 @@ testInsert
 	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
 	
 	self assert: par text = text.
-! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 17:42:38'!
-abstractIndexOf: anAddress base: anInitialAddress
-
-	^(repo root distanceFrom: anInitialAddress to: anAddress) 
-	! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 09:41:19'!
-doErase: aGenerator
-
-	|  len ab ae cb ce pp app ptext |
-	
-	len := (1/ ( (1/text size) + aGenerator next)) ceiling.
-	
-	ab := (text size + 1) atRandom.
-	
-	ae := ab + len min: text size + 1.
-		
-	"move to the same location in both concrete and abstract systems. "
-	
-	cb := self goto:ab from: repo begin.
-	
-	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-	
-	ce := self goto: ae from: repo begin.
-	
-	self assert: ae = (self abstractIndexOf: ce base: repo begin).
-	
-	"erase the parts at both the abstract and concrete sytems. "
-	
-	pp := repo eraseFrom: cb to: ce.
-
-	self assert: repo invariant.
-	
-	ptext := text.
-		
-	text := text eraseFrom:ab to:ae.
-	
-	"check that the abstract and concrete systems correspond"
-	
-	self assert: text  = repo root text.
-	
-	app := self abstractIndexOf: pp base: repo begin.
-	
-	self assert: (ab ~= ae
-				ifTrue:[ 
-					app = (ab - 1) ]
-				 ifFalse:[
-					app = ab ]).
-				
-	^ae - ab
-! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 17:20:36'!
-doInsert: aGenerator
-
-	| cc  ii bb |
-		
-	"We draw two numbers. one is the character to insert, the other the position after
-	which we insert the character."
-	
-	cc := self drawCharacterFrom: aGenerator.
-	
-	" Select an abstract index and a concrete address that corresponds to this index "
-	
-	ii := (aGenerator next * text size) floor. "we use floor to have a chance to insert a character at the very start of the text (index 0)"
-	
-	bb := self goto: ii from: repo begin. 
-	
-	repo insert: cc after: bb.
-	
-	text := text copyReplaceFrom:ii+1 to:ii with: cc asString. 
-		
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-
-
-	
-	! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:08:53'!
-drawCharacterFrom: aGenerator
-
-	"We a character to insert based on the following table
-	
-	word character (a , b)			0.8
-	space 						0.1889
-	new line 					0.01
-	new page 					0.001
-	
-	"
-
-	|  xx |
-	
-	xx := aGenerator next. "a number drawn randomlly from [0,1)"
-
-	^xx < 0.8 
-		ifTrue:[
-			aGenerator next < 0.5
-				ifTrue:[
-					$a]
-				ifFalse:[
-					$b] ] 
-		ifFalse:[
-			xx < (0.8  + 0.1889)
-				ifTrue:[
-					Character space]
-				ifFalse:[
-					xx < (0.8 + 0.1889 + 0.01)
-						ifTrue:[
-							Character cr]
-						ifFalse:[
-	 						Character codePoint: 12] ] ] ! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/2/2025 17:43:12'!
-goto: anIndex from: anAddress
-
-	| pp |
-	
-	pp := anAddress.
-	
-	anIndex timesRepeat:[
-		pp := repo root next: pp 
-	].
-
-	^pp! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 7/26/2025 18:41:33'!
-setUp
-
-	repo := KRepository new.
-	
-! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/6/2025 16:48:54'!
-testErase
-
-	|  bb ptext app |
-	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful.', (Character cr) asString, ' But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.', (Character newPage) asString, 'Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. ',  (Character escape) asString , 'When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-	
-	self assert: repo invariant.
-	
-	bb := repo begin.
-	
-	text do:[:each | 
-		bb := repo insert: each after: bb].
-	
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-	
-	"select at random two indices ii, jj between 1 and text size + 1, "
-	
-	[ text isEmpty ] whileFalse:[ | ii jj ab ae cb ce pp |
-		
-		ii := (text size + 1) atRandom.
-		
-		jj := (text size + 1) atRandom.
-		
-		"move to the same location in both concrete and abstract systems. "
-		
-		ab :=  ii min: jj. ae := ii max: jj.
-		
-		cb := self goto:ab from: repo begin.
-		
-		self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-		
-		ce := self goto: ae from: repo begin.
-		
-		self assert: ae = (self abstractIndexOf: ce base: repo begin).
-		
-		"erase the parts at both the abstract and concrete sytems. "
-		
-		pp := repo eraseFrom: cb to: ce.
-
-		self assert: repo invariant.
-		
-		ptext := text.
-			
-		text := text eraseFrom:ab to:ae.
-		
-		"check that the abstract and concrete systems correspond"
-		
-		self assert: text  = repo root text.
-		
-		app := self abstractIndexOf: pp base: repo begin.
-		
-		self assert: (ab ~= ae
-					ifTrue:[ 
-						app = (ab - 1) ]
-					 ifFalse:[
-						app = ab ]) ]! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 11:54:21'!
-testError
-
-	|  stream bb ab ae cb ce pp |
-	
-	text := ' 
-bb  a baba aabbabbabbaabbabbbabb aaaaa
- babbbababbbbaa   babbbbbbbabbabbbb  bb  baaab ba
-a aaabaabbaaabaaba b aba  bbbaaa b
-a abb'.
-	
-	stream := WriteStream on: ''.
-	
-	text do:[:each | each = Character lf ifTrue:[stream nextPut: Character cr] ifFalse:[stream nextPut:each] ].
-	
-	text := stream contents.
-		
-	self assert: repo invariant.
-	
-	bb := repo begin.
-	
-	text do:[:each | 
-		bb := repo insert: each after: bb. self assert: repo invariant. ].
-	
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-	
-	"move to the same location in both concrete and abstract systems. "
-		
-	ab :=  124. ae := 127.
-		
-	cb := self goto:ab from: repo begin.
-		
-	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-		
-	ce := self goto: ae from: repo begin.
-		
-	self assert: ae = (self abstractIndexOf: ce base: repo begin).
-		
-	"erase the parts at both the abstract and concrete sytems. "
-		
-	pp := repo eraseFrom: cb to: ce.
-
-	self assert: repo invariant.
-			
-	text := text eraseFrom:ab to:ae.
-		
-	"check that the abstract and concrete systems correspond"
-		
-	self assert: text  = repo root text.
-	
-	self assert: (self abstractIndexOf: pp base: repo begin) = (ab - 1). 
-! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/9/2025 09:38:54'!
-testEverything
-
-	| aGenerator iteration count maxErase countErase maxCount |
-
-	text := ''. "the abstract representation of the text in the repository"
-
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-	
-	iteration := 0. "keeps track of how many iterations the test did"
-	
-	count := 0. "the number of characters in the repository"
-	
-	maxErase := 1. "the largest subsequence that was erased so far"
-	
-	countErase := 1. "the number of characters that were erased and not inserted yet. This is used to ensure that after we erase k characters we insert k - 1 characters "
-	
-	maxCount := 1000. "the maximal number of characters in the repository during the test."
-	
-	self assert: count = text size.
-	
-	aGenerator := Random new.
-
-	2000 timesRepeat:[ | pp |  
-
-		" Select either to insert a character or to erase a range depending on how close we 
-		are to the maximal desired text size or if there is a debt from a previous erase 
-		operation. If an erase operation erased k characters then we have a debt of k-1 characters
-		to insert before we can consider erasing again."
-		
-		pp := (0 - (2 ln * count/ maxCount) ) exp.
-		
-		aGenerator next < pp or:[countErase > 1] ::
-			ifTrue:[
-				self doInsert: aGenerator.
-				
-				count := count + 1. 
-				
-				countErase > 1 
-					ifTrue:[countErase := countErase - 1] ]
-			ifFalse:[ 
-
-				countErase := self doErase: aGenerator.
-
-				maxErase := countErase max: maxErase.
-				
-				count := count - countErase.].
-
-		self assert: count = text size.
-		
-		iteration := iteration + 1.
-
-		"(Delay forMilliseconds: 50) wait" ] "fork".
-	! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 20:25:44'!
-testInsertError
-
-	|  bb ab cb pp cc |
-	
-	text := ' aaabaabaaaa bbaabbb abaabbabbabab aaaabba  aa bbaa bba abba bbbaaabaab aabbb b babbbbbbaaab a'.
-	
-	self assert: repo invariant.
-	
-	bb := repo begin.
-	
-	text do:[:each | 
-		bb := repo insert: each after: bb].
-	
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-	
-	"move to the same location in both concrete and abstract systems. "
-		
-	ab :=  7. 
-		
-	cb := self goto:ab from: repo begin.
-		
-	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-	
-	cc := Character space.
-	
-	self halt.
-	pp := repo insert: cc after: cb.
-
-	self assert: repo invariant.
-			
-	"check that the abstract and concrete systems correspond"
-	
-	text := text copyReplaceFrom:ab+1 to:ab with: cc asString. 
-		
-	self assert: text  = repo root text.
-	
-! !
-
-!TestKRepository methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 21:36:16'!
-testInsertPageBreak
-
-	|  bb ab cb pp cc |
-	
-	text := ' aaabaabaaaa bbaabbb abaabbabbabab', (Character codePoint:12) asString, 'aaaabba  aa bbaa bba abba bbbaaabaab aabbb b babbbbbbaaab a'.
-	
-	self assert: repo invariant.
-	
-	bb := repo begin.
-	
-	text do:[:each | 
-		bb := repo insert: each after: bb].
-	
-	self assert: repo root text = text.
-
-	self assert: repo invariant.
-	
-	"move to the same location in both concrete and abstract systems. "
-		
-	ab :=  7. 
-		
-	cb := self goto:ab from: repo begin.
-		
-	self assert: ab = (self abstractIndexOf: cb base: repo begin). 
-	
-	cc := Character space.
-	
-	self halt.
-	pp := repo insert: cc after: cb.
-
-	self assert: repo invariant.
-			
-	"check that the abstract and concrete systems correspond"
-	
-	text := text copyReplaceFrom:ab+1 to:ab with: cc asString. 
-		
-	self assert: text  = repo root text.
-	
 ! !
 
 !TestKTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:21:33'!
@@ -3008,6 +2527,27 @@ test
 eraseFrom: bIndex to: eIndex
 
 	^ self copyReplaceFrom: bIndex to: eIndex - 1 with: ''! !
+
+!String methodsFor: '*Kaeru-*Regex-Core' stamp: 'Df 9/5/2025 21:49:09'!
+asRegexLiteral
+
+	"answer a version of self where all the special regex characters in self are preceded with a backslash character"
+	
+	| special aWriteStream |
+	
+	special := Set new.
+	
+	'()[].*+?|$^:\' do:[:each | special add: each].
+	
+	aWriteStream := WriteStream on: ''.
+	
+	self do:[:each |
+		special includes: each 
+			:: ifTrue:[
+				aWriteStream nextPut: $\ ].
+		aWriteStream nextPut: each ].
+	
+	^aWriteStream contents! !
 
 !Integer methodsFor: '*Kaeru-enumerating' stamp: 'DF 7/20/2025 11:09:43'!
 copiesOf: anObject
