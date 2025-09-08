@@ -1,9 +1,10 @@
-'From Cuis7.3 [latest update: #7041] on 6 September 2025 at 1:32:18 pm'!
+'From Cuis7.3 [latest update: #7041] on 8 September 2025 at 9:34:05 pm'!
 'Description '!
-!provides: 'Kaeru' 1 431!
+!provides: 'Kaeru' 1 480!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
+SystemOrganization addCategory: #'Kaeru-Morphic'!
 
 
 !classDefinition: #KBackwardStream category: #Kaeru!
@@ -76,6 +77,46 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruController category: 'Kaeru-Keyboard'!
+Object subclass: #KaeruController
+	instanceVariableNames: 'master mapper'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruController class' category: 'Kaeru-Keyboard'!
+KaeruController class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruEditorController category: 'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruEditorController
+	instanceVariableNames: 'state leapLeft leapRight leapAgain'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruEditorController class' category: 'Kaeru-Keyboard'!
+KaeruEditorController class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruHelpController category: 'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruHelpController
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruHelpController class' category: 'Kaeru-Keyboard'!
+KaeruHelpController class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruMasterController category: 'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruMasterController
+	instanceVariableNames: 'active controllers'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruMasterController class' category: 'Kaeru-Keyboard'!
+KaeruMasterController class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruKeyboardMapper category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardMapper
 	instanceVariableNames: ''
@@ -106,14 +147,34 @@ LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
 LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruKeyboardStateMachine category: 'Kaeru-Keyboard'!
+Object subclass: #KaeruKeyboardStateMachine
+	instanceVariableNames: 'leapLeft leapRight leapAgain mapper'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardStateMachine class' category: 'Kaeru-Keyboard'!
+KaeruKeyboardStateMachine class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruKeyboardTester category: 'Kaeru-Keyboard'!
 PlacedMorph subclass: #KaeruKeyboardTester
-	instanceVariableNames: 'mapper'
+	instanceVariableNames: 'controller'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruKeyboardTester class' category: 'Kaeru-Keyboard'!
 KaeruKeyboardTester class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
+ColoredBoxMorph subclass: #KaeruEditorMorph
+	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Morphic'!
+!classDefinition: 'KaeruEditorMorph class' category: #'Kaeru-Morphic'!
+KaeruEditorMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #ExhaustiveTestKLibrary category: #Kaeru!
@@ -353,6 +414,27 @@ privPrevPar
 	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
 ! !
 
+!KIterator methodsFor: 'testing' stamp: 'Df 9/8/2025 21:24:44'!
+<= aKIterator
+
+	self assert: (aKIterator isKindOf: self class).
+	
+	self assert: pars == aKIterator privPars.
+
+	parIndex < aKIterator privParIndex ifTrue:[^true].
+	
+	parIndex > aKIterator privParIndex ifTrue:[^false].
+	
+	" parIndex = aKIterator parIndex "
+	
+	lineIndex < aKIterator privLineIndex ifTrue:[^true].
+
+	lineIndex > aKIterator privLineIndex ifTrue:[^false].
+
+	" lineIndex = aKIterator lineIndex "
+	
+	^ charIndex <= aKIterator privCharIndex 	! !
+
 !KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:35:32'!
 = aKIterator
 
@@ -399,6 +481,18 @@ char
 
 	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
 
+!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:06:28'!
+line
+
+	| aWriteStream |
+	
+	aWriteStream := WriteStream on: ''.
+	
+	pars at: parIndex :: lineAt: lineIndex :: textInto: aWriteStream.
+	
+	^ aWriteStream contents.
+	! !
+
 !KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:28:35'!
 next
 
@@ -409,6 +503,18 @@ next
 	lineIndex <  (pars at: parIndex :: numLines )
 		ifTrue:[
 			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:30:29'!
+nextLine
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+			^self privNextLine ].
+	
+	charIndex :=  pars at: parIndex :: lineAt: lineIndex :: length.
 	
 	self privNextPar! !
 
@@ -1011,6 +1117,195 @@ on: anOrderedSequence
 	stream := ReadStream on: anOrderedSequence.
 ! !
 
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:51:53'!
+initialize
+
+	mapper := LinuxKeyboardMapper new.
+	
+! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:08'!
+keyDown: aMorphicEvent
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:05'!
+keyStroke: aKeyboardEvent
+
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:00'!
+keyUp: aMorphicEvent
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:49:44'!
+master: aKaeruMasterController
+
+	self assert: ( aKaeruMasterController isKindOf: KaeruMasterController ).
+	
+	master := aKaeruMasterController ! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:37'!
+initialize
+
+	super initialize.
+	
+	state := #editing.
+	
+	leapLeft := #up.
+	
+	leapRight := #up.
+	
+	leapAgain := #up.! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:44:11'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #down ].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #down ].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #down ].
+		
+	leapLeft = #down and:[leapRight = #down] ::
+		ifTrue:[
+			state := #blocked ].
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:06'!
+keyStroke: aKeyboardEvent
+
+	state = #editing 
+		ifTrue:[
+			
+			leapLeft = #down
+				ifTrue:[
+					state := #left . ^self ].
+				
+			leapRight = #down
+				ifTrue:[
+					state := #right . ^self ].
+			
+			aKeyboardEvent keyCharacter = $[ and:[ leapAgain = #down] :: 
+				ifTrue:[
+					master activate: #help ].
+	
+		].
+	
+
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:57:50'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #up ].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #up ].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #up ].
+		
+	leapRight = #up and: [leapLeft = #up] ::
+		ifTrue:[
+			state := #editing].
+
+	leapRight = #up and: [leapLeft = #down] ::
+		ifTrue:[
+			state := #left].
+
+	leapRight = #down and: [leapLeft = #up] ::
+		ifTrue:[
+			state := #right].
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:44'!
+state
+	^state! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
+keyDown: aMorphicEvent
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:09'!
+keyStroke: aKeyboardEvent
+
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:01:56'!
+keyUp: aMorphicEvent
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			master activate: #edit ].
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
+state
+	^#help! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:53:06'!
+activate: aSymbol
+
+	Transcript show: ('activating {1}' format:{aSymbol}); cr.
+	
+	active := controllers at: aSymbol ! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:13:31'!
+at: aSymbol putController: aKaeruController
+
+	self assert: (aKaeruController isKindOf: KaeruController ).
+	
+	controllers at: aSymbol put: aKaeruController.
+	
+	aKaeruController master: self! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:58:48'!
+initialize
+
+	controllers := Dictionary new.
+	
+	
+	! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:21'!
+keyDown: aMorphicEvent
+	
+	active keyDown: aMorphicEvent.
+	
+	Transcript show: active state; cr.! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:58'!
+keyStroke: aKeyboardEvent
+
+	self assert: active notNil.
+
+	active keyStroke: aKeyboardEvent.
+	
+	Transcript show: active state; cr.
+! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:26'!
+keyUp: aMorphicEvent
+
+	self assert: active notNil.
+
+	active keyUp: aMorphicEvent.
+	
+	Transcript show: active state; cr.! !
+
 !KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
 isCopyKey: aMorphicEvent
 	^self subclassResponsibility ! !
@@ -1140,6 +1435,61 @@ isLeapRightKeyDown: aMorphicEvent
 isLeapRightKeyUp: aMorphicEvent
 	^(aMorphicEvent buttons bitAnd: 128) = 0! !
 
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
+initialize
+
+	mapper := LinuxKeyboardMapper new.
+
+	leapLeft := #up.
+	
+	leapRight := #up.
+	
+	leapAgain := #up.! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:27'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #down ].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #down ].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #down ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:59'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #up ].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #up ].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #up ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:02:03'!
+leapAgain
+	^leapAgain! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:33'!
+leapLeft
+	^leapLeft! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:50'!
+leapRight
+	^leapRight ! !
+
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
 	^true! !
@@ -1152,27 +1502,34 @@ handlesMouseDown: aMouseButtonEvent
 handlesMouseOver:aMouseButtonEvent
 	^true! !
 
-!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:17:03'!
+!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:54:30'!
 initialize
 
 	super initialize.
 	
-	mapper := LinuxKeyboardMapper new! !
+	controller := KaeruMasterController new.
+	
+	controller at: #edit putController: KaeruEditorController new.
 
-!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:19:49'!
+	controller at: #help putController: KaeruHelpController new. 
+
+	controller activate: #edit.! !
+
+!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 21:55:26'!
 keyDown: aMorphicEvent
 
-	Transcript show: aMorphicEvent ; cr.! !
+	controller keyDown: aMorphicEvent.
+! !
 
-!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:20:05'!
+!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 21:55:41'!
 keyStroke: aKeyboardEvent
 
-	Transcript show: aKeyboardEvent ; cr.! !
+	controller keyStroke: aKeyboardEvent ! !
 
-!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:20:00'!
+!KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 21:55:52'!
 keyUp: aMorphicEvent
 
-	Transcript show: aMorphicEvent ; cr.! !
+	controller keyUp: aMorphicEvent ! !
 
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:14:42'!
 mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
@@ -1183,6 +1540,103 @@ mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:09:08'!
+drawOn: aCanvas
+
+	super drawOn: aCanvas.
+	
+	[
+		self drawRulerOn: aCanvas ; drawTextOn: aCanvas.
+	
+	]
+	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 17:50:59'!
+drawRulerOn: aCanvas
+	
+	| xx yy |
+			
+	yy := rulerY.
+	
+	0 to:79 do:[:ii |
+		xx := textx + (dx / 2) + (dx * ii).
+		aCanvas line: xx@yy to: xx@ (yy + 5) width:1 color: Color white ].
+	
+	1 to:8 do:[:ii |
+		xx := textx + (dx / 2) + (dx * 10 * ii).
+		aCanvas 
+			line: xx@yy to: xx@(yy + 10) width:1 color: Color white ;
+			drawString: ('{1}' format:{ii}) at: (xx - wc) @ (yy + 12)  font: rulerFont color: Color white ].
+		
+	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:31:41'!
+drawTextOn: aCanvas
+	
+	| xx yy bb ee |
+		
+	aCanvas fillRectangle: textr color: Color white.
+	
+	yy := textr origin y.
+	
+	xx := textr origin x + (dx * 5).
+	
+	bb := window copy.
+	
+	ee := klib end.
+	
+	[yy < rulerY and:[bb ~= ee] ]
+		whileTrue:[
+			aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
+			yy := yy + dy.
+			bb nextLine ].
+		
+		! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:03:28'!
+initialize
+
+	super initialize .
+
+	self morphExtent: 1024@600.
+		
+	color := Color black.
+	
+	textFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+	
+	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
+	
+	dx :=  textFont widthOf:$M.
+	
+	dy := textFont lineSpacing.
+	
+	wc := (rulerFont widthOf: $8) / 2.
+
+	rulerY := 538.
+	
+	rulerH := 62.
+
+	textw := (80 * dx).
+			
+	texth := dy * 18.
+		
+	textr := (0@(rulerY - texth) corner: 1024 @ (rulerY-1)) insetBy: ((1024 - textw) / 2)@0.
+
+	textx := textr origin x.
+	
+	showCursor := true.! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:26:58'!
+text: aKLibrary
+
+	klib := aKLibrary.
+	
+	cursor := klib begin.
+	
+	window := klib begin.! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
 doErase: aGenerator
