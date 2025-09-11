@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 8 September 2025 at 9:34:05 pm'!
+'From Cuis7.3 [latest update: #7041] on 11 September 2025 at 9:41:33 pm'!
 'Description '!
-!provides: 'Kaeru' 1 480!
+!provides: 'Kaeru' 1 497!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -169,7 +169,7 @@ KaeruKeyboardTester class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window'
+	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -414,6 +414,11 @@ privPrevPar
 	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
 ! !
 
+!KIterator methodsFor: 'testing' stamp: 'Df 9/11/2025 18:14:03'!
+< aKIterator
+
+	^ self <= aKIterator and:[self ~= aKIterator ]! !
+
 !KIterator methodsFor: 'testing' stamp: 'Df 9/8/2025 21:24:44'!
 <= aKIterator
 
@@ -582,6 +587,39 @@ charIndexToIterator: anIndex
 	
 	^iterator! !
 
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/11/2025 19:48:18'!
+charIndexToLineIndex: aCharIndex
+
+	" Answer the line index and line offset of the line that holds the character at aCharIndex.
+	
+	We assume that aCharIndex refers to a character position in the text, that is, 
+	aCharIndex is not past the end of the text.
+	
+	"
+	
+	| charIndex lineIndex parIndex pp |
+	
+	charIndex := aCharIndex.
+	
+	lineIndex := 0.
+	
+	parIndex := 1.
+	
+	[ parIndex<= paragraphs size and: [ paragraphs at: parIndex :: length < charIndex] ]
+		whileTrue:[ 
+			lineIndex := lineIndex + (paragraphs at: parIndex :: numLines).			
+			charIndex := charIndex - (paragraphs at: parIndex :: length ).			
+			parIndex := parIndex  + 1. ].
+		
+	" As we assume that aCharIndex refers to a character in the text, we may assume that
+	parIndex <= paragraphs size and therefore paragraphs at: parIndex :: length > charIndex.
+	Therefore we only need to find the line index that corresponds to charIndex in this paragraph"
+	
+	pp := paragraphs at: parIndex :: charIndexToLineIndex: charIndex.
+	
+	^ { lineIndex + pp first . pp second }
+	! !
+
 !KLibrary methodsFor: 'addressing' stamp: 'Df 9/5/2025 20:10:55'!
 charIndexToParIndex: anIndex
 
@@ -615,6 +653,45 @@ end
 	anIterator pars: paragraphs ; setAtEnd.
 	
 	^anIterator ! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/11/2025 17:52:42'!
+lineIndexToIterator: anIndex
+
+	| pi li iterator |
+	
+	pi := self lineIndexToParIndex: anIndex.
+	
+	li := pi second.
+	
+	iterator := KIterator new.
+	
+	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li  ; privCharIndex: 1. 
+	
+	^iterator! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/10/2025 19:23:54'!
+lineIndexToParIndex: aLineIndex
+
+	" answer a pair whose first member is the paragraph index and whose second member is the line index in the paragraph text that corresponds to aLineIndex.
+	
+	If aLineIndex exceeds the number of lines in the library, answer the remainder. For example,
+	
+	if there are 3 paragraphs each with 10 lines then
+	
+	self lineIndexToParIndex: 31 = { 4 . 1 }.
+	
+	This behavior gives the correct result when we pass aLineIndex that marks one line past the end of the text in the library. "
+	
+	| ii pp |
+	
+	ii := aLineIndex. pp := 1.
+	
+	[ pp <= paragraphs size and: [ii > ((paragraphs at:pp) numLines) ] ]
+		whileTrue:[
+			ii := ii - ((paragraphs at:pp) numLines).
+			pp := pp + 1].
+
+	^ { pp . ii }! !
 
 !KLibrary methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:53:49'!
 insert: aCharacter after: anIndex
@@ -1040,6 +1117,10 @@ length
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:21:04'!
 lineAt: anIndex
 	^ lines at: anIndex! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/10/2025 19:22:34'!
+lineNum
+	^ lines size! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:20:18'!
 numLines
@@ -1541,18 +1622,35 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:09:08'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 21:40:12'!
+drawCursorOn: aCanvas
+
+	| cursorColor cursorRect cline xx yy  |
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+
+	cline := klib charIndexToLineIndex: cursor.
+	
+	yy := (cline first - window) * dy.	
+	
+	xx := (cline second ) * dx.
+	
+	cursorRect := textr origin + (dx * 5 @ 0) + (xx @ yy) extent: (dx @ dy).
+	
+	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 21:36:25'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
-		self drawRulerOn: aCanvas ; drawTextOn: aCanvas.
+		self drawRulerOn: aCanvas ; drawTextOn: aCanvas ; drawCursorOn: aCanvas.
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 17:50:59'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/8/2025 17:50:59'!
 drawRulerOn: aCanvas
 	
 	| xx yy |
@@ -1571,7 +1669,7 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:31:41'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 18:09:15'!
 drawTextOn: aCanvas
 	
 	| xx yy bb ee |
@@ -1582,7 +1680,7 @@ drawTextOn: aCanvas
 	
 	xx := textr origin x + (dx * 5).
 	
-	bb := window copy.
+	bb := klib lineIndexToIterator: window.
 	
 	ee := klib end.
 	
@@ -1594,7 +1692,29 @@ drawTextOn: aCanvas
 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:03:28'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/11/2025 20:02:51'!
+scrollToCursor
+
+	"Ensure that the window includes the cursor "
+	
+	| cline |
+	
+	cline := klib charIndexToLineIndex: cursor :: first.
+	
+	cline < window		
+		ifTrue:[
+			^window := cline].
+	
+	cline >= (window + numLines)
+		ifTrue:[
+			window := cline - numLines + 1
+			
+			" cline = window + numLines - 1"].
+		
+	self redrawNeeded 
+		! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 18:11:55'!
 initialize
 
 	super initialize .
@@ -1619,9 +1739,11 @@ initialize
 	
 	rulerH := 62.
 
+	numLines := 18.
+	
 	textw := (80 * dx).
 			
-	texth := dy * 18.
+	texth := dy * numLines.
 		
 	textr := (0@(rulerY - texth) corner: 1024 @ (rulerY-1)) insetBy: ((1024 - textw) / 2)@0.
 
@@ -1629,14 +1751,14 @@ initialize
 	
 	showCursor := true.! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:26:58'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 18:12:41'!
 text: aKLibrary
 
 	klib := aKLibrary.
 	
-	cursor := klib begin.
+	cursor := 1. "char index"
 	
-	window := klib begin.! !
+	window := 1. "line index"! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
 doErase: aGenerator
@@ -1907,10 +2029,10 @@ testInsertBreaks
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 17:01:36'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 19:46:12'!
 testIterators
 
-	| t1 t2 text index lib bb ee |
+	| t1 t2 text index lib bb ee aWriteStream eachLine |
 	
 	t1 := 'In olden times, when to wisX', Character cr asString, ' was to have, there lived a King whose daughters were all beautiful', Character cr asString, '. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine.'.  
 	
@@ -1965,6 +2087,29 @@ testIterators
 	1 to: text size do:[:each | 
 		bb := lib charIndexToIterator: each.
 		self assert: bb char = (text at:each) ].
+	
+	aWriteStream := WriteStream on: ''.
+	
+	bb := lib begin.
+	ee := lib end.
+	
+	eachLine := 1.
+	
+	[bb ~= ee]
+		whileTrue:[
+			aWriteStream nextPutAll: bb line. 
+			eachLine := eachLine + 1.
+			bb := lib lineIndexToIterator: eachLine	 ].
+	
+	self assert: aWriteStream contents = text.
+	
+	1 to: text size do:[:eachIndex | | pp qq |
+		pp := lib charIndexToLineIndex: eachIndex.
+		self assert: pp second > 0.
+		qq := lib lineIndexToIterator: pp first.		
+		qq advance: pp second - 1.
+		self assert: qq char = (text at: eachIndex) ].
+	
 	! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:31:30'!
