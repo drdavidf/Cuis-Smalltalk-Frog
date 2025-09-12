@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 September 2025 at 1:45:23 pm'!
+'From Cuis7.3 [latest update: #7041] on 12 September 2025 at 6:07:50 pm'!
 'Description '!
-!provides: 'Kaeru' 1 504!
+!provides: 'Kaeru' 1 518!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -17,6 +17,36 @@ Object subclass: #KBackwardStream
 KBackwardStream class
 	instanceVariableNames: ''!
 
+!classDefinition: #KForwardIterator category: #Kaeru!
+Object subclass: #KForwardIterator
+	instanceVariableNames: 'pars parIndex lineIndex charIndex'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KForwardIterator class' category: #Kaeru!
+KForwardIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KBidiIterator category: #Kaeru!
+KForwardIterator subclass: #KBidiIterator
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KBidiIterator class' category: #Kaeru!
+KBidiIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KForwardPageIterator category: #Kaeru!
+KForwardIterator subclass: #KForwardPageIterator
+	instanceVariableNames: 'pageNumber lineNumber pageSize'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KForwardPageIterator class' category: #Kaeru!
+KForwardPageIterator class
+	instanceVariableNames: ''!
+
 !classDefinition: #KForwardStream category: #Kaeru!
 Object subclass: #KForwardStream
 	instanceVariableNames: 'kiterator'
@@ -25,16 +55,6 @@ Object subclass: #KForwardStream
 	category: 'Kaeru'!
 !classDefinition: 'KForwardStream class' category: #Kaeru!
 KForwardStream class
-	instanceVariableNames: ''!
-
-!classDefinition: #KIterator category: #Kaeru!
-Object subclass: #KIterator
-	instanceVariableNames: 'pars parIndex lineIndex charIndex'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KIterator class' category: #Kaeru!
-KIterator class
 	instanceVariableNames: ''!
 
 !classDefinition: #KLibrary category: #Kaeru!
@@ -169,7 +189,7 @@ KaeruKeyboardTester class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines'
+	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines pageNumberFont'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -277,6 +297,308 @@ on: aKIterator
 	
 	^aKStream! !
 
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:36:46'!
+< aKIterator
+
+	^ self <= aKIterator and:[self ~= aKIterator ]! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:36:53'!
+<= aKIterator
+
+	self assert: (aKIterator isKindOf: self class).
+	
+	self assert: pars == aKIterator privPars.
+
+	parIndex < aKIterator privParIndex ifTrue:[^true].
+	
+	parIndex > aKIterator privParIndex ifTrue:[^false].
+	
+	" parIndex = aKIterator parIndex "
+	
+	lineIndex < aKIterator privLineIndex ifTrue:[^true].
+
+	lineIndex > aKIterator privLineIndex ifTrue:[^false].
+
+	" lineIndex = aKIterator lineIndex "
+	
+	^ charIndex <= aKIterator privCharIndex 	! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:36:58'!
+= aKIterator
+
+	aKIterator isKindOf: self class :: ifFalse:[^false].
+	
+	pars == aKIterator privPars ifFalse:[^false].
+	
+	parIndex = aKIterator privParIndex ifFalse:[^false].
+	
+	lineIndex = aKIterator privLineIndex ifFalse:[^false].
+	
+	^ charIndex = aKIterator privCharIndex ! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:02'!
+~= aKIterator
+
+	^( self = aKIterator ) not
+! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:21'!
+hash
+
+	^pars hash bitXor: ( parIndex hash bitXor: ( lineIndex hash bitXor: charIndex hash ) )! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:25'!
+isAtEnd
+	^parIndex = (pars size + 1)
+! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:29'!
+isAtStart
+	
+	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 1]! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
+advance: anInteger
+
+	anInteger timesRepeat: [self next].
+	
+	^self! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:11'!
+attributes
+
+	^ pars at: parIndex :: attributes! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:16'!
+char
+
+	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
+next
+
+	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
+		ifTrue:[
+			^self privNextChar ].
+		
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
+pars: anOrderedCollection
+
+	pars := anOrderedCollection.
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:38:54'!
+setAtStart
+	parIndex := 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:20'!
+privCharIndex
+	^charIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:24'!
+privCharIndex: anIndex
+
+	charIndex := anIndex ! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:27'!
+privLineIndex
+	^lineIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:32'!
+privLineIndex: anIndex
+
+	lineIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:09'!
+privNextChar
+
+	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	charIndex := charIndex + 1! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:12'!
+privNextLine
+
+	self assert: lineIndex <  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	lineIndex := lineIndex + 1.
+	
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:37:53'!
+privNextPar
+
+	self assert: lineIndex =  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	parIndex := parIndex + 1.
+	
+	lineIndex := 1.
+	
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:38'!
+privParIndex
+	^parIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:42'!
+privParIndex: anIndex
+
+	parIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:46'!
+privPars
+	^pars! !
+
+!KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
+privPrevChar
+
+	self assert: charIndex > 1.
+	
+	charIndex := charIndex - 1! !
+
+!KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:23:50'!
+privPrevLine
+
+	self assert: lineIndex >  1.
+
+	self assert: charIndex =  1.
+	
+	lineIndex := lineIndex - 1.
+	
+	charIndex := (pars at: parIndex :: lineAt: lineIndex :: length ).
+! !
+
+!KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:25:48'!
+privPrevPar
+
+	self assert: parIndex > 1.
+	
+	self assert: lineIndex =  1.
+
+	self assert: charIndex =  1.
+	
+	parIndex := parIndex - 1.
+	
+	lineIndex := 	pars at: parIndex :: numLines.
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+! !
+
+!KBidiIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:29:17'!
+prev
+
+	charIndex >  1
+		ifTrue:[
+			^self privPrevChar ].
+		
+	lineIndex >  1
+		ifTrue:[
+			^self privPrevLine ].
+	
+	self privPrevPar! !
+
+!KBidiIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:07:43'!
+retreat: anInteger
+
+	anInteger timesRepeat: [self prev].
+	
+	^self! !
+
+!KBidiIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:15:41'!
+setAtEnd
+	parIndex := pars size + 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:40:06'!
+line
+
+	| aWriteStream |
+	
+	aWriteStream := WriteStream on: ''.
+	
+	pars at: parIndex :: lineAt: lineIndex :: textInto: aWriteStream.
+	
+	^ aWriteStream contents.
+	! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:54:03'!
+lineNumber
+	^lineNumber! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:42:34'!
+lineNumber: anInteger
+	lineNumber := anInteger! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:40:13'!
+nextLine
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+			^self privNextLine ].
+	
+	charIndex :=  pars at: parIndex :: lineAt: lineIndex :: length.
+	
+	self privNextPar! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:42:49'!
+pageNumber
+	^pageNumber! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:42:27'!
+pageNumber: anInteger
+	pageNumber := anInteger ! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:52:57'!
+pageSize: anInteger
+	pageSize := anInteger ! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 17:53:09'!
+privNextLine
+		
+	self privNextPage.
+	
+	super privNextLine.
+	! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 17:52:27'!
+privNextPage
+
+	| lineH |
+		
+	lineH := self attributes second.
+	
+	pageNumber := pageNumber + ( (lineNumber + lineH) div: pageSize ).
+	
+	lineNumber := (lineNumber + lineH) mod: pageSize.
+	
+	! !
+
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 17:53:25'!
+privNextPar
+
+	self privNextPage.
+	
+	pars at: parIndex :: isPageBreaking :: 
+		ifTrue:[
+			pageNumber := pageNumber + 1.
+			lineNumber := 0].
+		
+	super privNextPar.! !
+
 !KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:15:36'!
 atEnd
 
@@ -317,267 +639,18 @@ on: aKIterator
 	
 	^aKStream! !
 
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:44'!
-privCharIndex
-	^charIndex! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:59:45'!
-privCharIndex: anIndex
-
-	charIndex := anIndex ! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:39'!
-privLineIndex
-	^lineIndex! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:59:54'!
-privLineIndex: anIndex
-
-	lineIndex := anIndex! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:21:16'!
-privNextChar
-
-	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	charIndex := charIndex + 1! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:21:39'!
-privNextLine
-
-	self assert: lineIndex <  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	lineIndex := lineIndex + 1.
-	
-	charIndex := 1.! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:12'!
-privNextPar
-
-	self assert: lineIndex =  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	parIndex := parIndex + 1.
-	
-	lineIndex := 1.
-	
-	charIndex := 1.! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:34:31'!
-privParIndex
-	^parIndex! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 17:00:16'!
-privParIndex: anIndex
-
-	parIndex := anIndex! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:33:24'!
-privPars
-	^pars! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
-privPrevChar
-
-	self assert: charIndex > 1.
-	
-	charIndex := charIndex - 1! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:23:50'!
-privPrevLine
-
-	self assert: lineIndex >  1.
-
-	self assert: charIndex =  1.
-	
-	lineIndex := lineIndex - 1.
-	
-	charIndex := (pars at: parIndex :: lineAt: lineIndex :: length ).
-! !
-
-!KIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:25:48'!
-privPrevPar
-
-	self assert: parIndex > 1.
-	
-	self assert: lineIndex =  1.
-
-	self assert: charIndex =  1.
-	
-	parIndex := parIndex - 1.
-	
-	lineIndex := 	pars at: parIndex :: numLines.
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-! !
-
-!KIterator methodsFor: 'testing' stamp: 'Df 9/11/2025 18:14:03'!
-< aKIterator
-
-	^ self <= aKIterator and:[self ~= aKIterator ]! !
-
-!KIterator methodsFor: 'testing' stamp: 'Df 9/8/2025 21:24:44'!
-<= aKIterator
-
-	self assert: (aKIterator isKindOf: self class).
-	
-	self assert: pars == aKIterator privPars.
-
-	parIndex < aKIterator privParIndex ifTrue:[^true].
-	
-	parIndex > aKIterator privParIndex ifTrue:[^false].
-	
-	" parIndex = aKIterator parIndex "
-	
-	lineIndex < aKIterator privLineIndex ifTrue:[^true].
-
-	lineIndex > aKIterator privLineIndex ifTrue:[^false].
-
-	" lineIndex = aKIterator lineIndex "
-	
-	^ charIndex <= aKIterator privCharIndex 	! !
-
-!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:35:32'!
-= aKIterator
-
-	aKIterator isKindOf: self class :: ifFalse:[^false].
-	
-	pars == aKIterator privPars ifFalse:[^false].
-	
-	parIndex = aKIterator privParIndex ifFalse:[^false].
-	
-	lineIndex = aKIterator privLineIndex ifFalse:[^false].
-	
-	^ charIndex = aKIterator privCharIndex ! !
-
-!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:40:41'!
-~= aKIterator
-
-	^( self = aKIterator ) not
-! !
-
-!KIterator methodsFor: 'testing' stamp: 'DF 8/18/2025 16:40:09'!
-hash
-
-	^pars hash bitXor: ( parIndex hash bitXor: ( lineIndex hash bitXor: charIndex hash ) )! !
-
-!KIterator methodsFor: 'testing' stamp: 'DF 8/30/2025 17:21:15'!
-isAtEnd
-	^parIndex = (pars size + 1)
-! !
-
-!KIterator methodsFor: 'testing' stamp: 'DF 8/30/2025 17:53:28'!
-isAtStart
-	
-	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 1]! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:07:31'!
-advance: anInteger
-
-	anInteger timesRepeat: [self next].
-	
-	^self! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 11:38:15'!
-attributes
-
-	^ pars at: parIndex :: attributes! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:44'!
-char
-
-	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 18:06:28'!
-line
-
-	| aWriteStream |
-	
-	aWriteStream := WriteStream on: ''.
-	
-	pars at: parIndex :: lineAt: lineIndex :: textInto: aWriteStream.
-	
-	^ aWriteStream contents.
-	! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:28:35'!
-next
-
-	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
-		ifTrue:[
-			^self privNextChar ].
-		
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-	
-	self privNextPar! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/8/2025 21:30:29'!
-nextLine
-
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-			^self privNextLine ].
-	
-	charIndex :=  pars at: parIndex :: lineAt: lineIndex :: length.
-	
-	self privNextPar! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:07:53'!
-pars: anOrderedCollection
-
-	pars := anOrderedCollection.
-! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:29:17'!
-prev
-
-	charIndex >  1
-		ifTrue:[
-			^self privPrevChar ].
-		
-	lineIndex >  1
-		ifTrue:[
-			^self privPrevLine ].
-	
-	self privPrevPar! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:07:43'!
-retreat: anInteger
-
-	anInteger timesRepeat: [self prev].
-	
-	^self! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:15:41'!
-setAtEnd
-	parIndex := pars size + 1.
-	lineIndex := 1.
-	charIndex := 1.! !
-
-!KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:15:41'!
-setAtStart
-	parIndex := 1.
-	lineIndex := 1.
-	charIndex := 1.! !
-
-!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 16:31:34'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 16:35:55'!
 begin
 
 	| anIterator |
 	
-	anIterator := KIterator new.
+	anIterator := KBidiIterator new.
 	
 	anIterator pars: paragraphs ; setAtStart.
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 17:02:10'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 16:35:55'!
 charIndexToIterator: anIndex
 
 	| pi li iterator |
@@ -586,7 +659,7 @@ charIndexToIterator: anIndex
 	
 	li := paragraphs at: pi first :: charIndexToLineIndex: pi second.
 	
-	iterator := KIterator new.
+	iterator := KBidiIterator new.
 	
 	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
 	
@@ -648,36 +721,21 @@ charIndexToParIndex: anIndex
 
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 8/18/2025 16:31:44'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 16:35:55'!
 end
 
 	| anIterator |
 	
-	anIterator := KIterator new.
+	anIterator := KBidiIterator new.
 	
 	anIterator pars: paragraphs ; setAtEnd.
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/11/2025 17:52:42'!
-lineIndexToIterator: anIndex
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 17:14:32'!
+lineIndexToPageIterator: aLineIndex
 
-	| pi li iterator |
-	
-	pi := self lineIndexToParIndex: anIndex.
-	
-	li := pi second.
-	
-	iterator := KIterator new.
-	
-	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li  ; privCharIndex: 1. 
-	
-	^iterator! !
-
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 13:20:39'!
-lineIndexToParIndex: aLineIndex
-
-	" Answer a 4 member tuple that holds the following position information related to aLineIndex:
+	" Answer a forward page iterator that holds the following position information related to aLineIndex:
 	
 	1. the paragraph index
 	2. the line index in the paragraph 
@@ -735,7 +793,7 @@ lineIndexToParIndex: aLineIndex
 	
 	This behavior gives the correct result when we pass aLineIndex that marks one line past the end of the text in the library. "
 	
-	| par nlines ii pg pp jj lineH |
+	| par nlines ii pg pp jj lineH iterator |
 	
 	ii := aLineIndex. 
 	
@@ -760,10 +818,15 @@ lineIndexToParIndex: aLineIndex
 			nlines := (paragraphs at:pg) numLines.
 			lineH := par attributes second ].
 
-	pp := pp + ((jj + (ii * lineH)) div: pageSize).
-	jj := (jj + (ii * lineH)) mod: pageSize.
+	pp := pp + ((jj + ((ii -1) * lineH)) div: pageSize).
+	jj := (jj + ((ii -1) * lineH)) mod: pageSize.
+
+	iterator := KForwardPageIterator new.
 	
-	^ { pg . ii .pp . jj }! !
+	iterator pars: paragraphs ; privParIndex: pg ; privLineIndex: ii  ; privCharIndex: 1 ; pageNumber: pp ; lineNumber: jj ; pageSize: pageSize. 
+
+	^iterator	
+	! !
 
 !KLibrary methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:53:49'!
 insert: aCharacter after: anIndex
@@ -776,7 +839,7 @@ insert: aCharacter after: anIndex
 		
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'Df 9/12/2025 13:44:44'!
+!KLibrary methodsFor: 'inserting' stamp: 'Df 9/12/2025 16:08:39'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -815,7 +878,7 @@ insertBreakCharacter: aCharacter after: anIndex
 		ifTrue:[
 			right := { aCharacter } , right]
 		ifFalse:[
-			left := left, { aCharacter } ].
+			left := left asOrderedCollection, { aCharacter } ].
 		
 	(paragraphs at:pp) rebuildFromText: left asOrderedCollection.
 	
@@ -890,11 +953,15 @@ initialize
 newItem
 	^KParagraph new! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'Df 9/5/2025 20:26:22'!
+!KLibrary methodsFor: 'erasing' stamp: 'Df 9/12/2025 16:09:00'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi headText tailText par |
 	
+	aBeginIndex = anEndIndex
+		ifTrue:[
+			^self].
+		
 	beginPi := self charIndexToParIndex: aBeginIndex .
 	
 	endPi := self charIndexToParIndex: anEndIndex .
@@ -1072,6 +1139,12 @@ isLineSeparating
 	^chars size > 0 and: [chars last isKLineSeparator ]
 	! !
 
+!KLine methodsFor: 'testing' stamp: 'Df 9/12/2025 16:52:10'!
+isPageSeparating
+
+	^chars size > 0 and: [chars last isPageSeparator ]
+	! !
+
 !KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 12:13:59'!
 notEmpty
 	^chars notEmpty ! !
@@ -1167,6 +1240,11 @@ eraseFrom: abeginIndex to: anEndIndex
 isLineBreaking
 
 	^ lines size > 0 and: [lines last isLineSeparating ]! !
+
+!KParagraph methodsFor: 'testing' stamp: 'Df 9/12/2025 16:51:57'!
+isPageBreaking
+
+	^ lines size > 0 and: [lines last isPageSeparating ]! !
 
 !KParagraph methodsFor: 'testing' stamp: 'DF 8/18/2025 12:13:05'!
 notEmpty
@@ -1746,16 +1824,38 @@ drawCursorOn: aCanvas
 	
 	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 21:36:25'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:02:21'!
+drawCursorOn: aCanvas at: aPoint
+
+	| cursorColor cursorRect |
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+
+	cursorRect := aPoint extent: (dx @ dy).
+	
+	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:05:25'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
-		self drawRulerOn: aCanvas ; drawTextOn: aCanvas ; drawCursorOn: aCanvas.
+		self drawRulerOn: aCanvas ; drawTextOn: aCanvas
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 17:01:15'!
+drawOn: aCanvas page: anInteger breakAt: aNumberHeight
+
+	| hh |
+	
+	hh := aNumberHeight + (0.25*dy).
+	aCanvas fillRectangle: (textr origin x @ hh extent: textr width @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+	
+	aCanvas drawString: ('{1}' format:{anInteger}) atCenterX: (self morphWidth / 2.0 @ (hh - (0.125*dy))) font: pageNumberFont color: Color black.
+! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/8/2025 17:50:59'!
 drawRulerOn: aCanvas
@@ -1776,18 +1876,22 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 11:40:02'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:07:44'!
 drawTextOn: aCanvas
 	
-	| xx yy bb ee |
+	| xx yy bb ee cline wline |
 		
 	aCanvas fillRectangle: textr color: Color white.
 	
 	yy := textr origin y.
 	
-	bb := klib lineIndexToIterator: window.
+	bb := klib lineIndexToPageIterator: window.
 	
 	ee := klib end.
+	
+	cline := klib charIndexToLineIndex: cursor.
+	
+	wline := window.
 	
 	[yy < rulerY and:[bb ~= ee] ]
 		whileTrue:[ | attrs lineHeight leftMargin |
@@ -1799,9 +1903,20 @@ drawTextOn: aCanvas
 
 			xx := textr origin x + (dx * leftMargin).
 			
+			bb lineNumber = 0 
+				ifTrue:[
+					self drawOn: aCanvas page: bb pageNumber breakAt: yy.
+					yy := yy + dy. ].
+					
 			aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
+
+			wline = cline first
+				ifTrue:[
+					self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy ].
+			
 			yy := yy + (dy * lineHeight / 2.0).
-			bb nextLine ].
+			bb nextLine.
+			wline := wline + 1 ].
 		
 		! !
 
@@ -1827,7 +1942,7 @@ scrollToCursor
 	self redrawNeeded 
 		! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 18:11:55'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:55:50'!
 initialize
 
 	super initialize .
@@ -1835,6 +1950,8 @@ initialize
 	self morphExtent: 1024@600.
 		
 	color := Color black.
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
 	
 	textFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
 	
@@ -2142,7 +2259,7 @@ testInsertBreaks
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 19:46:12'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:44:53'!
 testIterators
 
 	| t1 t2 text index lib bb ee aWriteStream eachLine |
@@ -2212,14 +2329,14 @@ testIterators
 		whileTrue:[
 			aWriteStream nextPutAll: bb line. 
 			eachLine := eachLine + 1.
-			bb := lib lineIndexToIterator: eachLine	 ].
+			bb := lib lineIndexToPageIterator: eachLine	 ].
 	
 	self assert: aWriteStream contents = text.
 	
 	1 to: text size do:[:eachIndex | | pp qq |
 		pp := lib charIndexToLineIndex: eachIndex.
 		self assert: pp second > 0.
-		qq := lib lineIndexToIterator: pp first.		
+		qq := lib lineIndexToPageIterator: pp first.		
 		qq advance: pp second - 1.
 		self assert: qq char = (text at: eachIndex) ].
 	
