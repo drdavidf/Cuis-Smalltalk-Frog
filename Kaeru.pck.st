@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 11 September 2025 at 9:41:33 pm'!
+'From Cuis7.3 [latest update: #7041] on 12 September 2025 at 1:45:23 pm'!
 'Description '!
-!provides: 'Kaeru' 1 497!
+!provides: 'Kaeru' 1 504!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -39,7 +39,7 @@ KIterator class
 
 !classDefinition: #KLibrary category: #Kaeru!
 Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs border'
+	instanceVariableNames: 'paragraphs border pageSize'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru'!
@@ -59,7 +59,7 @@ KLine class
 
 !classDefinition: #KParagraph category: #Kaeru!
 Object subclass: #KParagraph
-	instanceVariableNames: 'leftMargin rightMargin lines'
+	instanceVariableNames: 'leftMargin rightMargin lineHeight lines'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru'!
@@ -481,6 +481,11 @@ advance: anInteger
 	
 	^self! !
 
+!KIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 11:38:15'!
+attributes
+
+	^ pars at: parIndex :: attributes! !
+
 !KIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:44'!
 char
 
@@ -587,7 +592,7 @@ charIndexToIterator: anIndex
 	
 	^iterator! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/11/2025 19:48:18'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 11:36:39'!
 charIndexToLineIndex: aCharIndex
 
 	" Answer the line index and line offset of the line that holds the character at aCharIndex.
@@ -617,7 +622,7 @@ charIndexToLineIndex: aCharIndex
 	
 	pp := paragraphs at: parIndex :: charIndexToLineIndex: charIndex.
 	
-	^ { lineIndex + pp first . pp second }
+	^ { lineIndex + pp first . pp second . paragraphs at: parIndex :: attributes }
 	! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'Df 9/5/2025 20:10:55'!
@@ -669,29 +674,96 @@ lineIndexToIterator: anIndex
 	
 	^iterator! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/10/2025 19:23:54'!
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 13:20:39'!
 lineIndexToParIndex: aLineIndex
 
-	" answer a pair whose first member is the paragraph index and whose second member is the line index in the paragraph text that corresponds to aLineIndex.
+	" Answer a 4 member tuple that holds the following position information related to aLineIndex:
+	
+	1. the paragraph index
+	2. the line index in the paragraph 
+	3. the page number
+	4. the line number in the page
+
+	we count both page numbers and line numbers in the page from 0.
+	
+	For example, if there are 3 paragraphs, each with 10 lines, and the page size is 10 half lines (5 lines), then
+	
+	line par page page line
+	1    1    0       0
+	2    1    0       2
+	3    1    0       4
+	4    1    0       6
+	5    1    0       8
+	6    1    1       0
+	7    1    1       2
+	8    1    1       4
+	9    1    1       6
+	10  1    1       8
+	11  2    2       0
+	12  2    2       2
+	
+	self lineIndexToParIndex: 12 = { 2 . 2 . 2 . 2 }.
+	
+	The page number is calculated as (12 - 1) * 2 (22 half lines starting from 0) div 10 = 2
+	The line number in the page is 22 mod 10 = 2.
+	
+	This is assuming that no paragraph ends with a page break. In case that a paragraph ends with a page 
+	break we have to increment the number of pages by 1 and reset the page line number to 0.
+	
+	For example, if there are 3 paragraphs, each with 7 lines, and the page size is 10 half lines (5 lines), and
+	the first paragraph ends with a page break, then
+
+	line par page page line
+	1    1    0       0
+	2    1    0       2
+	3    1    0       4
+	4    1    0       6
+	5    1    0       8
+	6    1    1       0
+	7    1    1       2
+	8    2    2       0
+	9    2    2       2
+	10  2    2       4
+	11  2    2       6
+	12  2    2       8
+	
+	self lineIndexToParIndex: 12 = { 2 . 2 . 2 . 8 } 
 	
 	If aLineIndex exceeds the number of lines in the library, answer the remainder. For example,
-	
-	if there are 3 paragraphs each with 10 lines then
-	
-	self lineIndexToParIndex: 31 = { 4 . 1 }.
+		
+	self lineIndexToParIndex: 31 = { 4 . 1 . 6 . 0 }.
 	
 	This behavior gives the correct result when we pass aLineIndex that marks one line past the end of the text in the library. "
 	
-	| ii pp |
+	| par nlines ii pg pp jj lineH |
 	
-	ii := aLineIndex. pp := 1.
+	ii := aLineIndex. 
 	
-	[ pp <= paragraphs size and: [ii > ((paragraphs at:pp) numLines) ] ]
-		whileTrue:[
-			ii := ii - ((paragraphs at:pp) numLines).
-			pp := pp + 1].
+	pp := 0. " page number "
+	
+	jj := 0. " line number in page (page offset) "
+	
+	pg := 1.
+	
+	par := paragraphs at:pg.
+	
+	nlines := par numLines.
+	lineH := par attributes second.
+	
+	[ pg <= paragraphs size and: [ii > nlines ] ]
+		whileTrue:[ 
+			ii := ii - nlines.
+			pp := pp + ((jj + (nlines * lineH)) div: pageSize).
+			jj := (jj + (nlines * lineH)) mod: pageSize.
+			pg := pg + 1.
+			par := paragraphs at:pg.
+			nlines := (paragraphs at:pg) numLines.
+			lineH := par attributes second ].
 
-	^ { pp . ii }! !
+	pp := pp + ((jj + (ii * lineH)) div: pageSize).
+	jj := (jj + (ii * lineH)) mod: pageSize.
+	
+	^ { pg . ii .pp . jj }! !
 
 !KLibrary methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:53:49'!
 insert: aCharacter after: anIndex
@@ -704,14 +776,27 @@ insert: aCharacter after: anIndex
 		
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 8/18/2025 11:11:16'!
+!KLibrary methodsFor: 'inserting' stamp: 'Df 9/12/2025 13:44:44'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
 	the index references a character in one of the paragraphs (that is, it is not larger than the total characters
 	in the library.
 	
-	Split the paragraph's text at the offset. Add the break character to the end of the first part and rebuild the paragraph just from the first part. Create a new paragraph and build it from the second part. Add the new paragraph after the current paragraph.
+	There are three cases to consider:
+	
+	1. We insert the break in the middle of the paragraph.
+	
+	In this case we split the paragraph's text at the offset. Add the break character to the end of the first part and rebuild the paragraph just from the first part. Create a new paragraph and build it from the second part. Add the new paragraph after the current paragraph.
+	
+	2. We insert the break at the end of the paragraph and the paragraph does not end with a page break.
+	
+	In this case we just append the break character to the end of the last line.
+
+	3. We insert the break at the end of the paragraph and the paragraph ends with a page break.
+	
+	In this case we create a new paragraph that holds the page break and append it after the current paragraph.
+	
 	"
 	
 	| pi ii pp text left right newPar |
@@ -721,17 +806,26 @@ insertBreakCharacter: aCharacter after: anIndex
 	pp := pi first. ii := pi second. 
 		
 	text := (paragraphs at:pp) text.
+
 	
 	left := text copyFrom:1 to: ii.
 	right := text copyFrom: ii+1 to: text size.
+
+	text at: ii :: isKLineSeparator 
+		ifTrue:[
+			right := { aCharacter } , right]
+		ifFalse:[
+			left := left, { aCharacter } ].
+		
+	(paragraphs at:pp) rebuildFromText: left asOrderedCollection.
 	
-	(paragraphs at:pp) rebuildFromText: left asOrderedCollection, {aCharacter}.
+	right notEmpty
+		ifTrue:[
+			newPar := self newItem.
 	
-	newPar := self newItem.
+			newPar rebuildFromText: right.
 	
-	newPar rebuildFromText: right.
-	
-	paragraphs add: newPar afterIndex: pp.
+			paragraphs add: newPar afterIndex: pp].
 	
 	! !
 
@@ -781,14 +875,16 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 8/16/2025 21:43:46'!
+!KLibrary methodsFor: 'initialization' stamp: 'Df 9/12/2025 12:32:55'!
 initialize
 
 	paragraphs := OrderedCollection new.
 	
 	paragraphs add: self newItem.
 	
-	border := 1.! !
+	border := 1.
+	
+	pageSize := 10. " in half lines. 10 half lines, equals 5 lines "! !
 
 !KLibrary methodsFor: 'factory' stamp: 'DF 8/16/2025 21:42:29'!
 newItem
@@ -999,14 +1095,16 @@ initialize
 
 	chars := OrderedCollection new! !
 
-!KParagraph methodsFor: 'initialization' stamp: 'DF 8/16/2025 21:29:11'!
+!KParagraph methodsFor: 'initialization' stamp: 'Df 9/12/2025 11:32:45'!
 initialize
 
 	lines := OrderedCollection new.
 		
 	leftMargin := 6.
 	
-	rightMargin := 6+8! !
+	rightMargin := 6+8.
+	
+	lineHeight := 2. "in half line units"! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:30:48'!
 buildFrom: aTokenStream
@@ -1077,6 +1175,11 @@ notEmpty
 !KParagraph methodsFor: 'factory' stamp: 'DF 7/20/2025 10:24:19'!
 newItem
 	^KLine new! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/12/2025 11:33:24'!
+attributes
+
+	^ { leftMargin . lineHeight }! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
 charAt: anIndex
@@ -1622,20 +1725,24 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 21:40:12'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 11:36:17'!
 drawCursorOn: aCanvas
 
-	| cursorColor cursorRect cline xx yy  |
+	| cursorColor cursorRect cline xx yy leftMargin lineHeight  |
 	
 	cursorColor := Color fromHexString: '#AAAAAA'.
 
 	cline := klib charIndexToLineIndex: cursor.
 	
-	yy := (cline first - window) * dy.	
+	leftMargin := cline third first.
+	
+	lineHeight := cline third second.
+	
+	yy := (cline first - window) * (lineHeight / 2.0) * dy.	
 	
 	xx := (cline second ) * dx.
 	
-	cursorRect := textr origin + (dx * 5 @ 0) + (xx @ yy) extent: (dx @ dy).
+	cursorRect := textr origin + (dx * leftMargin @ 0) + (xx @ yy) extent: (dx @ dy).
 	
 	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
 
@@ -1669,7 +1776,7 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/11/2025 18:09:15'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 11:40:02'!
 drawTextOn: aCanvas
 	
 	| xx yy bb ee |
@@ -1678,16 +1785,22 @@ drawTextOn: aCanvas
 	
 	yy := textr origin y.
 	
-	xx := textr origin x + (dx * 5).
-	
 	bb := klib lineIndexToIterator: window.
 	
 	ee := klib end.
 	
 	[yy < rulerY and:[bb ~= ee] ]
-		whileTrue:[
+		whileTrue:[ | attrs lineHeight leftMargin |
+			attrs := bb attributes.
+
+			leftMargin := attrs first.
+	
+			lineHeight := attrs second.
+
+			xx := textr origin x + (dx * leftMargin).
+			
 			aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
-			yy := yy + dy.
+			yy := yy + (dy * lineHeight / 2.0).
 			bb nextLine ].
 		
 		! !
