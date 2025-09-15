@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 12 September 2025 at 6:07:50 pm'!
+'From Cuis7.3 [latest update: #7041] on 15 September 2025 at 9:33:31 am'!
 'Description '!
-!provides: 'Kaeru' 1 518!
+!provides: 'Kaeru' 1 524!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -574,16 +574,19 @@ privNextLine
 	super privNextLine.
 	! !
 
-!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 17:52:27'!
+!KForwardPageIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/14/2025 22:20:06'!
 privNextPage
 
 	| lineH |
 		
 	lineH := self attributes second.
 	
-	pageNumber := pageNumber + ( (lineNumber + lineH) div: pageSize ).
-	
-	lineNumber := (lineNumber + lineH) mod: pageSize.
+	lineNumber + lineH < pageSize 
+		ifTrue:[
+			lineNumber := lineNumber + lineH]
+		ifFalse:[
+			lineNumber := 0.
+			pageNumber := pageNumber + 1].
 	
 	! !
 
@@ -1803,37 +1806,21 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 11:36:17'!
-drawCursorOn: aCanvas
-
-	| cursorColor cursorRect cline xx yy leftMargin lineHeight  |
-	
-	cursorColor := Color fromHexString: '#AAAAAA'.
-
-	cline := klib charIndexToLineIndex: cursor.
-	
-	leftMargin := cline third first.
-	
-	lineHeight := cline third second.
-	
-	yy := (cline first - window) * (lineHeight / 2.0) * dy.	
-	
-	xx := (cline second ) * dx.
-	
-	cursorRect := textr origin + (dx * leftMargin @ 0) + (xx @ yy) extent: (dx @ dy).
-	
-	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:02:21'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/13/2025 21:18:31'!
 drawCursorOn: aCanvas at: aPoint
 
-	| cursorColor cursorRect |
+	| cursorColor cursorRect rulerCursorRect | 
 	
 	cursorColor := Color fromHexString: '#AAAAAA'.
 
 	cursorRect := aPoint extent: (dx @ dy).
 	
-	aCanvas fillRectangle: cursorRect  color: cursorColor.! !
+	aCanvas fillRectangle: cursorRect  color: cursorColor.
+	
+	rulerCursorRect := (aPoint x + (dx / 2)) @ rulerY extent: 4@12.
+
+	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
+! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:05:25'!
 drawOn: aCanvas
@@ -1876,10 +1863,10 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:07:44'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/15/2025 09:31:35'!
 drawTextOn: aCanvas
 	
-	| xx yy bb ee cline wline |
+	| xx yy bb ee cline wline linen |
 		
 	aCanvas fillRectangle: textr color: Color white.
 	
@@ -1893,6 +1880,23 @@ drawTextOn: aCanvas
 	
 	wline := window.
 	
+	linen := bb lineNumber.
+
+	" We have to deal with two kinds of line numbers. Logical line numbers represent the order
+	of lines in the text, while physical line numbers (for lack of a more suitable term) are in half line
+	units, represent the position of the line on a page and are affected by the line height. 
+	The iterator's lineNumber method answers physical line numbers which may skip by more 
+	than 1 when the line height in a paragraph is different from 2. Because of this skipping behavior
+	we may lose a position if we rely on advancing by the iterator. This affects the drawing of the
+	page boundaries. 
+	
+	Therefore drawing should advance by physical half lines. At the beginning we should setup two
+	variables, the page number and line number that corresponds to the window start position. Then we 
+	advance by incrementing linen to the next physical (half) line, until we hit the lineNumber of the
+	iterator, at this point we draw the text and advance the iterator.
+	
+	"	
+
 	[yy < rulerY and:[bb ~= ee] ]
 		whileTrue:[ | attrs lineHeight leftMargin |
 			attrs := bb attributes.
@@ -1902,44 +1906,106 @@ drawTextOn: aCanvas
 			lineHeight := attrs second.
 
 			xx := textr origin x + (dx * leftMargin).
+
+			bb lineNumber = linen 
+				ifTrue:[
+					aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
+
+					wline = cline first
+						ifTrue:[
+							self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy ] ].
+			
+			yy := yy + (dy / 2).
+
+			bb lineNumber = linen
+				ifTrue: [ bb nextLine. wline := wline + 1 ].	
 			
 			bb lineNumber = 0 
 				ifTrue:[
-					self drawOn: aCanvas page: bb pageNumber breakAt: yy.
-					yy := yy + dy. ].
-					
-			aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
-
-			wline = cline first
-				ifTrue:[
-					self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy ].
+					linen := 0.
+					yy := yy + (dy/2).
+					yy + dy < rulerY
+						ifTrue:[
+							self drawOn: aCanvas page: bb pageNumber breakAt: yy].
+					yy := yy + dy ]
+				ifFalse:[
+					linen := linen + 1].
 			
+			].
+	
+		! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 19:54:55'!
+lastVisibleLine
+	
+	| yy bb ee wline |
+		
+	yy := textr origin y.
+	
+	bb := klib lineIndexToPageIterator: window.
+	
+	ee := klib end.
+		
+	wline := window.
+	
+	[yy < rulerY and:[bb ~= ee] ]
+		whileTrue:[ | attrs lineHeight |
+			attrs := bb attributes.
+
+			lineHeight := attrs second.
+
+			bb lineNumber = 0 
+				ifTrue:[
+					yy := yy + dy. ].
+								
 			yy := yy + (dy * lineHeight / 2.0).
 			bb nextLine.
 			wline := wline + 1 ].
 		
-		! !
+	^wline	! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/11/2025 20:02:51'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 20:16:12'!
 scrollToCursor
 
 	"Ensure that the window includes the cursor "
 	
-	| cline |
+	| cline lvl |
+	
 	
 	cline := klib charIndexToLineIndex: cursor :: first.
 	
 	cline < window		
 		ifTrue:[
-			^window := cline].
+			window := cline.
+			^self redrawNeeded ].
+
+	lvl := self lastVisibleLine.
 	
-	cline >= (window + numLines)
+	cline < lvl
 		ifTrue:[
-			window := cline - numLines + 1
-			
-			" cline = window + numLines - 1"].
-		
-	self redrawNeeded 
+			" cursor is within the window, no need to do anything"
+			^self].
+	
+	" If the window is further than numLines from cline move it such that window + numLines = cline.
+	
+	However, the cursor may still not be visible because page boundaries and changes in line height
+	may result in fewer lines fitting into the window. 
+	
+	Therefore after we set window to be at most numLines behind the cursor we begin incrementing
+	the window by 1 and each time checking if the cursor is still after the last visible line. 
+	"
+	
+	cline - window > numLines
+		ifTrue:[
+			window := cline - numLines.
+			lvl := self lastVisibleLine.	 ].
+	
+	[cline >= lvl]
+		whileTrue:[
+			window := window + 1.
+			lvl := self lastVisibleLine ].
+	
+	self redrawNeeded 		
 		! !
 
 !KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:55:50'!
