@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 September 2025 at 7:35:08 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 September 2025 at 7:56:29 pm'!
 'Description '!
-!provides: 'Kaeru' 1 565!
+!provides: 'Kaeru' 1 566!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -1787,6 +1787,27 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:42:53'!
+drawCursor
+
+	| cursorColor cursorRect rulerCursorRect | 
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+
+	cursorRect := xx@yy extent: (dx @ dy).
+	
+	canvas fillRectangle: cursorRect  color: cursorColor.
+	
+	rulerCursorRect := (xx + (dx / 2)) @ displayHeight extent: 4@12.
+
+	canvas fillRectangle: rulerCursorRect  color: Color white. 
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
+moveRight
+
+	xx := xx + dx.! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:32:57'!
 newLine
 
@@ -1824,14 +1845,14 @@ newPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 08:32:52'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:55:45'!
 putChar: aCharacter
 	
 	canvas fillRectangle: (xx@yy extent: dx@(dy * lineSpace / 2)) color: background.
 	
 	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
 	
-	xx := xx + dx.! !
+! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:17:12'!
 skipToNewLine
@@ -2169,10 +2190,10 @@ drawTextOn: aCanvas
 	
 		! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 19:12:38'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 19:56:22'!
 drawWithPrinter: aCanvas
 
-	| printer bb ee selectionB selectionE |
+	| printer bb ee selectionB selectionE cit |
 	
 	aCanvas fillRectangle: textr color: Color white.
 	
@@ -2184,6 +2205,8 @@ drawWithPrinter: aCanvas
 
 	selectionE := klib charIndexToIterator: 61.
 
+	cit := klib charIndexToIterator: cursor.
+	
 	bb := self advance: printer.
 	
 	ee := klib end.
@@ -2207,6 +2230,12 @@ drawWithPrinter: aCanvas
 			
 			cc := bb char. 
 			printer putChar: cc.
+			
+			bb = cit
+				ifTrue:[ 
+					printer drawCursor].
+			
+			printer moveRight.
 			
 			bb isAtEndOfLine 
 				ifTrue:[
