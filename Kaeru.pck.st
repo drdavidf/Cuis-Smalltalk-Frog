@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 16 September 2025 at 10:03:17 pm'!
+'From Cuis7.3 [latest update: #7041] on 17 September 2025 at 8:32:58 am'!
 'Description '!
-!provides: 'Kaeru' 1 546!
+!provides: 'Kaeru' 1 555!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -179,7 +179,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace pageWidth pageNumberFont pageSize pageHeight'
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace pageWidth pageNumberFont pageSize pageHeight numLines'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -1793,28 +1793,26 @@ newLine
 		ifTrue:[
 			self newPage ]! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/16/2025 21:30:42'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 08:24:02'!
 newPage
 	
 	yy + (dy/2) >= pageHeight
 		ifTrue:[^self].
-		
-	yy := yy + (0.25*dy).
-	
-	canvas fillRectangle: (xx @ yy extent: pageWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+			
+	canvas fillRectangle: (xx @ yy corner: pageWidth @ (dy / 2.0 + yy)) color: (Color fromHexString:'#BBBBBB').
 	
 	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (pageWidth / 2.0 @ (yy - (0.125*dy))) font: pageNumberFont color: Color black.
 	
-	yy := yy + (0.25*dy).
+	yy := yy + (0.5*dy).
 	
 	pageNumber := pageNumber + 1.
 	
 	lineNumber := 1.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/16/2025 21:49:56'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 08:32:52'!
 putChar: aCharacter
 	
-	canvas fillRectangle: (xx@yy extent: dx@dy) color: background.
+	canvas fillRectangle: (xx@yy extent: dx@(dy * lineSpace / 2)) color: background.
 	
 	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
 	
@@ -1844,7 +1842,7 @@ font: aFont
 foreground: aColor
 	foreground := aColor! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:43:57'!
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 08:21:59'!
 initialize
 
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
@@ -1854,6 +1852,12 @@ initialize
 	dx :=  font widthOf:$M.
 	
 	dy := font lineSpacing.
+
+	pageWidth := 80 * dx.
+
+	pageHeight := 538.
+	
+	numLines := 18.
 	
 	lineSpace := 2.
 	
@@ -1861,15 +1865,13 @@ initialize
 	
 	xx := leftMargin * dx.
 	
-	yy := 0.	
-	
-	pageWidth := 80 * dx.
-
-	pageHeight := 538.
+	yy := pageHeight - (dy * numLines).	
 	
 	background := Color white.
 	
 	foreground := Color black.
+	
+	pageSize := 5.
 	
 	lineNumber := 1.
 	
@@ -2131,10 +2133,12 @@ drawTextOn: aCanvas
 	
 		! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 22:02:25'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 08:31:27'!
 drawWithPrinter: aCanvas
 
 	| printer bb ee selectionB selectionE |
+	
+	aCanvas fillRectangle: textr color: Color white.
 	
 	printer := KaeruPrinter new.
 	
@@ -2142,13 +2146,13 @@ drawWithPrinter: aCanvas
 
 	selectionB := klib charIndexToIterator: 51.
 
-	selectionE := klib charIndexToIterator: 63.
+	selectionE := klib charIndexToIterator: 61.
 
 	bb := klib charIndexToIterator: 1.
 	
 	ee := klib end.
 	
-	[ printer yy < rulerY and: [bb ~= ee] ]
+	[ printer yy  + dy < rulerY and: [bb ~= ee] ] 
 		whileTrue:[ | cc attrs |
 
 			attrs := bb attributes.
