@@ -1,9 +1,9 @@
-'From Cuis7.3 [latest update: #6895] on 17 September 2025 at 9:59:19 am'!
+'From Cuis7.3 [latest update: #7041] on 17 September 2025 at 7:35:08 pm'!
 'Description '!
-!provides: 'Kaeru' 1 559!
+!provides: 'Kaeru' 1 565!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
-SystemOrganization addCategory: #'Kaeru-Keyboard'!
+SystemOrganization addCategory: 'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
 SystemOrganization addCategory: #'Kaeru-Text'!
 
@@ -98,83 +98,83 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruController category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruController category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruController
 	instanceVariableNames: 'master mapper'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruController class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruController class' category: 'Kaeru-Keyboard'!
 KaeruController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruEditorController category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruEditorController category: 'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruEditorController
 	instanceVariableNames: 'state leapLeft leapRight leapAgain'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruEditorController class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruEditorController class' category: 'Kaeru-Keyboard'!
 KaeruEditorController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruHelpController category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruHelpController category: 'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruHelpController
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruHelpController class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruHelpController class' category: 'Kaeru-Keyboard'!
 KaeruHelpController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruMasterController category: 'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruMasterController
 	instanceVariableNames: 'active controllers'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruMasterController class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruMasterController class' category: 'Kaeru-Keyboard'!
 KaeruMasterController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardMapper category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardMapper category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardMapper class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardMapper class' category: 'Kaeru-Keyboard'!
 KaeruKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #LinuxKeyboardMapper category: #'Kaeru-Keyboard'!
+!classDefinition: #LinuxKeyboardMapper category: 'Kaeru-Keyboard'!
 KaeruKeyboardMapper subclass: #LinuxKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'LinuxKeyboardMapper class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'LinuxKeyboardMapper class' category: 'Kaeru-Keyboard'!
 LinuxKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #LinuxRaspiKeyboardMapper category: #'Kaeru-Keyboard'!
+!classDefinition: #LinuxRaspiKeyboardMapper category: 'Kaeru-Keyboard'!
 LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'LinuxRaspiKeyboardMapper class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'LinuxRaspiKeyboardMapper class' category: 'Kaeru-Keyboard'!
 LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardStateMachine category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardStateMachine category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardStateMachine
 	instanceVariableNames: 'leapLeft leapRight leapAgain mapper'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardStateMachine class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardStateMachine class' category: 'Kaeru-Keyboard'!
 KaeruKeyboardStateMachine class
 	instanceVariableNames: ''!
 
@@ -188,13 +188,13 @@ Object subclass: #KaeruPrinter
 KaeruPrinter class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardTester category: #'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardTester category: 'Kaeru-Keyboard'!
 PlacedMorph subclass: #KaeruKeyboardTester
 	instanceVariableNames: 'controller'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardTester class' category: #'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardTester class' category: 'Kaeru-Keyboard'!
 KaeruKeyboardTester class
 	instanceVariableNames: ''!
 
@@ -404,6 +404,18 @@ next
 	lineIndex <  (pars at: parIndex :: numLines )
 		ifTrue:[
 			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 18:34:59'!
+nextLine
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+			^self privNextLine ].
+	
+	charIndex :=  pars at: parIndex :: lineAt: lineIndex :: length.
 	
 	self privNextPar! !
 
@@ -1775,12 +1787,12 @@ leapLeft
 leapRight
 	^leapRight ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/17/2025 09:58:11'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:32:57'!
 newLine
 
 	| rect |
 		
-	rect := (xx @yy) corner: (displayWidth) @ (yy + (lineSpace * dy / 2)).
+	rect := (xx @yy) corner: displayRect corner x @ (yy + (lineSpace * dy / 2)).
 	
 	canvas fillRectangle: rect color: background.
 		
@@ -1821,6 +1833,24 @@ putChar: aCharacter
 	
 	xx := xx + dx.! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:17:12'!
+skipToNewLine
+	
+	lineSpace timesRepeat:[
+		
+		lineNumber := lineNumber + 1.
+	
+		lineNumber = pageSize
+			ifTrue:[
+				self skipToNewPage ] ].! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:32:43'!
 background: aColor
 	background := aColor! !
@@ -1845,7 +1875,7 @@ font: aFont
 foreground: aColor
 	foreground := aColor! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'DF 9/17/2025 09:49:33'!
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 19:34:54'!
 initialize
 
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
@@ -1862,7 +1892,7 @@ initialize
 
 	displayHeight := 538.
 	
-	displayRect := (1024 - displayWidth) / 2 @ (displayHeight - (dy * numLines)) corner: displayWidth @ displayHeight.
+	displayRect := (1024 - displayWidth) / 2 @ (displayHeight - (dy * numLines)) corner: ((1024 + displayWidth) / 2)  @ displayHeight.
 	
 	
 	lineSpace := 2. " in half line units "
@@ -1946,56 +1976,6 @@ mouseButton1Down: aMouseButtonEvent localPosition: localEventPosition
 mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
-
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 18:27:52'!
-initialize
-
-	super initialize .
-
-	self morphExtent: 1024@600.
-		
-	color := Color black.
-
-	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
-	
-	textFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
-	
-	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
-	
-	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
-	
-	dx :=  textFont widthOf:$M.
-	
-	dy := textFont lineSpacing.
-	
-	wc := (rulerFont widthOf: $8) / 2.
-
-	rulerY := 538.
-	
-	rulerH := 62.
-
-	numLines := 18.
-	
-	textw := (80 * dx).
-			
-	texth := dy * numLines.
-		
-	textr := (0@(rulerY - texth) corner: 1024 @ (rulerY-1)) insetBy: ((1024 - textw) / 2)@0.
-
-	textx := textr origin x.
-	
-	showCursor := true.
-	
-	selection := 10 to:21.! !
-
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 18:12:41'!
-text: aKLibrary
-
-	klib := aKLibrary.
-	
-	cursor := 1. "char index"
-	
-	window := 1. "line index"! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/13/2025 21:18:31'!
 drawCursorOn: aCanvas at: aPoint
@@ -2189,7 +2169,7 @@ drawTextOn: aCanvas
 	
 		! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 08:31:27'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 19:12:38'!
 drawWithPrinter: aCanvas
 
 	| printer bb ee selectionB selectionE |
@@ -2204,7 +2184,7 @@ drawWithPrinter: aCanvas
 
 	selectionE := klib charIndexToIterator: 61.
 
-	bb := klib charIndexToIterator: 1.
+	bb := self advance: printer.
 	
 	ee := klib end.
 	
@@ -2233,6 +2213,53 @@ drawWithPrinter: aCanvas
 					printer newLine].
 				
 			bb next ].
+			! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/17/2025 19:17:22'!
+advance: aKaeruPrinter
+
+	| bb ee halfLine |
+	
+	bb := klib charIndexToIterator: 1.
+	
+	ee := klib end.
+	
+	halfLine := 0.
+	
+	[ halfLine < window and: [bb ~= ee] ] 
+		whileTrue:[ | lineHeight |
+
+			lineHeight := bb attributes second.
+
+			halfLine := halfLine + lineHeight.
+				
+			bb nextLine.
+			aKaeruPrinter skipToNewLine.	 ].
+		
+	^bb
+			! !
+
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/17/2025 18:57:33'!
+advanceToWindow
+
+	| bb ee halfLine |
+	
+	bb := klib charIndexToIterator: 1.
+	
+	ee := klib end.
+	
+	halfLine := 0.
+	
+	[ halfLine < window and: [bb ~= ee] ] 
+		whileTrue:[ | lineHeight |
+
+			lineHeight := bb attributes second.
+
+			halfLine := halfLine + lineHeight.
+				
+			bb nextLine	 ].
+		
+	^bb
 			! !
 
 !KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 19:54:55'!
@@ -2307,6 +2334,56 @@ scrollToCursor
 	
 	self redrawNeeded 		
 		! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 18:27:52'!
+initialize
+
+	super initialize .
+
+	self morphExtent: 1024@600.
+		
+	color := Color black.
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	textFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+	
+	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
+	
+	dx :=  textFont widthOf:$M.
+	
+	dy := textFont lineSpacing.
+	
+	wc := (rulerFont widthOf: $8) / 2.
+
+	rulerY := 538.
+	
+	rulerH := 62.
+
+	numLines := 18.
+	
+	textw := (80 * dx).
+			
+	texth := dy * numLines.
+		
+	textr := (0@(rulerY - texth) corner: 1024 @ (rulerY-1)) insetBy: ((1024 - textw) / 2)@0.
+
+	textx := textr origin x.
+	
+	showCursor := true.
+	
+	selection := 10 to:21.! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 18:31:49'!
+text: aKLibrary
+
+	klib := aKLibrary.
+	
+	cursor := 1. "char index"
+	
+	window := 0. " global half line index"! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
 doErase: aGenerator
