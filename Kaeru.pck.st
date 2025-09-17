@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 15 September 2025 at 9:33:31 am'!
+'From Cuis7.3 [latest update: #7041] on 16 September 2025 at 10:03:17 pm'!
 'Description '!
-!provides: 'Kaeru' 1 524!
+!provides: 'Kaeru' 1 546!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -177,6 +177,16 @@ Object subclass: #KaeruKeyboardStateMachine
 KaeruKeyboardStateMachine class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
+Object subclass: #KaeruPrinter
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace pageWidth pageNumberFont pageSize pageHeight'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Morphic'!
+!classDefinition: 'KaeruPrinter class' category: #'Kaeru-Morphic'!
+KaeruPrinter class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruKeyboardTester category: 'Kaeru-Keyboard'!
 PlacedMorph subclass: #KaeruKeyboardTester
 	instanceVariableNames: 'controller'
@@ -189,7 +199,7 @@ KaeruKeyboardTester class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines pageNumberFont'
+	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines pageNumberFont selection'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -302,10 +312,10 @@ on: aKIterator
 
 	^ self <= aKIterator and:[self ~= aKIterator ]! !
 
-!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:36:53'!
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/16/2025 19:50:14'!
 <= aKIterator
 
-	self assert: (aKIterator isKindOf: self class).
+	self assert: (aKIterator isKindOf: KForwardIterator ).
 	
 	self assert: pars == aKIterator privPars.
 
@@ -336,6 +346,11 @@ on: aKIterator
 	
 	^ charIndex = aKIterator privCharIndex ! !
 
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/16/2025 19:51:40'!
+> aKIterator
+
+	^ (self <= aKIterator) not! !
+
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:02'!
 ~= aKIterator
 
@@ -351,6 +366,10 @@ hash
 isAtEnd
 	^parIndex = (pars size + 1)
 ! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/16/2025 22:01:36'!
+isAtEndOfLine
+	^charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length )! !
 
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:29'!
 isAtStart
@@ -1755,6 +1774,120 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/16/2025 21:29:31'!
+newLine
+
+	| rect |
+		
+	rect := (xx@yy) corner: (pageWidth @ (yy+(lineSpace * dy / 2))).
+	
+	canvas fillRectangle: rect color: background.
+		
+	xx := leftMargin * dx.
+	
+	yy := yy + (lineSpace * dy / 2).
+	
+	lineNumber := lineNumber + 1.
+	
+	lineNumber = pageSize
+		ifTrue:[
+			self newPage ]! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/16/2025 21:30:42'!
+newPage
+	
+	yy + (dy/2) >= pageHeight
+		ifTrue:[^self].
+		
+	yy := yy + (0.25*dy).
+	
+	canvas fillRectangle: (xx @ yy extent: pageWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+	
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (pageWidth / 2.0 @ (yy - (0.125*dy))) font: pageNumberFont color: Color black.
+	
+	yy := yy + (0.25*dy).
+	
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 1.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/16/2025 21:49:56'!
+putChar: aCharacter
+	
+	canvas fillRectangle: (xx@yy extent: dx@dy) color: background.
+	
+	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
+	
+	xx := xx + dx.! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:32:43'!
+background: aColor
+	background := aColor! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:57:41'!
+canvas: aCanvas
+	canvas := aCanvas! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:44'!
+dx: aNumber
+	dx := aNumber ! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:50'!
+dy: aNumber
+	dy := aNumber! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:21'!
+font: aFont
+	font := aFont! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:32:51'!
+foreground: aColor
+	foreground := aColor! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:43:57'!
+initialize
+
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	
+	dx :=  font widthOf:$M.
+	
+	dy := font lineSpacing.
+	
+	lineSpace := 2.
+	
+	leftMargin := 6.
+	
+	xx := leftMargin * dx.
+	
+	yy := 0.	
+	
+	pageWidth := 80 * dx.
+
+	pageHeight := 538.
+	
+	background := Color white.
+	
+	foreground := Color black.
+	
+	lineNumber := 1.
+	
+	pageNumber := 1.
+	! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:59:00'!
+leftMargin: aNumber
+	leftMargin := aNumber! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:00:44'!
+lineSpace: anInteger
+	lineSpace := anInteger! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:28:37'!
+yy
+	^yy! !
+
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
 	^true! !
@@ -1822,13 +1955,26 @@ drawCursorOn: aCanvas at: aPoint
 	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 18:05:25'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:44:23'!
+drawLine: anIterator on: aCanvas at: aPoint foreground: aColorF background: aColorB
+
+	| rect |
+
+	rect := textr origin x @ aPoint y corner: textr corner x @ (aPoint y + dy).
+	
+	aCanvas fillRectangle: rect color: aColorB.
+
+	aCanvas drawString: anIterator line  at: aPoint font: textFont color: aColorF.
+
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 21:42:22'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
-		self drawRulerOn: aCanvas ; drawTextOn: aCanvas
+		self drawRulerOn: aCanvas ; drawWithPrinter: aCanvas
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
@@ -1842,6 +1988,42 @@ drawOn: aCanvas page: anInteger breakAt: aNumberHeight
 	aCanvas fillRectangle: (textr origin x @ hh extent: textr width @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
 	
 	aCanvas drawString: ('{1}' format:{anInteger}) atCenterX: (self morphWidth / 2.0 @ (hh - (0.125*dy))) font: pageNumberFont color: Color black.
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:32:39'!
+drawPartialLineOn: aCanvas at: aPoint from: begin foreground: aColorF background: aColorB
+
+	| rect text part |
+
+	rect := aPoint + ((dx * (begin privCharIndex - 1)) @ 0) corner: (textr corner x @ (aPoint y + dy)).
+	
+	aCanvas fillRectangle: rect color: aColorB.
+
+	text := begin line.
+
+	part := text copyFrom: begin privCharIndex to: text size.
+			
+	aCanvas drawString: part  at: rect origin font: textFont color: aColorF.
+
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:38:22'!
+drawPartialLineOn: aCanvas at: aPoint to: end foreground: aColorF background: aColorB
+
+	| rect text part ii |
+
+	ii := end privCharIndex - 1.
+	
+	rect := aPoint extent: (dx * ii) @ dy.
+	
+	aCanvas fillRectangle: rect color: aColorB.
+
+	text := end line.
+
+	part := text copyFrom: 1 to: ii.
+			
+	aCanvas drawString: part  at: rect origin font: textFont color: aColorF.
+
 ! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/8/2025 17:50:59'!
@@ -1863,12 +2045,16 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/15/2025 09:31:35'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 20:54:47'!
 drawTextOn: aCanvas
 	
-	| xx yy bb ee cline wline linen |
+	| xx yy bb ee cline wline linen selectionB selectionE |
 		
 	aCanvas fillRectangle: textr color: Color white.
+	
+	selectionB := klib charIndexToIterator: selection first.
+
+	selectionE := klib charIndexToIterator: selection last.
 	
 	yy := textr origin y.
 	
@@ -1890,8 +2076,8 @@ drawTextOn: aCanvas
 	we may lose a position if we rely on advancing by the iterator. This affects the drawing of the
 	page boundaries. 
 	
-	Therefore drawing should advance by physical half lines. At the beginning we should setup two
-	variables, the page number and line number that corresponds to the window start position. Then we 
+	Therefore drawing should advance by physical half lines. At the beginning we should setup a variable 
+	linen to hold the physical line number that corresponds to the window start position. Then we 
 	advance by incrementing linen to the next physical (half) line, until we hit the lineNumber of the
 	iterator, at this point we draw the text and advance the iterator.
 	
@@ -1909,11 +2095,21 @@ drawTextOn: aCanvas
 
 			bb lineNumber = linen 
 				ifTrue:[
-					aCanvas drawString: bb line at: xx @ yy font: textFont color: Color black.
+					
+					bb < selectionB  or: [bb > selectionE] ::
+						ifTrue:[
+							self drawLine: bb on: aCanvas at: xx @yy foreground: Color black background: Color cyan.]
+						ifFalse:[
+							bb privLineIndex = selectionB privLineIndex
+								ifTrue:[
+									self drawLine: bb on: aCanvas at: xx @yy foreground: Color white background: Color green.] ].
 
 					wline = cline first
 						ifTrue:[
-							self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy ] ].
+							"
+							self drawPartialLineOn: aCanvas at: xx @ yy from: (bb copy advance:3) foreground: Color black background: Color yellow.
+							self drawPartialLineOn: aCanvas at: xx @ yy to: (bb copy advance:3) foreground: Color red background: Color blue. "
+							"self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy" ] ].
 			
 			yy := yy + (dy / 2).
 
@@ -1934,6 +2130,50 @@ drawTextOn: aCanvas
 			].
 	
 		! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 22:02:25'!
+drawWithPrinter: aCanvas
+
+	| printer bb ee selectionB selectionE |
+	
+	printer := KaeruPrinter new.
+	
+	printer canvas: aCanvas.	
+
+	selectionB := klib charIndexToIterator: 51.
+
+	selectionE := klib charIndexToIterator: 63.
+
+	bb := klib charIndexToIterator: 1.
+	
+	ee := klib end.
+	
+	[ printer yy < rulerY and: [bb ~= ee] ]
+		whileTrue:[ | cc attrs |
+
+			attrs := bb attributes.
+
+			printer leftMargin: attrs first.
+	
+			printer lineSpace: attrs second.
+			
+			bb = selectionB
+				ifTrue:[
+					printer background: Color cyan ; foreground: Color red].
+				
+			bb = selectionE
+				ifTrue:[
+					printer background: Color white ; foreground: Color black].
+			
+			cc := bb char. 
+			printer putChar: cc.
+			
+			bb isAtEndOfLine 
+				ifTrue:[
+					printer newLine].
+				
+			bb next ].
+			! !
 
 !KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 19:54:55'!
 lastVisibleLine
@@ -2008,7 +2248,7 @@ scrollToCursor
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:55:50'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 18:27:52'!
 initialize
 
 	super initialize .
@@ -2045,7 +2285,9 @@ initialize
 
 	textx := textr origin x.
 	
-	showCursor := true.! !
+	showCursor := true.
+	
+	selection := 10 to:21.! !
 
 !KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/11/2025 18:12:41'!
 text: aKLibrary
