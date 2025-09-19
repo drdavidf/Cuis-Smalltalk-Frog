@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 17 September 2025 at 7:56:29 pm'!
+'From Cuis7.3 [latest update: #7041] on 19 September 2025 at 1:33:03 pm'!
 'Description '!
-!provides: 'Kaeru' 1 566!
+!provides: 'Kaeru' 1 584!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -200,7 +200,7 @@ KaeruKeyboardTester class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont statusFont dx showCursor textFont rulerH rulerY textw texth textr wc textx klib dy cursor window numLines pageNumberFont selection'
+	instanceVariableNames: 'rulerFont statusFont klib cursor window selection printer wc windowEnd'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -1787,6 +1787,14 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
+clearCanvas
+
+	canvas fillRectangle: displayRect color: Color white.
+
+	self reset.
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:42:53'!
 drawCursor
 
@@ -1808,28 +1816,29 @@ moveRight
 
 	xx := xx + dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:32:57'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:44:11'!
 newLine
 
-	| rect |
+	| rect hh |
+
+	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
 		
-	rect := (xx @yy) corner: displayRect corner x @ (yy + (lineSpace * dy / 2)).
+	rect := (xx @yy) corner: displayRect corner x @ hh.
 	
 	canvas fillRectangle: rect color: background.
 		
 	xx := displayRect origin x + (leftMargin * dx).
 	
-	lineSpace timesRepeat:[
+	yy := yy + (lineSpace * dy / 2).
 
-	yy := yy + (dy / 2).
-		
-		lineNumber := lineNumber + 1.
-	
-		lineNumber = pageSize
-			ifTrue:[
-				self newPage ] ].! !
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self newPage ].! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/17/2025 09:52:44'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:25:25'!
 newPage
 	
 	yy + (dy/2) >= displayHeight
@@ -1845,25 +1854,53 @@ newPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:55:45'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
 putChar: aCharacter
 	
-	canvas fillRectangle: (xx@yy extent: dx@(dy * lineSpace / 2)) color: background.
+	| hh |
+
+	hh := (dy * lineSpace / 2) min: displayRect corner y - yy.
+	
+	"
+	hh <= displayRect corner y - yy 
+	
+	yy + hh <= displayRect corner y 
+	"
+	 
+	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
 	
 	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
 	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:17:12'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:17'!
+reset
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 13:28:55'!
 skipToNewLine
 	
-	lineSpace timesRepeat:[
-		
-		lineNumber := lineNumber + 1.
+	| hh |
 	
-		lineNumber = pageSize
-			ifTrue:[
-				self skipToNewPage ] ].! !
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:16:57'!
 skipToNewPage
@@ -1876,13 +1913,26 @@ skipToNewPage
 background: aColor
 	background := aColor! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:57:41'!
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:51:48'!
 canvas: aCanvas
-	canvas := aCanvas! !
+
+	canvas := aCanvas.! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:28:30'!
+displayRect
+	^ displayRect! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 22:43:05'!
+dx
+	^dx! !
 
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:44'!
 dx: aNumber
 	dx := aNumber ! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 22:39:20'!
+dy
+	^dy! !
 
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:50'!
 dy: aNumber
@@ -1896,25 +1946,24 @@ font: aFont
 foreground: aColor
 	foreground := aColor! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 19:34:54'!
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:56:52'!
 initialize
 
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
-
-	numLines := 18.
-
 	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
 	
 	dx :=  font widthOf:$M.
 	
 	dy := font lineSpacing.
 
+	numLines := 18.
+
 	displayWidth := 80 * dx.
 
 	displayHeight := 538.
-	
-	displayRect := (1024 - displayWidth) / 2 @ (displayHeight - (dy * numLines)) corner: ((1024 + displayWidth) / 2)  @ displayHeight.
-	
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
 	
 	lineSpace := 2. " in half line units "
 	
@@ -1935,6 +1984,11 @@ initialize
 	pageNumber := 1.
 	! !
 
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 10:07:18'!
+isNotAtEnd
+
+	^ yy  <= (dy * numLines)! !
+
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:59:00'!
 leftMargin: aNumber
 	leftMargin := aNumber! !
@@ -1942,6 +1996,10 @@ leftMargin: aNumber
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:00:44'!
 lineSpace: anInteger
 	lineSpace := anInteger! !
+
+!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 22:14:02'!
+numLines
+	^numLines ! !
 
 !KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:28:37'!
 yy
@@ -1998,99 +2056,27 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/13/2025 21:18:31'!
-drawCursorOn: aCanvas at: aPoint
-
-	| cursorColor cursorRect rulerCursorRect | 
-	
-	cursorColor := Color fromHexString: '#AAAAAA'.
-
-	cursorRect := aPoint extent: (dx @ dy).
-	
-	aCanvas fillRectangle: cursorRect  color: cursorColor.
-	
-	rulerCursorRect := (aPoint x + (dx / 2)) @ rulerY extent: 4@12.
-
-	aCanvas fillRectangle: rulerCursorRect  color: Color white. 
-! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:44:23'!
-drawLine: anIterator on: aCanvas at: aPoint foreground: aColorF background: aColorB
-
-	| rect |
-
-	rect := textr origin x @ aPoint y corner: textr corner x @ (aPoint y + dy).
-	
-	aCanvas fillRectangle: rect color: aColorB.
-
-	aCanvas drawString: anIterator line  at: aPoint font: textFont color: aColorF.
-
-! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 21:42:22'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/18/2025 22:08:02'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
-		self drawRulerOn: aCanvas ; drawWithPrinter: aCanvas
+		self drawRulerOn: aCanvas ; drawTextOn: aCanvas
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/12/2025 17:01:15'!
-drawOn: aCanvas page: anInteger breakAt: aNumberHeight
-
-	| hh |
-	
-	hh := aNumberHeight + (0.25*dy).
-	aCanvas fillRectangle: (textr origin x @ hh extent: textr width @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
-	
-	aCanvas drawString: ('{1}' format:{anInteger}) atCenterX: (self morphWidth / 2.0 @ (hh - (0.125*dy))) font: pageNumberFont color: Color black.
-! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:32:39'!
-drawPartialLineOn: aCanvas at: aPoint from: begin foreground: aColorF background: aColorB
-
-	| rect text part |
-
-	rect := aPoint + ((dx * (begin privCharIndex - 1)) @ 0) corner: (textr corner x @ (aPoint y + dy)).
-	
-	aCanvas fillRectangle: rect color: aColorB.
-
-	text := begin line.
-
-	part := text copyFrom: begin privCharIndex to: text size.
-			
-	aCanvas drawString: part  at: rect origin font: textFont color: aColorF.
-
-! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 19:38:22'!
-drawPartialLineOn: aCanvas at: aPoint to: end foreground: aColorF background: aColorB
-
-	| rect text part ii |
-
-	ii := end privCharIndex - 1.
-	
-	rect := aPoint extent: (dx * ii) @ dy.
-	
-	aCanvas fillRectangle: rect color: aColorB.
-
-	text := end line.
-
-	part := text copyFrom: 1 to: ii.
-			
-	aCanvas drawString: part  at: rect origin font: textFont color: aColorF.
-
-! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/8/2025 17:50:59'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/18/2025 22:03:07'!
 drawRulerOn: aCanvas
 	
-	| xx yy |
+	| xx yy textx dx |
+	
+	textx := printer displayRect origin x.
+	
+	dx := printer dx.
 			
-	yy := rulerY.
+	yy := printer displayRect corner y + 1.
 	
 	0 to:79 do:[:ii |
 		xx := textx + (dx / 2) + (dx * ii).
@@ -2104,121 +2090,37 @@ drawRulerOn: aCanvas
 		
 	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/16/2025 20:54:47'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/19/2025 11:48:59'!
 drawTextOn: aCanvas
-	
-	| xx yy bb ee cline wline linen selectionB selectionE |
+
+	| bb ee selectionB selectionE cit |
 		
-	aCanvas fillRectangle: textr color: Color white.
-	
-	selectionB := klib charIndexToIterator: selection first.
-
-	selectionE := klib charIndexToIterator: selection last.
-	
-	yy := textr origin y.
-	
-	bb := klib lineIndexToPageIterator: window.
-	
-	ee := klib end.
-	
-	cline := klib charIndexToLineIndex: cursor.
-	
-	wline := window.
-	
-	linen := bb lineNumber.
-
-	" We have to deal with two kinds of line numbers. Logical line numbers represent the order
-	of lines in the text, while physical line numbers (for lack of a more suitable term) are in half line
-	units, represent the position of the line on a page and are affected by the line height. 
-	The iterator's lineNumber method answers physical line numbers which may skip by more 
-	than 1 when the line height in a paragraph is different from 2. Because of this skipping behavior
-	we may lose a position if we rely on advancing by the iterator. This affects the drawing of the
-	page boundaries. 
-	
-	Therefore drawing should advance by physical half lines. At the beginning we should setup a variable 
-	linen to hold the physical line number that corresponds to the window start position. Then we 
-	advance by incrementing linen to the next physical (half) line, until we hit the lineNumber of the
-	iterator, at this point we draw the text and advance the iterator.
-	
-	"	
-
-	[yy < rulerY and:[bb ~= ee] ]
-		whileTrue:[ | attrs lineHeight leftMargin |
-			attrs := bb attributes.
-
-			leftMargin := attrs first.
-	
-			lineHeight := attrs second.
-
-			xx := textr origin x + (dx * leftMargin).
-
-			bb lineNumber = linen 
-				ifTrue:[
-					
-					bb < selectionB  or: [bb > selectionE] ::
-						ifTrue:[
-							self drawLine: bb on: aCanvas at: xx @yy foreground: Color black background: Color cyan.]
-						ifFalse:[
-							bb privLineIndex = selectionB privLineIndex
-								ifTrue:[
-									self drawLine: bb on: aCanvas at: xx @yy foreground: Color white background: Color green.] ].
-
-					wline = cline first
-						ifTrue:[
-							"
-							self drawPartialLineOn: aCanvas at: xx @ yy from: (bb copy advance:3) foreground: Color black background: Color yellow.
-							self drawPartialLineOn: aCanvas at: xx @ yy to: (bb copy advance:3) foreground: Color red background: Color blue. "
-							"self drawCursorOn: aCanvas at: (xx + (cline second * dx)) @ yy" ] ].
-			
-			yy := yy + (dy / 2).
-
-			bb lineNumber = linen
-				ifTrue: [ bb nextLine. wline := wline + 1 ].	
-			
-			bb lineNumber = 0 
-				ifTrue:[
-					linen := 0.
-					yy := yy + (dy/2).
-					yy + dy < rulerY
-						ifTrue:[
-							self drawOn: aCanvas page: bb pageNumber breakAt: yy].
-					yy := yy + dy ]
-				ifFalse:[
-					linen := linen + 1].
-			
-			].
-	
-		! !
-
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/17/2025 19:56:22'!
-drawWithPrinter: aCanvas
-
-	| printer bb ee selectionB selectionE cit |
-	
-	aCanvas fillRectangle: textr color: Color white.
-	
-	printer := KaeruPrinter new.
-	
 	printer canvas: aCanvas.	
 
+	printer clearCanvas.
+	
 	selectionB := klib charIndexToIterator: 51.
 
 	selectionE := klib charIndexToIterator: 61.
 
 	cit := klib charIndexToIterator: cursor.
 	
-	bb := self advance: printer.
+	bb := self advance: printer. "updates the printer's page and line number without changing its x and y registers"
 	
 	ee := klib end.
 	
-	[ printer yy  + dy < rulerY and: [bb ~= ee] ] 
-		whileTrue:[ | cc attrs |
+	windowEnd := window.
+	
+	[ printer isNotAtEnd and: [bb ~= ee] ] 
+		whileTrue:[ | cc attrs lineSpace |
 
 			attrs := bb attributes.
 
+			lineSpace := attrs second.
+			
 			printer leftMargin: attrs first.
 	
-			printer lineSpace: attrs second.
+			printer lineSpace: lineSpace.
 			
 			bb = selectionB
 				ifTrue:[
@@ -2239,94 +2141,45 @@ drawWithPrinter: aCanvas
 			
 			bb isAtEndOfLine 
 				ifTrue:[
-					printer newLine].
+					printer newLine.
+					windowEnd := windowEnd + 1 ].
 				
 			bb next ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/17/2025 19:17:22'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 12:08:32'!
 advance: aKaeruPrinter
 
-	| bb ee halfLine |
+	" Move the line and page numbers of aKaeruPrinter to the line that corresponds to window "
+	
+	| bb ee line |
 	
 	bb := klib charIndexToIterator: 1.
 	
 	ee := klib end.
 	
-	halfLine := 0.
+	line := 1.
 	
-	[ halfLine < window and: [bb ~= ee] ] 
+	[ line < window and: [bb ~= ee] ] 
 		whileTrue:[ | lineHeight |
 
 			lineHeight := bb attributes second.
-
-			halfLine := halfLine + lineHeight.
-				
+			
+			aKaeruPrinter lineSpace: lineHeight.
 			bb nextLine.
-			aKaeruPrinter skipToNewLine.	 ].
+			
+			line := line + 1.
+			printer skipToNewLine. ].
 		
 	^bb
 			! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/17/2025 18:57:33'!
-advanceToWindow
-
-	| bb ee halfLine |
-	
-	bb := klib charIndexToIterator: 1.
-	
-	ee := klib end.
-	
-	halfLine := 0.
-	
-	[ halfLine < window and: [bb ~= ee] ] 
-		whileTrue:[ | lineHeight |
-
-			lineHeight := bb attributes second.
-
-			halfLine := halfLine + lineHeight.
-				
-			bb nextLine	 ].
-		
-	^bb
-			! !
-
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 19:54:55'!
-lastVisibleLine
-	
-	| yy bb ee wline |
-		
-	yy := textr origin y.
-	
-	bb := klib lineIndexToPageIterator: window.
-	
-	ee := klib end.
-		
-	wline := window.
-	
-	[yy < rulerY and:[bb ~= ee] ]
-		whileTrue:[ | attrs lineHeight |
-			attrs := bb attributes.
-
-			lineHeight := attrs second.
-
-			bb lineNumber = 0 
-				ifTrue:[
-					yy := yy + dy. ].
-								
-			yy := yy + (dy * lineHeight / 2.0).
-			bb nextLine.
-			wline := wline + 1 ].
-		
-	^wline	! !
-
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/13/2025 20:16:12'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 12:21:07'!
 scrollToCursor
 
 	"Ensure that the window includes the cursor "
 	
-	| cline lvl |
-	
+	| cline |
 	
 	cline := klib charIndexToLineIndex: cursor :: first.
 	
@@ -2335,9 +2188,7 @@ scrollToCursor
 			window := cline.
 			^self redrawNeeded ].
 
-	lvl := self lastVisibleLine.
-	
-	cline < lvl
+	cline < windowEnd
 		ifTrue:[
 			" cursor is within the window, no need to do anything"
 			^self].
@@ -2351,68 +2202,76 @@ scrollToCursor
 	the window by 1 and each time checking if the cursor is still after the last visible line. 
 	"
 	
-	cline - window > numLines
+	cline - window > printer numLines 
 		ifTrue:[
-			window := cline - numLines.
-			lvl := self lastVisibleLine.	 ].
+			window := cline - printer numLines ].
 	
-	[cline >= lvl]
+	self updateWindowEnd.
+	
+	[ cline >= windowEnd ]
 		whileTrue:[
 			window := window + 1.
-			lvl := self lastVisibleLine ].
+			self updateWindowEnd. ].
 	
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 18:27:52'!
-initialize
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 13:31:23'!
+updateWindowEnd
+	
+	| bb ee yy |
+	
+	printer reset.
+	
+	bb := self advance: printer.
+	
+	ee := klib end.
+	
+	windowEnd := window.
+	
+	yy := printer displayRect origin y.	
+	
+	[ yy < printer displayRect height and: [bb ~= ee] ] 
+		whileTrue:[ | lineSpace |
 
+			lineSpace := bb attributes second.
+
+			printer lineSpace: lineSpace.
+									
+			bb nextLine.
+			
+			yy := yy + printer skipToNewLine.
+			
+			windowEnd := windowEnd + 1 ].
+			! !
+
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 22:05:25'!
+initialize
+	
 	super initialize .
 
-	self morphExtent: 1024@600.
-		
 	color := Color black.
-
-	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
-	
-	textFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
 	
 	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
 	
 	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
-	
-	dx :=  textFont widthOf:$M.
-	
-	dy := textFont lineSpacing.
-	
-	wc := (rulerFont widthOf: $8) / 2.
 
-	rulerY := 538.
-	
-	rulerH := 62.
+	self morphExtent: 1024@600.	
 
-	numLines := 18.
+	printer := KaeruPrinter new.
 	
-	textw := (80 * dx).
-			
-	texth := dy * numLines.
-		
-	textr := (0@(rulerY - texth) corner: 1024 @ (rulerY-1)) insetBy: ((1024 - textw) / 2)@0.
+	wc := (rulerFont widthOf: $8) / 2.	
 
-	textx := textr origin x.
-	
-	showCursor := true.
-	
 	selection := 10 to:21.! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 18:31:49'!
+!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 11:48:41'!
 text: aKLibrary
 
 	klib := aKLibrary.
 	
 	cursor := 1. "char index"
 	
-	window := 0. " global half line index"! !
+	window := 1. "line index of first line in the text window"! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
 doErase: aGenerator
