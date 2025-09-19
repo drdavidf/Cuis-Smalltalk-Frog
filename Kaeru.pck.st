@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 19 September 2025 at 1:33:03 pm'!
+'From Cuis7.3 [latest update: #7041] on 19 September 2025 at 7:26:33 pm'!
 'Description '!
-!provides: 'Kaeru' 1 584!
+!provides: 'Kaeru' 1 606!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -180,8 +180,8 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect'
-	classVariableNames: ''
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin'
+	classVariableNames: 'IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruPrinter class' category: #'Kaeru-Morphic'!
@@ -201,7 +201,7 @@ KaeruKeyboardTester class
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
 	instanceVariableNames: 'rulerFont statusFont klib cursor window selection printer wc windowEnd'
-	classVariableNames: ''
+	classVariableNames: 'IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruEditorMorph class' category: #'Kaeru-Morphic'!
@@ -1289,10 +1289,10 @@ notEmpty
 newItem
 	^KLine new! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/12/2025 11:33:24'!
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:38:49'!
 attributes
 
-	^ { leftMargin . lineHeight }! !
+	^ { leftMargin . lineHeight . rightMargin }! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
 charAt: anIndex
@@ -1787,6 +1787,42 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
+reset
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
+skipToNewLine
+	
+	| hh |
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
 clearCanvas
 
@@ -1795,21 +1831,34 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:42:53'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 19:26:26'!
 drawCursor
 
-	| cursorColor cursorRect rulerCursorRect | 
+	| cursorColor cursorRect rulerCursorRect rulerY xl | 
 	
 	cursorColor := Color fromHexString: '#AAAAAA'.
 
 	cursorRect := xx@yy extent: (dx @ dy).
 	
 	canvas fillRectangle: cursorRect  color: cursorColor.
+
+	rulerY := displayRect corner y + 1.
+	
+	canvas frameRectangle: (self leftMarginX @ rulerY corner: (self rightMarginX @ (rulerY + 30)) ) borderWidth: 1 color: Color white.
 	
 	rulerCursorRect := (xx + (dx / 2)) @ displayHeight extent: 4@12.
 
 	canvas fillRectangle: rulerCursorRect  color: Color white. 
-! !
+
+	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3 @ (displayHeight + 30) font: statusFont color: Color white. 
+
+	xl := dx * 60.
+	
+	2 to:4 do:[:eachIndex | 					
+		canvas image: (self class selectLineIcon: lineSpace for: eachIndex) at: xl @ (rulerY + 32).
+		xl := xl + 32
+	]
+	! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
 moveRight
@@ -1873,83 +1922,17 @@ putChar: aCharacter
 	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:17'!
-reset
+!KaeruPrinter methodsFor: 'testing' stamp: 'Df 9/19/2025 10:07:18'!
+isNotAtEnd
 
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
+	^ yy  <= (dy * numLines)! !
 
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 13:28:55'!
-skipToNewLine
-	
-	| hh |
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:32:43'!
-background: aColor
-	background := aColor! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:51:48'!
-canvas: aCanvas
-
-	canvas := aCanvas.! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:28:30'!
-displayRect
-	^ displayRect! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 22:43:05'!
-dx
-	^dx! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:44'!
-dx: aNumber
-	dx := aNumber ! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/17/2025 22:39:20'!
-dy
-	^dy! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:50'!
-dy: aNumber
-	dy := aNumber! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:58:21'!
-font: aFont
-	font := aFont! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:32:51'!
-foreground: aColor
-	foreground := aColor! !
-
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 21:56:52'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/19/2025 14:36:10'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+
+	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
 
 	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
 	
@@ -1957,7 +1940,7 @@ initialize
 	
 	dy := font lineSpacing.
 
-	numLines := 18.
+	numLines := 18. "how many line units fit on the physical display"
 
 	displayWidth := 80 * dx.
 
@@ -1968,6 +1951,8 @@ initialize
 	lineSpace := 2. " in half line units "
 	
 	leftMargin := 6.
+
+	rightMargin := 70.
 	
 	xx := displayRect origin x + (leftMargin * dx).
 	
@@ -1984,26 +1969,176 @@ initialize
 	pageNumber := 1.
 	! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 10:07:18'!
-isNotAtEnd
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
+background: aColor
+	background := aColor! !
 
-	^ yy  <= (dy * numLines)! !
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:51:48'!
+canvas: aCanvas
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 20:59:00'!
+	canvas := aCanvas.! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:28:30'!
+displayRect
+	^ displayRect! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:43:05'!
+dx
+	^dx! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:44'!
+dx: aNumber
+	dx := aNumber ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:39:20'!
+dy
+	^dy! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:50'!
+dy: aNumber
+	dy := aNumber! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:21'!
+font: aFont
+	font := aFont! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:51'!
+foreground: aColor
+	foreground := aColor! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:59:00'!
 leftMargin: aNumber
 	leftMargin := aNumber! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:00:44'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:31:53'!
+leftMarginOriginX
+	^ displayRect origin x + (leftMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:36'!
+leftMarginX
+	^ displayRect origin x + (leftMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 19:25:24'!
 lineSpace: anInteger
+	
+	self assert: anInteger >= 2.
+	
 	lineSpace := anInteger! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 22:14:02'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 22:14:02'!
 numLines
 	^numLines ! !
 
-!KaeruPrinter methodsFor: 'as yet unclassified' stamp: 'Df 9/16/2025 21:28:37'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:20:26'!
+pageSize: anInteger
+
+	self assert: anInteger > 0.
+	
+	pageSize := anInteger! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:48'!
+rightMargin: anInteger
+	rightMargin := anInteger.! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:33'!
+rightMarginOriginX
+	^ displayRect origin x + (rightMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:45'!
+rightMarginX
+	^ displayRect origin x + (rightMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:28:37'!
 yy
 	^yy! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:57'!
+initialize
+
+	" self initialize "
+	
+	IconForLineSpace := Dictionary new.
+	
+	IconForLineSpace at: 2 put: self oneLineSpaceIcon.
+	IconForLineSpace at: 3 put: self oneAndHalfLineSpaceIcon.
+	IconForLineSpace at: 4 put: self twoLineSpaceIcon.
+	
+	IconForLineSpaceSelected := Dictionary new.
+	
+	IconForLineSpaceSelected at: 2 put: self oneLineSpaceIconSelected.
+	IconForLineSpaceSelected at: 3 put: self oneAndHalfLineSpaceIconSelected.
+	IconForLineSpaceSelected at: 4 put: self twoLineSpaceIconSelected.	! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:52'!
+oneAndHalfLineSpaceIcon
+ 
+^  (Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2148139136 131072 2148139648 131072 2158624896 131072 2148139136 134348800 2148139136 537001984 2148139136 2147614720 2148139682 131072 2148139016 131072 2148139042 2684485632 2148139144 134348800 2148139528 134348800 2148141056 134348800 2148139008 537001984 2148139010 2147614720 2148139016 131072 2148139016 131072 2150268938 2818703360 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0 0 0)
+ 	offset: 0@0) .
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:49'!
+oneAndHalfLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2862983786 2863267840 2862983530 2863267840 2857740906 2863267840 2862983786 2796158976 2862983786 2594832384 2862983786 1789526016 2862983513 2863267840 2862983846 2863267840 2862983833 1521090560 2862983782 2796158976 2862983590 2796158976 2862982826 2796158976 2862983850 2594832384 2862983849 1789526016 2862983846 2863267840 2862983846 2863267840 2857720485 1453981696 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:45'!
+oneLineSpaceIcon
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2147484288 131072 2147486336 131072 2147494528 131072 2147525248 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147527338 131072 2147527338 131072 2147483648 131072 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0)
+ 	offset: 0@0`
+	
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:40'!
+oneLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2863311210 2863267840 2863310186 2863267840 2863306090 2863267840 2863290730 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863289685 2863267840 2863289685 2863267840 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`	
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:19:17'!
+selectLineIcon: anIntegerSelected for: anIntegerIndex
+
+	^anIntegerIndex = anIntegerSelected 
+		ifTrue:[
+			IconForLineSpaceSelected  at: anIntegerIndex ]
+		ifFalse:[
+			IconForLineSpace  at: anIntegerIndex ]! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:35'!
+twoLineSpaceIcon
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2147486378 131072 2147491850 2147614720 2147516418 2147614720 2147524608 2147614720 2147524608 2147614720 2147483648 2147614720 2147483650 2147614720 2147483658 131072 2147483688 131072 2147483808 131072 2147484288 131072 2147486208 131072 2147493888 131072 2147524608 131072 2147524608 131072 2147524610 2147614720 2147527338 2147614720 2147483648 131072 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0)
+ 	offset: 0@0`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:27'!
+twoLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2863312895 2863267840 2863315631 3937009664 2863327915 3937009664 2863332010 3937009664 2863332010 3937009664 2863311530 3937009664 2863311531 3937009664 2863311535 2863267840 2863311550 2863267840 2863311610 2863267840 2863311850 2863267840 2863312810 2863267840 2863316650 2863267840 2863332010 2863267840 2863332010 2863267840 2863332011 3937009664 2863333375 3937009664 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`
+	
+! !
 
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
@@ -2067,7 +2202,7 @@ drawOn: aCanvas
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/18/2025 22:03:07'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/19/2025 16:46:53'!
 drawRulerOn: aCanvas
 	
 	| xx yy textx dx |
@@ -2087,12 +2222,16 @@ drawRulerOn: aCanvas
 		aCanvas 
 			line: xx@yy to: xx@(yy + 10) width:1 color: Color white ;
 			drawString: ('{1}' format:{ii}) at: (xx - wc) @ (yy + 12)  font: rulerFont color: Color white ].
-		
-	aCanvas frameRectangle: (8 * dx @ yy extent: (65 * dx + dx  @ 30) ) borderWidth: 1 color: Color white.! !
+			
+	aCanvas image: self class pageNumberIcon at: dx * 1.0 @ (yy + 30 - 3).
+	
+! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/19/2025 11:48:59'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/19/2025 14:39:07'!
 drawTextOn: aCanvas
 
+	" draw the text, highlight the selection, and show the cursor "
+	
 	| bb ee selectionB selectionE cit |
 		
 	printer canvas: aCanvas.	
@@ -2109,8 +2248,6 @@ drawTextOn: aCanvas
 	
 	ee := klib end.
 	
-	windowEnd := window.
-	
 	[ printer isNotAtEnd and: [bb ~= ee] ] 
 		whileTrue:[ | cc attrs lineSpace |
 
@@ -2121,6 +2258,8 @@ drawTextOn: aCanvas
 			printer leftMargin: attrs first.
 	
 			printer lineSpace: lineSpace.
+			
+			printer rightMargin: attrs third.
 			
 			bb = selectionB
 				ifTrue:[
@@ -2141,13 +2280,55 @@ drawTextOn: aCanvas
 			
 			bb isAtEndOfLine 
 				ifTrue:[
-					printer newLine.
-					windowEnd := windowEnd + 1 ].
+					printer newLine ].
 				
 			bb next ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 12:08:32'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 14:12:34'!
+scrollToCursor
+
+	"Ensure that the window includes the cursor "
+	
+	| cline |
+	
+	cline := klib charIndexToLineIndex: cursor :: first.
+	
+	cline < window		
+		ifTrue:[
+			window := cline.
+			self updateWindowEnd. 
+			^self redrawNeeded ].
+
+	cline < windowEnd
+		ifTrue:[
+			" cursor is within the window, no need to do anything"
+			^self].
+	
+	" If the window is further than numLines from cline move it such that window + numLines = cline.
+	
+	However, the cursor may still not be visible because page boundaries and changes in line height
+	may result in fewer lines fitting into the window. 
+	
+	Therefore after we set window to be at most numLines behind the cursor we begin incrementing
+	the window by 1 and each time checking if the cursor is still after the last visible line. 
+	"
+	
+	cline - window > printer numLines 
+		ifTrue:[
+			window := cline - printer numLines. self updateWindowEnd. ].
+	
+	
+	
+	[ cline >= windowEnd ]
+		whileTrue:[
+			window := window + 1.
+			self updateWindowEnd. ].
+	
+	self redrawNeeded 		
+		! !
+
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'Df 9/19/2025 12:08:32'!
 advance: aKaeruPrinter
 
 	" Move the line and page numbers of aKaeruPrinter to the line that corresponds to window "
@@ -2174,50 +2355,10 @@ advance: aKaeruPrinter
 	^bb
 			! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 12:21:07'!
-scrollToCursor
-
-	"Ensure that the window includes the cursor "
-	
-	| cline |
-	
-	cline := klib charIndexToLineIndex: cursor :: first.
-	
-	cline < window		
-		ifTrue:[
-			window := cline.
-			^self redrawNeeded ].
-
-	cline < windowEnd
-		ifTrue:[
-			" cursor is within the window, no need to do anything"
-			^self].
-	
-	" If the window is further than numLines from cline move it such that window + numLines = cline.
-	
-	However, the cursor may still not be visible because page boundaries and changes in line height
-	may result in fewer lines fitting into the window. 
-	
-	Therefore after we set window to be at most numLines behind the cursor we begin incrementing
-	the window by 1 and each time checking if the cursor is still after the last visible line. 
-	"
-	
-	cline - window > printer numLines 
-		ifTrue:[
-			window := cline - printer numLines ].
-	
-	self updateWindowEnd.
-	
-	[ cline >= windowEnd ]
-		whileTrue:[
-			window := window + 1.
-			self updateWindowEnd. ].
-	
-	self redrawNeeded 		
-		! !
-
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/19/2025 13:31:23'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:52:38'!
 updateWindowEnd
+	
+	" Find the last line visible on the display, without actually drawing "
 	
 	| bb ee yy |
 	
@@ -2245,7 +2386,7 @@ updateWindowEnd
 			windowEnd := windowEnd + 1 ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/18/2025 22:05:25'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/18/2025 22:05:25'!
 initialize
 	
 	super initialize .
@@ -2264,14 +2405,82 @@ initialize
 
 	selection := 10 to:21.! !
 
-!KaeruEditorMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 11:48:41'!
+!KaeruEditorMorph methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:13:08'!
 text: aKLibrary
 
 	klib := aKLibrary.
 	
 	cursor := 1. "char index"
 	
-	window := 1. "line index of first line in the text window"! !
+	window := 1. "line index of first line in the text window"
+	
+	self updateWindowEnd.! !
+
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 14:03:24'!
+pageNumberIcon
+
+ ^ `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #(
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10101010101010101010101000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r00000000100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00001010100000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r00101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r10101010100000000000000000000000
+ 		2r10000000000000000000001000000010
+ 		2r10101010100000000000000000000000
+ 		2r10000010101010101000001000000000
+ 		2r10101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00101010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00001010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000010100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000100000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000000000000001000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010101010101000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010000000100000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010000010000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010001000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10000000000010001000000000000000
+ 		2r00000000000000000000000000000000
+ 		2r10101010101010100000000000000000
+ 		2r00000000000000000000000000000000)
+ 	offset: 0@0`
+	! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/5/2025 20:01:18'!
 doErase: aGenerator
@@ -2969,3 +3178,4 @@ isPageSeparator
 
 	^self codePoint = 12 "form feed"
 	or: [self isKDocSeparator ]! !
+KaeruPrinter initialize!
