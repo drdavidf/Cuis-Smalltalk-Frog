@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 20 September 2025 at 5:27:33 pm'!
+'From Cuis7.3 [latest update: #7041] on 20 September 2025 at 5:37:51 pm'!
 'Description '!
-!provides: 'Kaeru' 1 615!
+!provides: 'Kaeru' 1 618!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -704,7 +704,7 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/20/2025 17:27:12'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/20/2025 17:37:45'!
 drawCursor
 
 	| cursorColor cursorRect rulerCursorRect rulerY xl | 
@@ -725,7 +725,7 @@ drawCursor
 
 	" Draw the line number "
 	
-	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3 @ (displayHeight + 30) font: statusFont color: Color white. 
+	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 5 @ (displayHeight + 33) font: statusFont color: Color white. 
 
 	" Draw the justification selection icons "
 
@@ -2382,7 +2382,7 @@ drawOn: aCanvas
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/19/2025 16:46:53'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/20/2025 17:35:23'!
 drawRulerOn: aCanvas
 	
 	| xx yy textx dx |
@@ -2403,7 +2403,7 @@ drawRulerOn: aCanvas
 			line: xx@yy to: xx@(yy + 10) width:1 color: Color white ;
 			drawString: ('{1}' format:{ii}) at: (xx - wc) @ (yy + 12)  font: rulerFont color: Color white ].
 			
-	aCanvas image: self class pageNumberIcon at: dx * 1.0 @ (yy + 30 - 3).
+	aCanvas image: self class pageNumberIcon at: textx @ (yy + 30 ).
 	
 ! !
 
