@@ -1,102 +1,13 @@
-'From Cuis7.3 [latest update: #7041] on 19 September 2025 at 7:26:33 pm'!
+'From Cuis7.3 [latest update: #7041] on 20 September 2025 at 5:27:33 pm'!
 'Description '!
-!provides: 'Kaeru' 1 606!
+!provides: 'Kaeru' 1 615!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
 SystemOrganization addCategory: #'Kaeru-Text'!
+SystemOrganization addCategory: #'Kaeru-Tools'!
 
-
-!classDefinition: #KBackwardStream category: #Kaeru!
-Object subclass: #KBackwardStream
-	instanceVariableNames: 'kiterator'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KBackwardStream class' category: #Kaeru!
-KBackwardStream class
-	instanceVariableNames: ''!
-
-!classDefinition: #KForwardIterator category: #Kaeru!
-Object subclass: #KForwardIterator
-	instanceVariableNames: 'pars parIndex lineIndex charIndex'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KForwardIterator class' category: #Kaeru!
-KForwardIterator class
-	instanceVariableNames: ''!
-
-!classDefinition: #KBidiIterator category: #Kaeru!
-KForwardIterator subclass: #KBidiIterator
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KBidiIterator class' category: #Kaeru!
-KBidiIterator class
-	instanceVariableNames: ''!
-
-!classDefinition: #KForwardPageIterator category: #Kaeru!
-KForwardIterator subclass: #KForwardPageIterator
-	instanceVariableNames: 'pageNumber lineNumber pageSize'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KForwardPageIterator class' category: #Kaeru!
-KForwardPageIterator class
-	instanceVariableNames: ''!
-
-!classDefinition: #KForwardStream category: #Kaeru!
-Object subclass: #KForwardStream
-	instanceVariableNames: 'kiterator'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KForwardStream class' category: #Kaeru!
-KForwardStream class
-	instanceVariableNames: ''!
-
-!classDefinition: #KLibrary category: #Kaeru!
-Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs border pageSize'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KLibrary class' category: #Kaeru!
-KLibrary class
-	instanceVariableNames: ''!
-
-!classDefinition: #KLine category: #Kaeru!
-Object subclass: #KLine
-	instanceVariableNames: 'chars'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KLine class' category: #Kaeru!
-KLine class
-	instanceVariableNames: ''!
-
-!classDefinition: #KParagraph category: #Kaeru!
-Object subclass: #KParagraph
-	instanceVariableNames: 'leftMargin rightMargin lineHeight lines'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KParagraph class' category: #Kaeru!
-KParagraph class
-	instanceVariableNames: ''!
-
-!classDefinition: #KTokenStream category: #Kaeru!
-Object subclass: #KTokenStream
-	instanceVariableNames: 'stream head'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'KTokenStream class' category: #Kaeru!
-KTokenStream class
-	instanceVariableNames: ''!
 
 !classDefinition: #KaeruController category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruController
@@ -181,11 +92,111 @@ KaeruKeyboardStateMachine class
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
 	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin'
-	classVariableNames: 'IconForLineSpace IconForLineSpaceSelected'
+	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruPrinter class' category: #'Kaeru-Morphic'!
 KaeruPrinter class
+	instanceVariableNames: ''!
+
+!classDefinition: #KBackwardStream category: #'Kaeru-Text'!
+Object subclass: #KBackwardStream
+	instanceVariableNames: 'kiterator'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KBackwardStream class' category: #'Kaeru-Text'!
+KBackwardStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #KForwardIterator category: #'Kaeru-Text'!
+Object subclass: #KForwardIterator
+	instanceVariableNames: 'pars parIndex lineIndex charIndex'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KForwardIterator class' category: #'Kaeru-Text'!
+KForwardIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KBidiIterator category: #Kaeru!
+KForwardIterator subclass: #KBidiIterator
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KBidiIterator class' category: #Kaeru!
+KBidiIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KForwardPageIterator category: #Kaeru!
+KForwardIterator subclass: #KForwardPageIterator
+	instanceVariableNames: 'pageNumber lineNumber pageSize'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru'!
+!classDefinition: 'KForwardPageIterator class' category: #Kaeru!
+KForwardPageIterator class
+	instanceVariableNames: ''!
+
+!classDefinition: #KForwardStream category: #'Kaeru-Text'!
+Object subclass: #KForwardStream
+	instanceVariableNames: 'kiterator'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KForwardStream class' category: #'Kaeru-Text'!
+KForwardStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #KLibrary category: #'Kaeru-Text'!
+Object subclass: #KLibrary
+	instanceVariableNames: 'paragraphs border pageSize'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KLibrary class' category: #'Kaeru-Text'!
+KLibrary class
+	instanceVariableNames: ''!
+
+!classDefinition: #KLine category: #'Kaeru-Text'!
+Object subclass: #KLine
+	instanceVariableNames: 'chars'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KLine class' category: #'Kaeru-Text'!
+KLine class
+	instanceVariableNames: ''!
+
+!classDefinition: #KParagraph category: #'Kaeru-Text'!
+Object subclass: #KParagraph
+	instanceVariableNames: 'leftMargin rightMargin lineHeight lines'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KParagraph class' category: #'Kaeru-Text'!
+KParagraph class
+	instanceVariableNames: ''!
+
+!classDefinition: #KTokenStream category: #'Kaeru-Text'!
+Object subclass: #KTokenStream
+	instanceVariableNames: 'stream head'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KTokenStream class' category: #'Kaeru-Text'!
+KTokenStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #KPngConverter category: #'Kaeru-Tools'!
+Object subclass: #KPngConverter
+	instanceVariableNames: 'directory'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Tools'!
+!classDefinition: 'KPngConverter class' category: #'Kaeru-Tools'!
+KPngConverter class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruKeyboardTester category: 'Kaeru-Keyboard'!
@@ -208,49 +219,54 @@ ColoredBoxMorph subclass: #KaeruEditorMorph
 KaeruEditorMorph class
 	instanceVariableNames: ''!
 
-!classDefinition: #ExhaustiveTestKLibrary category: #Kaeru!
+!classDefinition: #ExhaustiveTestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #ExhaustiveTestKLibrary
 	instanceVariableNames: 'lib text'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'ExhaustiveTestKLibrary class' category: #Kaeru!
+	category: 'Kaeru-Text'!
+!classDefinition: 'ExhaustiveTestKLibrary class' category: #'Kaeru-Text'!
 ExhaustiveTestKLibrary class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestKLibrary category: #Kaeru!
+!classDefinition: #TestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #TestKLibrary
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'TestKLibrary class' category: #Kaeru!
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestKLibrary class' category: #'Kaeru-Text'!
 TestKLibrary class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestKParagraph category: #Kaeru!
+!classDefinition: #TestKParagraph category: #'Kaeru-Text'!
 TestCase subclass: #TestKParagraph
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'TestKParagraph class' category: #Kaeru!
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestKParagraph class' category: #'Kaeru-Text'!
 TestKParagraph class
 	instanceVariableNames: ''!
 
-!classDefinition: #TestKTokenStream category: #Kaeru!
+!classDefinition: #TestKTokenStream category: #'Kaeru-Text'!
 TestCase subclass: #TestKTokenStream
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'Kaeru'!
-!classDefinition: 'TestKTokenStream class' category: #Kaeru!
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestKTokenStream class' category: #'Kaeru-Text'!
 TestKTokenStream class
 	instanceVariableNames: ''!
 
 
 !KLibrary commentStamp: '<historical>' prior: 0!
 A KLibrary holds a collection of KDocuments
+
+!
+
+!KPngConverter commentStamp: '<historical>' prior: 0!
+Convert PNG images to 2-bit forms and generate the text for entering them into the code base.
 
 !
 
@@ -270,6 +286,852 @@ the leap key is realeased the machine transitions back to the editing state.
 pressing both leap keys 
 
 this necessarily means that one is pressed after the other. !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:51:53'!
+initialize
+
+	mapper := LinuxKeyboardMapper new.
+	
+! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:08'!
+keyDown: aMorphicEvent
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:05'!
+keyStroke: aKeyboardEvent
+
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:00'!
+keyUp: aMorphicEvent
+
+	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:49:44'!
+master: aKaeruMasterController
+
+	self assert: ( aKaeruMasterController isKindOf: KaeruMasterController ).
+	
+	master := aKaeruMasterController ! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:37'!
+initialize
+
+	super initialize.
+	
+	state := #editing.
+	
+	leapLeft := #up.
+	
+	leapRight := #up.
+	
+	leapAgain := #up.! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:44:11'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #down ].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #down ].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #down ].
+		
+	leapLeft = #down and:[leapRight = #down] ::
+		ifTrue:[
+			state := #blocked ].
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:06'!
+keyStroke: aKeyboardEvent
+
+	state = #editing 
+		ifTrue:[
+			
+			leapLeft = #down
+				ifTrue:[
+					state := #left . ^self ].
+				
+			leapRight = #down
+				ifTrue:[
+					state := #right . ^self ].
+			
+			aKeyboardEvent keyCharacter = $[ and:[ leapAgain = #down] :: 
+				ifTrue:[
+					master activate: #help ].
+	
+		].
+	
+
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:57:50'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #up ].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #up ].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #up ].
+		
+	leapRight = #up and: [leapLeft = #up] ::
+		ifTrue:[
+			state := #editing].
+
+	leapRight = #up and: [leapLeft = #down] ::
+		ifTrue:[
+			state := #left].
+
+	leapRight = #down and: [leapLeft = #up] ::
+		ifTrue:[
+			state := #right].
+! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:44'!
+state
+	^state! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
+keyDown: aMorphicEvent
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:09'!
+keyStroke: aKeyboardEvent
+
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:01:56'!
+keyUp: aMorphicEvent
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			master activate: #edit ].
+! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
+state
+	^#help! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:53:06'!
+activate: aSymbol
+
+	Transcript show: ('activating {1}' format:{aSymbol}); cr.
+	
+	active := controllers at: aSymbol ! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:13:31'!
+at: aSymbol putController: aKaeruController
+
+	self assert: (aKaeruController isKindOf: KaeruController ).
+	
+	controllers at: aSymbol put: aKaeruController.
+	
+	aKaeruController master: self! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:58:48'!
+initialize
+
+	controllers := Dictionary new.
+	
+	
+	! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:21'!
+keyDown: aMorphicEvent
+	
+	active keyDown: aMorphicEvent.
+	
+	Transcript show: active state; cr.! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:58'!
+keyStroke: aKeyboardEvent
+
+	self assert: active notNil.
+
+	active keyStroke: aKeyboardEvent.
+	
+	Transcript show: active state; cr.
+! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:26'!
+keyUp: aMorphicEvent
+
+	self assert: active notNil.
+
+	active keyUp: aMorphicEvent.
+	
+	Transcript show: active state; cr.! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
+isCopyKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
+isEnterKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
+isEraseKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:16'!
+isLeapAgainKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:23'!
+isLeapLeftKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:32'!
+isLeapRightKeyUp: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:43:40'!
+isPageBreakKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
+isPageKey: aMorphicEvent
+	^self subclassResponsibility ! !
+
+!KaeruKeyboardMapper class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:38'!
+instance
+
+	| aMapperClass |
+	
+	aMapperClass := Smalltalk platformName caseOf: {
+		['Mac OS'] 	-> [MacOSKeyboardMapper] .
+		['unix'] 		-> [Smalltalk platformSubtype = 'aarch64' 
+							and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
+								ifTrue:[LinuxRaspiKeyboardMapper ] 
+								ifFalse:[LinuxKeyboardMapper] ] }.
+						
+	^aMapperClass new
+		
+		! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:13'!
+isCopyKey: aMorphicEvent
+	^aMorphicEvent controlKeyPressed and: [aMorphicEvent keyValue = 97]	! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
+isEnterKey: aMorphicEvent
+	^aMorphicEvent keyValue = 13! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
+isEraseKey: aMorphicEvent
+	^aMorphicEvent keyValue = 8! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:39:59'!
+isLeapAgainKeyUp: aMorphicEvent
+	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and:[aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:18'!
+isLeapLeftKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:42'!
+isLeapLeftKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:13'!
+isLeapRightKeyDown: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and: [aMorphicEvent isKeyDown]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:59'!
+isLeapRightKeyUp: aMorphicEvent
+	^aMorphicEvent keyValue = 136 and:[aMorphicEvent isKeyUp]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:44:19'!
+isPageBreakKey: aMorphicEvent
+	^aMorphicEvent isPageDown and: [aMorphicEvent controlKeyPressed ]! !
+
+!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
+isPageKey: aMorphicEvent
+
+	^aMorphicEvent isPageDown! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:24'!
+isLeapAgainKeyDown: aMorphicEvent
+	^aMorphicEvent controlKeyPressed ! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
+isLeapAgainKeyUp: aMorphicEvent
+	^aMorphicEvent controlKeyPressed not! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+isLeapLeftKeyDown: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
+isLeapLeftKeyUp: aMorphicEvent
+	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+isLeapRightKeyDown: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 128! !
+
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
+isLeapRightKeyUp: aMorphicEvent
+	^(aMorphicEvent buttons bitAnd: 128) = 0! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
+initialize
+
+	mapper := LinuxKeyboardMapper new.
+
+	leapLeft := #up.
+	
+	leapRight := #up.
+	
+	leapAgain := #up.! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:27'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #down ].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #down ].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #down ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:59'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #up ].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #up ].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #up ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:02:03'!
+leapAgain
+	^leapAgain! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:33'!
+leapLeft
+	^leapLeft! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:50'!
+leapRight
+	^leapRight ! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
+reset
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
+skipToNewLine
+	
+	| hh |
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
+clearCanvas
+
+	canvas fillRectangle: displayRect color: Color white.
+
+	self reset.
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/20/2025 17:27:12'!
+drawCursor
+
+	| cursorColor cursorRect rulerCursorRect rulerY xl | 
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+
+	cursorRect := xx@yy extent: (dx @ dy).
+	
+	canvas fillRectangle: cursorRect  color: cursorColor.
+
+	rulerY := displayRect corner y + 1.
+	
+	canvas frameRectangle: (self leftMarginX @ rulerY corner: (self rightMarginX @ (rulerY + 30)) ) borderWidth: 1 color: Color white.
+	
+	rulerCursorRect := (xx + (dx / 2)) @ displayHeight extent: 4@12.
+
+	canvas fillRectangle: rulerCursorRect  color: Color white. 
+
+	" Draw the line number "
+	
+	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3 @ (displayHeight + 30) font: statusFont color: Color white. 
+
+	" Draw the justification selection icons "
+
+	xl := dx * 50.
+
+	{ #left . #centre . #right. #justify } do:[:eachIndex |
+		canvas image: (self class selectJustifyIcon: #left for: eachIndex) at: xl @ (rulerY + 32).
+		xl := xl + 28
+	].
+
+	" Draw the line space selection icons "
+		
+	xl := dx * 62.
+
+	2 to:4 do:[:eachIndex | 					
+		canvas image: (self class selectLineIcon: lineSpace for: eachIndex) at: xl @ (rulerY + 32).
+		xl := xl + 28
+	].
+
+
+	
+	! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
+moveRight
+
+	xx := xx + dx.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:44:11'!
+newLine
+
+	| rect hh |
+
+	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
+		
+	rect := (xx @yy) corner: displayRect corner x @ hh.
+	
+	canvas fillRectangle: rect color: background.
+		
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := yy + (lineSpace * dy / 2).
+
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self newPage ].! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:25:25'!
+newPage
+	
+	yy + (dy/2) >= displayHeight
+		ifTrue:[^self].
+			
+	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+	
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.125*dy))) font: pageNumberFont color: Color black.
+	
+	yy := yy + (0.5*dy).
+	
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
+putChar: aCharacter
+	
+	| hh |
+
+	hh := (dy * lineSpace / 2) min: displayRect corner y - yy.
+	
+	"
+	hh <= displayRect corner y - yy 
+	
+	yy + hh <= displayRect corner y 
+	"
+	 
+	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
+	
+	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
+	
+! !
+
+!KaeruPrinter methodsFor: 'testing' stamp: 'Df 9/19/2025 10:07:18'!
+isNotAtEnd
+
+	^ yy  <= (dy * numLines)! !
+
+!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/19/2025 14:36:10'!
+initialize
+
+	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+
+	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
+
+	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+	
+	dx :=  font widthOf:$M.
+	
+	dy := font lineSpacing.
+
+	numLines := 18. "how many line units fit on the physical display"
+
+	displayWidth := 80 * dx.
+
+	displayHeight := 538.
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+	
+	lineSpace := 2. " in half line units "
+	
+	leftMargin := 6.
+
+	rightMargin := 70.
+	
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+	
+	background := Color white.
+	
+	foreground := Color black.
+	
+	pageSize := 10. "in half line units"
+	
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+	! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
+background: aColor
+	background := aColor! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:51:48'!
+canvas: aCanvas
+
+	canvas := aCanvas.! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:28:30'!
+displayRect
+	^ displayRect! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:43:05'!
+dx
+	^dx! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:44'!
+dx: aNumber
+	dx := aNumber ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:39:20'!
+dy
+	^dy! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:50'!
+dy: aNumber
+	dy := aNumber! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:21'!
+font: aFont
+	font := aFont! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:51'!
+foreground: aColor
+	foreground := aColor! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:59:00'!
+leftMargin: aNumber
+	leftMargin := aNumber! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:31:53'!
+leftMarginOriginX
+	^ displayRect origin x + (leftMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:36'!
+leftMarginX
+	^ displayRect origin x + (leftMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 19:25:24'!
+lineSpace: anInteger
+	
+	self assert: anInteger >= 2.
+	
+	lineSpace := anInteger! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 22:14:02'!
+numLines
+	^numLines ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:20:26'!
+pageSize: anInteger
+
+	self assert: anInteger > 0.
+	
+	pageSize := anInteger! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:48'!
+rightMargin: anInteger
+	rightMargin := anInteger.! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:33'!
+rightMarginOriginX
+	^ displayRect origin x + (rightMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:45'!
+rightMarginX
+	^ displayRect origin x + (rightMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:28:37'!
+yy
+	^yy! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:19:27'!
+initialize
+
+	" self initialize "
+	
+	IconForLineSpace := Dictionary new.
+	
+	IconForLineSpace at: 2 put: self oneLineSpaceIcon.
+	IconForLineSpace at: 3 put: self oneAndHalfLineSpaceIcon.
+	IconForLineSpace at: 4 put: self twoLineSpaceIcon.
+	
+	IconForLineSpaceSelected := Dictionary new.
+	
+	IconForLineSpaceSelected at: 2 put: self oneLineSpaceIconSelected.
+	IconForLineSpaceSelected at: 3 put: self oneAndHalfLineSpaceIconSelected.
+	IconForLineSpaceSelected at: 4 put: self twoLineSpaceIconSelected.	
+	
+	IconForJustify := Dictionary new.
+	
+	IconForJustify at: #left put: self justifyLeftIcon.
+	IconForJustify at: #centre put: self justifyCentreIcon.
+	IconForJustify at: #right put: self justifyRightIcon.
+	IconForJustify at: #justify put: self justifyIcon.
+	
+	IconForJustifySelected := Dictionary new.
+	
+	IconForJustifySelected at: #left put: self justifyLeftIconSelected.
+	IconForJustifySelected at: #centre put: self justifyCentreIconSelected.
+	IconForJustifySelected at: #right put: self justifyRightIconSelected.
+	IconForJustifySelected at: #justify put: self justifyIconSelected.
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:19'!
+justifyCentreIcon
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 537569962 2148007936 536870912 524288 536870912 524288 536870912 524288 539667114 2684878848 536870912 524288 536870912 524288 536870912 524288 536914600 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:26'!
+justifyCentreIconSelected
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715478357 1789394944 715827882 2863136768 715827882 2863136768 715827882 2863136768 714429781 1520959488 715827882 2863136768 715827882 2863136768 715827882 2863136768 715806038 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:31'!
+justifyIcon
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 548055040 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:13'!
+justifyIconSelected
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235818 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:43'!
+justifyLeftIcon
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 548055720 524288 536870912 524288 536870912 524288 536870912 524288 548055722 2148007936 536870912 524288 536870912 524288 536870912 524288 548055040 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:47'!
+justifyLeftIconSelected
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+  	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235478 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1789394944 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235818 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:51'!
+justifyRightIcon
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 548055722 2852651008 536870912 524288 536870912 524288 536870912 524288 536881834 2852651008 536870912 524288 536870912 524288 536870912 524288 537045674 2852651008 536870912 524288 536870912 524288 536870912 524288 536870954 2852651008 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:16:57'!
+justifyRightIconSelected
+ 
+ ^`(Form
+ 	extent: 24@28
+ 	depth: 2
+  	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715822421 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715740501 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827861 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0)`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:17:03'!
+oneAndHalfLineSpaceIcon
+ 
+^  `(Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 536870912 524288 537526400 524288 537526912 524288 548012160 524288 537526400 134742016 537526400 537395200 537526400 2148007936 537526946 524288 537526280 524288 537526306 2684878848 537526408 134742016 537526792 134742016 537528320 134742016 537526272 537395200 537526274 2148007936 537526280 524288 537526280 524288 548053002 2819096576 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0) `.
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:13:26'!
+oneAndHalfLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715500138 2863136768 715499882 2863136768 710257258 2863136768 715500138 2796027904 715500138 2594701312 715500138 1789394944 715499865 2863136768 715500198 2863136768 715500185 1520959488 715500134 2796027904 715499942 2796027904 715499178 2796027904 715500202 2594701312 715500201 1789394944 715500198 2863136768 715500198 2863136768 710236837 1453850624 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:12:13'!
+oneLineSpaceIcon
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536871552 524288 536873600 524288 536881792 524288 536912512 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536871552 524288 536914602 524288 536914602 524288 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0`
+	
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:12:26'!
+oneLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827562 2863136768 715826538 2863136768 715822442 2863136768 715807082 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715827562 2863136768 715806037 2863136768 715806037 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`	
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:24:35'!
+selectJustifyIcon: anIntegerSelected for: anIntegerIndex
+
+	^anIntegerIndex = anIntegerSelected 
+		ifTrue:[
+			IconForJustifySelected  at: anIntegerIndex ]
+		ifFalse:[
+			IconForJustify at: anIntegerIndex ]! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:19:17'!
+selectLineIcon: anIntegerSelected for: anIntegerIndex
+
+	^anIntegerIndex = anIntegerSelected 
+		ifTrue:[
+			IconForLineSpaceSelected  at: anIntegerIndex ]
+		ifFalse:[
+			IconForLineSpace  at: anIntegerIndex ]! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:12:42'!
+twoLineSpaceIcon
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 536870912 524288 536870912 524288 536870912 524288 536870912 524288 536873642 524288 536879114 2148007936 536903682 2148007936 536911872 2148007936 536911872 2148007936 536870912 2148007936 536870914 2148007936 536870922 524288 536870952 524288 536871072 524288 536871552 524288 536873472 524288 536881152 524288 536911872 524288 536911872 524288 536911874 2148007936 536914602 2148007936 536870912 524288 536870912 524288 536870912 524288 536870912 524288 178956970 2862612480 0 0)
+ 	offset: 0@0`
+! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:12:57'!
+twoLineSpaceIconSelected
+ 
+^  `Form
+ 	extent: 24@28
+ 	depth: 2
+ 	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715829247 2863136768 715831983 3936878592 715844267 3936878592 715848362 3936878592 715848362 3936878592 715827882 3936878592 715827883 3936878592 715827887 2863136768 715827902 2863136768 715827962 2863136768 715828202 2863136768 715829162 2863136768 715833002 2863136768 715848362 2863136768 715848362 2863136768 715848363 3936878592 715849727 3936878592 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
+ 	offset: 0@0`
+	
+! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:53:53'!
 atEnd
@@ -1414,731 +2276,49 @@ on: anOrderedSequence
 	stream := ReadStream on: anOrderedSequence.
 ! !
 
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:51:53'!
-initialize
+!KPngConverter methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:02:38'!
+convert: anOrderedCollection
 
-	mapper := LinuxKeyboardMapper new.
+	| aWriteStream |
 	
-! !
-
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:08'!
-keyDown: aMorphicEvent
-
-	self subclassResponsibility ! !
-
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:05'!
-keyStroke: aKeyboardEvent
-
-
-	self subclassResponsibility ! !
-
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:00'!
-keyUp: aMorphicEvent
-
-	self subclassResponsibility ! !
-
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:49:44'!
-master: aKaeruMasterController
-
-	self assert: ( aKaeruMasterController isKindOf: KaeruMasterController ).
+	aWriteStream := WriteStream on: ''.
 	
-	master := aKaeruMasterController ! !
-
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:37'!
-initialize
-
-	super initialize.
-	
-	state := #editing.
-	
-	leapLeft := #up.
-	
-	leapRight := #up.
-	
-	leapAgain := #up.! !
-
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:44:11'!
-keyDown: aMorphicEvent
-
-	mapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #down ].
-
-	mapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #down ].
-
-	mapper isLeapAgainKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #down ].
+	anOrderedCollection do:[:each | | aForm |
 		
-	leapLeft = #down and:[leapRight = #down] ::
-		ifTrue:[
-			state := #blocked ].
-! !
-
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:51:06'!
-keyStroke: aKeyboardEvent
-
-	state = #editing 
-		ifTrue:[
-			
-			leapLeft = #down
-				ifTrue:[
-					state := #left . ^self ].
-				
-			leapRight = #down
-				ifTrue:[
-					state := #right . ^self ].
-			
-			aKeyboardEvent keyCharacter = $[ and:[ leapAgain = #down] :: 
-				ifTrue:[
-					master activate: #help ].
-	
-		].
-	
-
-! !
-
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:57:50'!
-keyUp: aMorphicEvent
-
-	mapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #up ].
-
-	mapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #up ].
-
-	mapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #up ].
+		aForm := ImageReadWriter formFromFileNamed: directory , '/', each , '.png'.
 		
-	leapRight = #up and: [leapLeft = #up] ::
-		ifTrue:[
-			state := #editing].
-
-	leapRight = #up and: [leapLeft = #down] ::
-		ifTrue:[
-			state := #left].
-
-	leapRight = #down and: [leapLeft = #up] ::
-		ifTrue:[
-			state := #right].
-! !
-
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:44'!
-state
-	^state! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
-keyDown: aMorphicEvent
-! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:09'!
-keyStroke: aKeyboardEvent
-
-! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:01:56'!
-keyUp: aMorphicEvent
-
-	mapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			master activate: #edit ].
-! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
-state
-	^#help! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:53:06'!
-activate: aSymbol
-
-	Transcript show: ('activating {1}' format:{aSymbol}); cr.
-	
-	active := controllers at: aSymbol ! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:13:31'!
-at: aSymbol putController: aKaeruController
-
-	self assert: (aKaeruController isKindOf: KaeruController ).
-	
-	controllers at: aSymbol put: aKaeruController.
-	
-	aKaeruController master: self! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:58:48'!
-initialize
-
-	controllers := Dictionary new.
-	
-	
-	! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:21'!
-keyDown: aMorphicEvent
-	
-	active keyDown: aMorphicEvent.
-	
-	Transcript show: active state; cr.! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:16:58'!
-keyStroke: aKeyboardEvent
-
-	self assert: active notNil.
-
-	active keyStroke: aKeyboardEvent.
-	
-	Transcript show: active state; cr.
-! !
-
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:55:26'!
-keyUp: aMorphicEvent
-
-	self assert: active notNil.
-
-	active keyUp: aMorphicEvent.
-	
-	Transcript show: active state; cr.! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
-isCopyKey: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
-isEnterKey: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
-isEraseKey: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
-isLeapAgainKeyDown: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:16'!
-isLeapAgainKeyUp: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
-isLeapLeftKeyDown: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:23'!
-isLeapLeftKeyUp: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
-isLeapRightKeyDown: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:41:32'!
-isLeapRightKeyUp: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:43:40'!
-isPageBreakKey: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
-isPageKey: aMorphicEvent
-	^self subclassResponsibility ! !
-
-!KaeruKeyboardMapper class methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:38'!
-instance
-
-	| aMapperClass |
-	
-	aMapperClass := Smalltalk platformName caseOf: {
-		['Mac OS'] 	-> [MacOSKeyboardMapper] .
-		['unix'] 		-> [Smalltalk platformSubtype = 'aarch64' 
-							and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
-								ifTrue:[LinuxRaspiKeyboardMapper ] 
-								ifFalse:[LinuxKeyboardMapper] ] }.
-						
-	^aMapperClass new
+		self writeForm: aForm name: each onto: aWriteStream ].
 		
-		! !
+	^ aWriteStream contents! !
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:49:13'!
-isCopyKey: aMorphicEvent
-	^aMorphicEvent controlKeyPressed and: [aMorphicEvent keyValue = 97]	! !
+!KPngConverter methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:02:26'!
+directory: aString
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:09'!
-isEnterKey: aMorphicEvent
-	^aMorphicEvent keyValue = 13! !
+	directory := aString.! !
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:46:23'!
-isEraseKey: aMorphicEvent
-	^aMorphicEvent keyValue = 8! !
+!KPngConverter methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:11:25'!
+writeForm: aForm name: aString onto: aWriteStream
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:40:24'!
-isLeapAgainKeyDown: aMorphicEvent
-	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and: [aMorphicEvent isKeyDown]! !
+	aWriteStream nextPutAll: aString ; nextPutAll: 'Icon
 
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:39:59'!
-isLeapAgainKeyUp: aMorphicEvent
-	^(aMorphicEvent keyValue = 222 or: [aMorphicEvent keyValue = 221]) and:[aMorphicEvent isKeyUp]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:18'!
-isLeapLeftKeyDown: aMorphicEvent
-	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyDown]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:42'!
-isLeapLeftKeyUp: aMorphicEvent
-	^aMorphicEvent keyValue = 152 and: [aMorphicEvent isKeyUp]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:36:13'!
-isLeapRightKeyDown: aMorphicEvent
-	^aMorphicEvent keyValue = 136 and: [aMorphicEvent isKeyDown]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:59'!
-isLeapRightKeyUp: aMorphicEvent
-	^aMorphicEvent keyValue = 136 and:[aMorphicEvent isKeyUp]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 6/2/2025 13:44:19'!
-isPageBreakKey: aMorphicEvent
-	^aMorphicEvent isPageDown and: [aMorphicEvent controlKeyPressed ]! !
-
-!LinuxKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/18/2025 18:47:03'!
-isPageKey: aMorphicEvent
-
-	^aMorphicEvent isPageDown! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:24'!
-isLeapAgainKeyDown: aMorphicEvent
-	^aMorphicEvent controlKeyPressed ! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
-isLeapAgainKeyUp: aMorphicEvent
-	^aMorphicEvent controlKeyPressed not! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
-isLeapLeftKeyDown: aMorphicEvent
-	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
-isLeapLeftKeyUp: aMorphicEvent
-	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
-isLeapRightKeyDown: aMorphicEvent
-	^(aMorphicEvent buttons bitAnd: 128) = 128! !
-
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
-isLeapRightKeyUp: aMorphicEvent
-	^(aMorphicEvent buttons bitAnd: 128) = 0! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
-initialize
-
-	mapper := LinuxKeyboardMapper new.
-
-	leapLeft := #up.
+^'.
 	
-	leapRight := #up.
+	aForm asFormOfDepth: 2 :: storeOn: aWriteStream.
 	
-	leapAgain := #up.! !
+	aWriteStream nextPutAll: '
 
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:27'!
-keyDown: aMorphicEvent
+'.! !
 
-	mapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #down ].
+!KPngConverter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:10:41'!
+example
 
-	mapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #down ].
-
-	mapper isLeapAgainKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #down ]
-! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:59'!
-keyUp: aMorphicEvent
-
-	mapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #up ].
-
-	mapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #up ].
-
-	mapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #up ]
-! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:02:03'!
-leapAgain
-	^leapAgain! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:33'!
-leapLeft
-	^leapLeft! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:50'!
-leapRight
-	^leapRight ! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
-reset
-
-	xx := displayRect origin x + (leftMargin * dx).
+	| aConverter |
 	
-	yy := displayRect origin y.	
+	aConverter := KPngConverter new.
 
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
+	aConverter directory: '/home/davidf/Projects/Frog/parts/Software/parts/icons'.
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
-skipToNewLine
-	
-	| hh |
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
-clearCanvas
-
-	canvas fillRectangle: displayRect color: Color white.
-
-	self reset.
-! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 19:26:26'!
-drawCursor
-
-	| cursorColor cursorRect rulerCursorRect rulerY xl | 
-	
-	cursorColor := Color fromHexString: '#AAAAAA'.
-
-	cursorRect := xx@yy extent: (dx @ dy).
-	
-	canvas fillRectangle: cursorRect  color: cursorColor.
-
-	rulerY := displayRect corner y + 1.
-	
-	canvas frameRectangle: (self leftMarginX @ rulerY corner: (self rightMarginX @ (rulerY + 30)) ) borderWidth: 1 color: Color white.
-	
-	rulerCursorRect := (xx + (dx / 2)) @ displayHeight extent: 4@12.
-
-	canvas fillRectangle: rulerCursorRect  color: Color white. 
-
-	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3 @ (displayHeight + 30) font: statusFont color: Color white. 
-
-	xl := dx * 60.
-	
-	2 to:4 do:[:eachIndex | 					
-		canvas image: (self class selectLineIcon: lineSpace for: eachIndex) at: xl @ (rulerY + 32).
-		xl := xl + 32
-	]
-	! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
-moveRight
-
-	xx := xx + dx.! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:44:11'!
-newLine
-
-	| rect hh |
-
-	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
-		
-	rect := (xx @yy) corner: displayRect corner x @ hh.
-	
-	canvas fillRectangle: rect color: background.
-		
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := yy + (lineSpace * dy / 2).
-
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self newPage ].! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:25:25'!
-newPage
-	
-	yy + (dy/2) >= displayHeight
-		ifTrue:[^self].
-			
-	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
-	
-	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.125*dy))) font: pageNumberFont color: Color black.
-	
-	yy := yy + (0.5*dy).
-	
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
-putChar: aCharacter
-	
-	| hh |
-
-	hh := (dy * lineSpace / 2) min: displayRect corner y - yy.
-	
-	"
-	hh <= displayRect corner y - yy 
-	
-	yy + hh <= displayRect corner y 
-	"
-	 
-	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
-	
-	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
-	
-! !
-
-!KaeruPrinter methodsFor: 'testing' stamp: 'Df 9/19/2025 10:07:18'!
-isNotAtEnd
-
-	^ yy  <= (dy * numLines)! !
-
-!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/19/2025 14:36:10'!
-initialize
-
-	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
-
-	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
-
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
-	
-	dx :=  font widthOf:$M.
-	
-	dy := font lineSpacing.
-
-	numLines := 18. "how many line units fit on the physical display"
-
-	displayWidth := 80 * dx.
-
-	displayHeight := 538.
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-	
-	lineSpace := 2. " in half line units "
-	
-	leftMargin := 6.
-
-	rightMargin := 70.
-	
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
-	
-	background := Color white.
-	
-	foreground := Color black.
-	
-	pageSize := 10. "in half line units"
-	
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-	! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
-background: aColor
-	background := aColor! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:51:48'!
-canvas: aCanvas
-
-	canvas := aCanvas.! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 21:28:30'!
-displayRect
-	^ displayRect! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:43:05'!
-dx
-	^dx! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:44'!
-dx: aNumber
-	dx := aNumber ! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/17/2025 22:39:20'!
-dy
-	^dy! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:50'!
-dy: aNumber
-	dy := aNumber! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:58:21'!
-font: aFont
-	font := aFont! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:51'!
-foreground: aColor
-	foreground := aColor! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:59:00'!
-leftMargin: aNumber
-	leftMargin := aNumber! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:31:53'!
-leftMarginOriginX
-	^ displayRect origin x + (leftMargin * dx)! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:36'!
-leftMarginX
-	^ displayRect origin x + (leftMargin * dx)! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 19:25:24'!
-lineSpace: anInteger
-	
-	self assert: anInteger >= 2.
-	
-	lineSpace := anInteger! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 22:14:02'!
-numLines
-	^numLines ! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:20:26'!
-pageSize: anInteger
-
-	self assert: anInteger > 0.
-	
-	pageSize := anInteger! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:48'!
-rightMargin: anInteger
-	rightMargin := anInteger.! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:33'!
-rightMarginOriginX
-	^ displayRect origin x + (rightMargin * dx)! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:45'!
-rightMarginX
-	^ displayRect origin x + (rightMargin * dx)! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:28:37'!
-yy
-	^yy! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:57'!
-initialize
-
-	" self initialize "
-	
-	IconForLineSpace := Dictionary new.
-	
-	IconForLineSpace at: 2 put: self oneLineSpaceIcon.
-	IconForLineSpace at: 3 put: self oneAndHalfLineSpaceIcon.
-	IconForLineSpace at: 4 put: self twoLineSpaceIcon.
-	
-	IconForLineSpaceSelected := Dictionary new.
-	
-	IconForLineSpaceSelected at: 2 put: self oneLineSpaceIconSelected.
-	IconForLineSpaceSelected at: 3 put: self oneAndHalfLineSpaceIconSelected.
-	IconForLineSpaceSelected at: 4 put: self twoLineSpaceIconSelected.	! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:52'!
-oneAndHalfLineSpaceIcon
- 
-^  (Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2148139136 131072 2148139648 131072 2158624896 131072 2148139136 134348800 2148139136 537001984 2148139136 2147614720 2148139682 131072 2148139016 131072 2148139042 2684485632 2148139144 134348800 2148139528 134348800 2148141056 134348800 2148139008 537001984 2148139010 2147614720 2148139016 131072 2148139016 131072 2150268938 2818703360 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0 0 0)
- 	offset: 0@0) .
-! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:49'!
-oneAndHalfLineSpaceIconSelected
- 
-^  `Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2862983786 2863267840 2862983530 2863267840 2857740906 2863267840 2862983786 2796158976 2862983786 2594832384 2862983786 1789526016 2862983513 2863267840 2862983846 2863267840 2862983833 1521090560 2862983782 2796158976 2862983590 2796158976 2862982826 2796158976 2862983850 2594832384 2862983849 1789526016 2862983846 2863267840 2862983846 2863267840 2857720485 1453981696 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
- 	offset: 0@0`
-! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:45'!
-oneLineSpaceIcon
- 
-^  `Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2147484288 131072 2147486336 131072 2147494528 131072 2147525248 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147484288 131072 2147527338 131072 2147527338 131072 2147483648 131072 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0)
- 	offset: 0@0`
-	
-! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:40'!
-oneLineSpaceIconSelected
- 
-^  `Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2863311210 2863267840 2863310186 2863267840 2863306090 2863267840 2863290730 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863311210 2863267840 2863289685 2863267840 2863289685 2863267840 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
- 	offset: 0@0`	
-! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:19:17'!
-selectLineIcon: anIntegerSelected for: anIntegerIndex
-
-	^anIntegerIndex = anIntegerSelected 
-		ifTrue:[
-			IconForLineSpaceSelected  at: anIntegerIndex ]
-		ifFalse:[
-			IconForLineSpace  at: anIntegerIndex ]! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:35'!
-twoLineSpaceIcon
- 
-^  `Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 0 0 2147483648 131072 2147483648 131072 2147483648 131072 2147486378 131072 2147491850 2147614720 2147516418 2147614720 2147524608 2147614720 2147524608 2147614720 2147483648 2147614720 2147483650 2147614720 2147483658 131072 2147483688 131072 2147483808 131072 2147484288 131072 2147486208 131072 2147493888 131072 2147524608 131072 2147524608 131072 2147524610 2147614720 2147527338 2147614720 2147483648 131072 2147483648 131072 2147483648 131072 0 0 178956970 2862612480 0 0)
- 	offset: 0@0`
-! !
-
-!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 19:05:27'!
-twoLineSpaceIconSelected
- 
-^  `Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 178956970 2862612480 715827882 2863136768 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 2863312895 2863267840 2863315631 3937009664 2863327915 3937009664 2863332010 3937009664 2863332010 3937009664 2863311530 3937009664 2863311531 3937009664 2863311535 2863267840 2863311550 2863267840 2863311610 2863267840 2863311850 2863267840 2863312810 2863267840 2863316650 2863267840 2863332010 2863267840 2863332010 2863267840 2863332011 3937009664 2863333375 3937009664 2863311530 2863267840 2863311530 2863267840 2863311530 2863267840 715827882 2863136768 178956970 2862612480 0 0)
- 	offset: 0@0`
-	
-! !
+	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
