@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 20 September 2025 at 10:55:37 pm'!
+'From Cuis7.3 [latest update: #7041] on 20 September 2025 at 10:57:37 pm'!
 'Description '!
-!provides: 'Kaeru' 1 631!
+!provides: 'Kaeru' 1 632!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -2719,7 +2719,7 @@ drawOn: aCanvas
 			printer putChar: each;  moveRight ] ].
 	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 22:55:27'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 22:56:37'!
 initialize 
 
 	super initialize.
@@ -2745,8 +2745,8 @@ To move the cursor, hold down a LEAP key, type whatever you want to find --
      [UNDO] can undo leaping, erasing and most commands.
 To highlight some text you want to do something with (such as print or erase),
      leap from one end of it to the other, then press both LEAP keys. To
-     unhighlight, press and release either LEAP key. Toadjust the highlight, 
-     tap either LEAP key repeatedly as needed, then press both LEAP keys again.
+     unhighlight, press and release either LEAP key. To adjust the highlight, 
+     tap either LEAP key repeatedly as needed, and press both LEAP keys again.
 Commands do things to highlighted text. Labels on key fronts show other 
      commands. To use these, hold down [USE FRONT], and, while you hold it, 
      press command.
