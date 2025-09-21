@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 9:36:47 pm'!
+'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 9:41:34 pm'!
 'Description '!
-!provides: 'Kaeru' 1 684!
+!provides: 'Kaeru' 1 685!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -782,12 +782,12 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 21:35:00'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 21:41:09'!
 calculateCursorRectangles	 
 	
 	cursorRect := (xx+dx)@yy extent: (dx @ dy).
 
-	rulerCursorRect := (xx + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+	rulerCursorRect := (xx + dx + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
 ! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
