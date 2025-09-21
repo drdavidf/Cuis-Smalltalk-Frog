@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 8:20:26 pm'!
+'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 9:36:47 pm'!
 'Description '!
-!provides: 'Kaeru' 1 682!
+!provides: 'Kaeru' 1 684!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -782,10 +782,10 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:20:21'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 21:35:00'!
 calculateCursorRectangles	 
 	
-	cursorRect := xx@yy extent: (dx @ dy).
+	cursorRect := (xx+dx)@yy extent: (dx @ dy).
 
 	rulerCursorRect := (xx + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
 ! !
@@ -2459,6 +2459,14 @@ isCursorAtEnd
 	
 	^ it = self end! !
 
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 21:13:19'!
+isNarrow
+	^ cursorState = #narrow! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 21:13:12'!
+isWide
+	^cursorState = #wide! !
+
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:18:49'!
 pageSize
 	^text pageSize! !
@@ -2666,7 +2674,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 19:57:38'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 21:35:54'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -2682,7 +2690,7 @@ drawTextOn: aCanvas
 	selectionE := editor charIndexToIterator: editor selection last.
 
 	cit := editor charIndexToIterator: editor cursor.
-	
+
 	bb := self advance: printer. "updates the printer's page and line number without changing its x and y registers"
 	
 	ee := editor end.
@@ -2707,10 +2715,15 @@ drawTextOn: aCanvas
 			bb = selectionE
 				ifTrue:[
 					printer background: Color white ; foreground: Color black].
-			
+					
 			cc := bb char. 
-			printer putChar: cc.
-			
+
+			editor isWide and:[ bb = cit ] ::
+				ifTrue:[
+					printer background: Color black; foreground: Color white ; putChar: cc; background: Color white; foreground: Color black ] 
+				ifFalse:[
+					printer putChar: cc].
+								
 			bb = cit
 				ifTrue:[ 
 					printer calculateCursorRectangles ; displayStatus ].
