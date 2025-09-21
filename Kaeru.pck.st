@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 9:41:34 pm'!
+'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 10:25:11 pm'!
 'Description '!
-!provides: 'Kaeru' 1 685!
+!provides: 'Kaeru' 1 686!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -405,7 +405,7 @@ keyDown: aMorphicEvent
 			state := #blocked ].
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 17:09:55'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 22:15:43'!
 keyStroke: aKeyboardEvent
 
 	state = #editing 
@@ -426,6 +426,10 @@ keyStroke: aKeyboardEvent
 			aKeyboardEvent keyCharacter = $s and:[ leapAgain = #down] :: 
 				ifTrue:[
 					controllerMaster activate: #sleep. viewMaster activate: #sleep. ^self ].
+
+			aKeyboardEvent keyCharacter = $p and:[ leapAgain = #down] :: 
+				ifTrue:[
+					model insert: (Character codePoint:12) . ^self ].
 			
 			keyboardMapper isEraseKey: aKeyboardEvent ::
 				ifTrue:[
@@ -891,6 +895,23 @@ newPage
 	pageNumber := pageNumber + 1.
 	
 	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 22:22:37'!
+newSoftPage
+
+	| rect hh |
+
+	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
+		
+	rect := (xx @yy) corner: displayRect corner x @ hh.
+	
+	canvas fillRectangle: rect color: background.
+		
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := yy + (lineSpace * dy / 2).
+
+	self newPage.! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
 putChar: aCharacter
@@ -2674,7 +2695,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 21:35:54'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 22:23:59'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -2732,7 +2753,11 @@ drawTextOn: aCanvas
 			
 			bb isAtEndOfLine 
 				ifTrue:[
-					printer newLine ].
+					cc = Character newPage 
+						ifTrue:[
+							printer newSoftPage]
+						ifFalse:[
+						printer newLine ] ].
 				
 			bb next ].
 			! !
