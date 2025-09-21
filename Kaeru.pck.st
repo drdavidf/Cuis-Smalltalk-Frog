@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 7:30:30 pm'!
+'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 7:38:00 pm'!
 'Description '!
-!provides: 'Kaeru' 1 672!
+!provides: 'Kaeru' 1 674!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -1822,7 +1822,7 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'Df 9/12/2025 16:09:00'!
+!KLibrary methodsFor: 'erasing' stamp: 'Df 9/21/2025 19:37:57'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi headText tailText par |
@@ -1851,12 +1851,19 @@ eraseFrom: aBeginIndex to: anEndIndex
 	
 			paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) ]
 
-		ifFalse:[ 
+		ifFalse:[ | origin |
+					
+			origin := paragraphs at: beginPi first.
+			
 			paragraphs := paragraphs copyFrom:1 to: beginPi first - 1.
 			
 			headText isEmpty
-				ifFalse:[
+				ifFalse:[ 
+					
 					par := KParagraph new.
+					
+					par attributes: origin attributes.
+					
 					par rebuildFromText: headText.
 					paragraphs add: par ] ].
 	
@@ -2133,6 +2140,14 @@ newItem
 attributes
 
 	^ { leftMargin . lineHeight . rightMargin }! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 19:36:28'!
+attributes: anOrderedCollection
+
+	leftMargin := anOrderedCollection at:1.
+	lineHeight := anOrderedCollection at:2.
+	rightMargin := anOrderedCollection at:3.
+! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
 charAt: anIndex
