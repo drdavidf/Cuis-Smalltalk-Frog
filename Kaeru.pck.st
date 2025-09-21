@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 7:38:00 pm'!
+'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 8:15:55 pm'!
 'Description '!
-!provides: 'Kaeru' 1 674!
+!provides: 'Kaeru' 1 681!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -101,7 +101,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin'
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -231,7 +231,7 @@ KaeruMasterMorph class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont statusFont klib cursor window selection printer wc windowEnd editor'
+	instanceVariableNames: 'rulerFont statusFont klib cursor window selection printer wc windowEnd editor showCursor'
 	classVariableNames: 'IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -782,6 +782,14 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:09:18'!
+calculateCursorRectangles	 
+	
+	cursorRect := xx@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + (dx / 2)) @ displayHeight + 1 extent: 4@12.
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
 clearCanvas
 
@@ -790,25 +798,16 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/20/2025 17:37:45'!
-drawCursor
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:10:07'!
+displayStatus
 
-	| cursorColor cursorRect rulerCursorRect rulerY xl | 
-	
-	cursorColor := Color fromHexString: '#AAAAAA'.
-
-	cursorRect := xx@yy extent: (dx @ dy).
-	
-	canvas fillRectangle: cursorRect  color: cursorColor.
+	| rulerY xl | 
 
 	rulerY := displayRect corner y + 1.
-	
+
 	canvas frameRectangle: (self leftMarginX @ rulerY corner: (self rightMarginX @ (rulerY + 30)) ) borderWidth: 1 color: Color white.
+
 	
-	rulerCursorRect := (xx + (dx / 2)) @ displayHeight extent: 4@12.
-
-	canvas fillRectangle: rulerCursorRect  color: Color white. 
-
 	" Draw the line number "
 	
 	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 5 @ (displayHeight + 33) font: statusFont color: Color white. 
@@ -834,6 +833,21 @@ drawCursor
 
 	
 	! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:09:54'!
+drawCursor
+
+	| cursorColor | 
+	
+	cursorColor := Color fromHexString: '#AAAAAA'.
+
+	cursorRect ifNotNil:[
+		canvas fillRectangle: cursorRect  color: cursorColor].
+
+	rulerCursorRect ifNotNil:[
+		canvas fillRectangle: rulerCursorRect  color: Color white]. 
+
+! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
 moveRight
@@ -1037,6 +1051,14 @@ rightMarginOriginX
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:45'!
 rightMarginX
 	^ displayRect origin x + (rightMargin * dx)! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:50'!
+rulerCursorRectangle
+	^ rulerCursorRect ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:42'!
+textCursorRectangle
+	^ cursorRect ! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:28:37'!
 yy
@@ -2538,7 +2560,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'Df 9/21/2025 15:28:51'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'Df 9/21/2025 20:11:22'!
 initialize
 
 	| editor |
@@ -2592,13 +2614,29 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/18/2025 22:08:02'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 20:14:27'!
+start
+
+	view at: #edit :: startBlinking.! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 19:58:48'!
+drawCursorOn: aCanvas
+
+	printer canvas: aCanvas.
+
+	printer drawCursor ! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 20:00:54'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
-		self drawRulerOn: aCanvas ; drawTextOn: aCanvas
+		self drawRulerOn: aCanvas ; drawTextOn: aCanvas.
+		
+		showCursor 
+			ifTrue:[
+				self drawCursorOn: aCanvas].
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
@@ -2628,7 +2666,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 15:27:06'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 19:57:38'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -2675,7 +2713,7 @@ drawTextOn: aCanvas
 			
 			bb = cit
 				ifTrue:[ 
-					printer drawCursor].
+					printer calculateCursorRectangles ; displayStatus ].
 			
 			printer moveRight.
 			
@@ -2785,7 +2823,7 @@ updateWindowEnd
 			windowEnd := windowEnd + 1 ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/21/2025 15:26:28'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/21/2025 20:01:14'!
 initialize
 	
 	super initialize .
@@ -2802,7 +2840,9 @@ initialize
 	
 	wc := (rulerFont widthOf: $8) / 2.	
 	
-	editor := KaeruEditor new.! !
+	editor := KaeruEditor new.
+	
+	showCursor := false.! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:36:42'!
 model: aKaeruEditor
@@ -2821,6 +2861,43 @@ model: aKaeruEditor
 update: aSymbol
 
 	self redrawNeeded ! !
+
+!KaeruEditorMorph methodsFor: 'cursor' stamp: 'Df 9/21/2025 20:04:17'!
+invalidateCursorRectangles
+
+	printer textCursorRectangle ifNotNil: [ :r | self invalidateLocalRect: r ].
+	
+	printer rulerCursorRectangle ifNotNil:[ :r | self invalidateLocalRect: r ].
+	! !
+
+!KaeruEditorMorph methodsFor: 'cursor' stamp: 'Df 9/21/2025 20:05:05'!
+onBlinkCursor
+	
+	"Blink the cursor"
+	
+	showCursor := showCursor not.
+	
+	self invalidateCursorRectangles 
+! !
+
+!KaeruEditorMorph methodsFor: 'cursor' stamp: 'Df 9/21/2025 20:01:41'!
+startBlinking
+	
+	showCursor := true.
+	
+	self startStepping: #onBlinkCursor stepTime: 500.
+	! !
+
+!KaeruEditorMorph methodsFor: 'cursor' stamp: 'Df 9/21/2025 20:04:53'!
+stopBlinking
+
+	"And do not show cursor anymore."
+	self stopStepping: #onBlinkCursor.
+	
+	"Hide cursor right now if needed"
+	showCursor ifTrue: [
+		showCursor := false.
+		self invalidateCursorRectangles ]! !
 
 !KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 14:03:24'!
 pageNumberIcon
