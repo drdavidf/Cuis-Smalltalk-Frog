@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 21 September 2025 at 10:25:11 pm'!
+'From Cuis7.3 [latest update: #7041] on 22 September 2025 at 5:44:51 pm'!
 'Description '!
-!provides: 'Kaeru' 1 686!
+!provides: 'Kaeru' 1 701!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -101,7 +101,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect'
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect offsetCursor'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -201,7 +201,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Morphic'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text'
+	instanceVariableNames: 'cursorState cursor selection text searchString'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -405,7 +405,7 @@ keyDown: aMorphicEvent
 			state := #blocked ].
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 22:15:43'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 17:21:13'!
 keyStroke: aKeyboardEvent
 
 	state = #editing 
@@ -413,11 +413,11 @@ keyStroke: aKeyboardEvent
 			
 			leapLeft = #down
 				ifTrue:[
-					state := #left . ^self ].
+					state := #left . model clearSearchString. model appendAndSearchBack: aKeyboardEvent keyCharacter.  ^self ].
 				
 			leapRight = #down
 				ifTrue:[
-					state := #right . ^self ].
+					state := #right . model clearSearchString.  model appendAndSearchForward: aKeyboardEvent keyCharacter. ^self ].
 			
 			aKeyboardEvent keyCharacter = $n and:[ leapAgain = #down] :: 
 				ifTrue:[
@@ -435,10 +435,19 @@ keyStroke: aKeyboardEvent
 				ifTrue:[
 					^model erase].
 			
-			model insert: aKeyboardEvent keyCharacter
+			model insert: aKeyboardEvent keyCharacter.
+			^self
 		].
 	
+	state = #left
+		ifTrue:[
+			model appendAndSearchBack: aKeyboardEvent keyCharacter. 
+			^self ].
 
+	state = #right
+		ifTrue:[
+			model appendAndSearchForward: aKeyboardEvent keyCharacter. 
+			^self ]
 ! !
 
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:38'!
@@ -786,12 +795,16 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 21:41:09'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/22/2025 17:42:33'!
 calculateCursorRectangles	 
 	
-	cursorRect := (xx+dx)@yy extent: (dx @ dy).
+	| offset |
+	
+	offset := offsetCursor ifTrue:[dx] ifFalse:[0].
+	
+	cursorRect := (xx+offset)@yy extent: (dx @ dy).
 
-	rulerCursorRect := (xx + dx + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+	rulerCursorRect := (xx + offset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
 ! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
@@ -913,6 +926,10 @@ newSoftPage
 
 	self newPage.! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/22/2025 17:41:32'!
+offsetCursor: aBoolean
+	offsetCursor := aBoolean ! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
 putChar: aCharacter
 	
@@ -945,7 +962,7 @@ computeDisplayArea
 	
 	! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/19/2025 14:36:10'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/22/2025 17:41:44'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
@@ -985,6 +1002,8 @@ initialize
 	lineNumber := 0. 
 	
 	pageNumber := 1.
+	
+	offsetCursor := false.
 	! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
@@ -1400,17 +1419,25 @@ char
 
 	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:02:23'!
-line
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:15:54'!
+globalIndex
 
-	| aWriteStream |
+	"Answers the global character index represented by this iterator "
 	
-	aWriteStream := WriteStream on: ''.
+	| index |
 	
-	pars at: parIndex :: lineAt: lineIndex :: textInto: aWriteStream.
+	index := 0.
 	
-	^ aWriteStream contents.
-	! !
+	1 to: parIndex - 1 do:[:ii | | par |
+		par := pars at: ii.
+		index := index + par length ].
+	
+	^ parIndex = (pars size + 1)
+		ifTrue:[ " the iterator points one place past the end of text "
+			 index +1 ]
+		ifFalse:[
+			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
+! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
 next
@@ -1925,7 +1952,7 @@ invariant
 isEmpty
 	^ paragraphs isEmpty! !
 
-!KLibrary methodsFor: 'searching' stamp: 'Df 9/6/2025 12:32:53'!
+!KLibrary methodsFor: 'searching' stamp: 'Df 9/22/2025 17:37:36'!
 searchFrom: anAddress backwardFor: aString
 
 	" Search backward starting from anAddress iterator for a substring in text that is equal to aString. If not found
@@ -1947,13 +1974,13 @@ searchFrom: anAddress backwardFor: aString
 	
 	| regex aKStream aMatcher result |
 	
-	regex := '.*' , aString reverse asRegexLiteral.
+	regex := aString reverse asRegexLiteral.
 	
 	aKStream := KBackwardStream on: anAddress.
 	
 	aMatcher := RxMatcher forString: regex.
 	
-	result := aMatcher matchesStreamPrefix: aKStream.
+	result := aMatcher searchStream: aKStream.
 	
 	result ifTrue:[
 		
@@ -1981,7 +2008,7 @@ searchFrom: anAddress backwardFor: aString
 		ifTrue:[aKStream position ]
 		ifFalse:[self end]! !
 
-!KLibrary methodsFor: 'searching' stamp: 'Df 9/6/2025 12:12:11'!
+!KLibrary methodsFor: 'searching' stamp: 'Df 9/22/2025 17:36:35'!
 searchFrom: anAddress forwardFor: aString
 
 	" Search forward starting from anAddress iterator for a substring in text that is equal to aString. If not found
@@ -2003,13 +2030,13 @@ searchFrom: anAddress forwardFor: aString
 	
 	| regex aKStream aMatcher result |
 	
-	regex := '.*' , aString asRegexLiteral.
+	regex := aString asRegexLiteral.
 	
 	aKStream := KForwardStream on: anAddress.
 	
 	aMatcher := RxMatcher forString: regex.
 	
-	result := aMatcher matchesStreamPrefix: aKStream.
+	result := aMatcher searchStream: aKStream.
 	
 	result ifTrue:[
 		
@@ -2228,8 +2255,11 @@ charIndexToLineIndex: anIndex
 leftMargin: anInteger
 	leftMargin := anInteger ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:47:46'!
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:05:32'!
 length
+
+	" Answers the number of characters in this paragraph. "
+	
 	^ lines sum:[:each | each length ] ifEmpty:0! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:21:04'!
@@ -2239,6 +2269,19 @@ lineAt: anIndex
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:27:14'!
 lineHeight: anInteger
 	lineHeight := anInteger! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:16:24'!
+lineIndexToCharIndex: anIntegerLineNumber
+
+	| index |
+	
+	index := 0.
+	
+	1 to: anIntegerLineNumber - 1 do:[:ii | | line |
+		line := lines at: ii.
+		index := index + line length ].
+	
+	^index! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/10/2025 19:22:34'!
 lineNum
@@ -2443,6 +2486,42 @@ insert: aCharacter
 	
 	self changed: #insert.! !
 
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 17:15:49'!
+appendAndSearchBack: aCharacter
+
+	| it cit |
+	
+	searchString nextPut: aCharacter.
+	
+	cit := text charIndexToIterator: cursor.
+	
+	it := text searchFrom:  cit backwardFor: searchString contents.
+	
+	it = text end
+		ifFalse:[
+			cursor := it globalIndex.
+			cursorState := #narrow.
+			self changed: #search ].
+		! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 17:15:41'!
+appendAndSearchForward: aCharacter
+
+	| it cit |
+	
+	searchString nextPut: aCharacter.
+	
+	cit := text charIndexToIterator: cursor.
+	
+	it := text searchFrom:  cit forwardFor: searchString contents.
+	
+	it = text end
+		ifFalse:[
+			cursor := it globalIndex.
+			cursorState := #narrow.
+			self changed: #search ].
+		! !
+
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
 charIndexToIterator: anInteger
 	^text charIndexToIterator: anInteger ! !
@@ -2450,6 +2529,11 @@ charIndexToIterator: anInteger
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
 charIndexToLineIndex: anInteger
 	^text charIndexToLineIndex: anInteger ! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:26:52'!
+clearSearchString
+
+	searchString reset.! !
 
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:12:34'!
 cursor
@@ -2460,7 +2544,7 @@ cursor
 end
 	^text end! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 19:30:28'!
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:25:11'!
 initialize
 
 	super initialize.
@@ -2469,7 +2553,9 @@ initialize
 	
 	selection := 0 to: 0.
 	
-	cursorState := #narrow.! !
+	cursorState := #narrow.
+	
+	searchString := WriteStream on:''.! !
 
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 19:23:37'!
 isCursorAtEnd
@@ -2695,7 +2781,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 22:23:59'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/22/2025 17:44:21'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -2747,6 +2833,7 @@ drawTextOn: aCanvas
 								
 			bb = cit
 				ifTrue:[ 
+					printer offsetCursor: editor isWide.
 					printer calculateCursorRectangles ; displayStatus ].
 			
 			printer moveRight.
@@ -3448,7 +3535,7 @@ testInsertBreaks
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:02:55'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:17:03'!
 testIterators
 
 	| t1 t2 text index lib bb ee |
@@ -3485,11 +3572,14 @@ testIterators
 	
 	ee := lib end.
 	
+	self assert: ee globalIndex = (text size + 1).
+	
 	index := 1.
 	
 	[bb ~= ee]
 		whileTrue:[
 			self assert: (bb char = (text at: index)).
+			self assert: bb globalIndex = index.
 			bb next.
 			index := index + 1 ].
 	
@@ -3569,7 +3659,7 @@ testRegex
 	self assert: aKStream position next next char = $m.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:34:17'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 17:34:51'!
 testSearch
 
 	| t1 t2 text index lib pos |
@@ -3601,6 +3691,12 @@ testSearch
 	self assert: lib text = text.
 	
 	self assert: lib invariant.
+	
+	self halt.
+
+	pos := lib searchFrom: lib begin forwardFor: 'e'.
+	
+	self assert: pos globalIndex = 7.
 
 	pos := lib searchFrom: lib begin forwardFor: 'himself'.
 	
