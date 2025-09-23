@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 23 September 2025 at 6:22:17 pm'!
+'From Cuis7.3 [latest update: #7041] on 23 September 2025 at 8:28:29 pm'!
 'Description '!
-!provides: 'Kaeru' 1 752!
+!provides: 'Kaeru' 1 756!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -211,7 +211,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Text'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text searchString positionRegister'
+	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -405,15 +405,27 @@ initialize
 	
 	leapAgain := #up.! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:38'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 20:26:50'!
 keyDown: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
 		ifTrue:[
+			leapLeft = #up
+				ifTrue:[ "leap left button just pressed"
+					model isExtended
+						ifTrue:[
+							model collapseLeft]  
+					].
 			leapLeft := #down ].
 
 	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
 		ifTrue:[
+			leapRight = #up
+				ifTrue:[ "leap right button just pressed"
+					model isExtended
+						ifTrue:[
+							model collapseRight]  
+				].
 			leapRight := #down ].
 
 	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
@@ -422,7 +434,9 @@ keyDown: aMorphicEvent
 		
 	leapLeft = #down and:[leapRight = #down] ::
 		ifTrue:[
-			state := #blocked ].
+			state := #blocked.
+			
+			model select. ].
 ! !
 
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 12:21:35'!
@@ -2578,7 +2592,7 @@ example
 
 	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/21/2025 19:09:35'!
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:08:36'!
 erase
 
 	cursorState = #narrow
@@ -2588,7 +2602,10 @@ erase
 	cursorState = #wide
 		ifTrue:[ 
 			^self eraseWide].
-	! !
+	
+	cursorState = #extended
+		ifTrue:[
+			^self eraseSelection].! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 13:24:27'!
 eraseNarrow
@@ -2608,6 +2625,19 @@ eraseNarrow
 					cursor > 0
 						ifTrue:[
 							cursorState := #wide] ] ].
+	
+	self changed: #erase.! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:14:40'!
+eraseSelection
+
+	text eraseFrom: selection first to: selection last.
+	
+	cursor := selection first.
+	
+	selection := cursor to: cursor.
+	
+	cursorState := #wide.
 	
 	self changed: #erase.! !
 
@@ -2646,6 +2676,10 @@ isCursorAtEnd
 	
 	^ it = self end! !
 
+!KaeruEditor methodsFor: 'testing' stamp: 'Df 9/23/2025 20:22:55'!
+isExtended
+	^cursorState = #extended! !
+
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/21/2025 21:13:19'!
 isNarrow
 	^ cursorState = #narrow! !
@@ -2679,18 +2713,53 @@ selection
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'Df 9/22/2025 16:25:11'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'Df 9/23/2025 19:49:04'!
 initialize
 
 	super initialize.
 	
 	cursor := 0.
 	
+	leapRegister := 0.
+	
 	selection := 0 to: 0.
 	
 	cursorState := #narrow.
 	
 	searchString := WriteStream on:''.! !
+
+!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:25:55'!
+collapseLeft
+
+	cursor := selection first.
+
+	selection := cursor to: cursor.
+	
+	cursorState := #narrow.
+	
+	self changed: #cursor! !
+
+!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:28:15'!
+collapseRight
+
+	cursor := selection last - 1.
+	
+	selection := cursor to: cursor.
+	
+	cursorState := #wide.
+	
+	self changed: #cursor! !
+
+!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:11:19'!
+select
+
+	selection := (leapRegister min: cursor) to: (leapRegister max: cursor) + 1.
+	
+	cursor := selection last.
+	
+	cursorState := #extended.
+	
+	self changed: #cursor! !
 
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
 charIndexToIterator: anInteger
@@ -2748,7 +2817,7 @@ nonCircularSearchFrom: anAddress forwardFor: aString
 remember: anInteger
 	positionRegister := anInteger.! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 13:18:41'!
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 20:00:54'!
 searchBack
 
 	| cit it |
@@ -2769,6 +2838,7 @@ searchBack
 				ifFalse:[
 					positionRegister] ]
 		ifFalse:[
+			leapRegister := positionRegister.
 			it globalIndex ].
 			
 		cursorState := #narrow.
@@ -2777,7 +2847,7 @@ searchBack
 		
 		! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 13:18:33'!
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 20:01:06'!
 searchForward
 
 	| it cit |
@@ -2803,6 +2873,7 @@ searchForward
 				ifFalse:[
 					positionRegister] ]
 		ifFalse:[
+			leapRegister := positionRegister.
 			it globalIndex ].
 			
 		cursorState := #narrow.
