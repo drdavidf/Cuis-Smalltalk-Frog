@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 23 September 2025 at 1:44:55 pm'!
+'From Cuis7.3 [latest update: #7041] on 23 September 2025 at 6:22:17 pm'!
 'Description '!
-!provides: 'Kaeru' 1 731!
+!provides: 'Kaeru' 1 752!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -59,6 +59,16 @@ KaeruController subclass: #KaeruScreenSaverController
 KaeruScreenSaverController class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruTitlesController category: 'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruTitlesController
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruTitlesController class' category: 'Kaeru-Keyboard'!
+KaeruTitlesController class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruKeyboardMapper category: 'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardMapper
 	instanceVariableNames: ''
@@ -101,7 +111,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect cursorOffset'
+	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect cursorOffset separatorH'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -257,6 +267,16 @@ ColoredBoxMorph subclass: #KaeruScreenSaverMorph
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruScreenSaverMorph class' category: #'Kaeru-Morphic'!
 KaeruScreenSaverMorph class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruTitlesMorph category: #'Kaeru-Morphic'!
+ColoredBoxMorph subclass: #KaeruTitlesMorph
+	instanceVariableNames: 'printer editor'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Morphic'!
+!classDefinition: 'KaeruTitlesMorph class' category: #'Kaeru-Morphic'!
+KaeruTitlesMorph class
 	instanceVariableNames: ''!
 
 !classDefinition: #FrogAnimation category: #'Kaeru-Morphic'!
@@ -453,7 +473,7 @@ keyUp: aMorphicEvent
 model: aKaeruLibrary
 	model := aKaeruLibrary ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 12:28:25'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:09:06'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editing.
@@ -470,11 +490,22 @@ processEditing: aKeyboardEvent
 	
 	aKeyboardEvent keyCharacter = $n and:[ leapAgain = #down] :: 
 		ifTrue:[
+			
+			" This will activate a different controller and control will get back to the editor
+			controller when the leap again key will be release. Therefore we set leapAgain to
+			up even if at this point it is still down. "
+			leapAgain := #up.
 			controllerMaster activate: #help. viewMaster activate: #help . ^self ].
 
 	aKeyboardEvent keyCharacter = $s and:[ leapAgain = #down] :: 
 		ifTrue:[
+			leapAgain := #up.
 			controllerMaster activate: #sleep. viewMaster activate: #sleep. ^self ].
+
+	( keyboardMapper isPageKey: aKeyboardEvent ) and:[ leapAgain = #down] :: 
+		ifTrue:[
+			leapAgain := #up.
+			controllerMaster activate: #titles. viewMaster activate: #titles. ^self ].
 
 	keyboardMapper isPageKey: aKeyboardEvent :: 
 		ifTrue:[
@@ -622,6 +653,27 @@ keyUp: aMorphicEvent
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:56:03'!
 state
 	^#sleep! !
+
+!KaeruTitlesController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:19:36'!
+keyDown: aMorphicEvent
+! !
+
+!KaeruTitlesController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:30:27'!
+keyStroke: aKeyboardEvent
+
+	! !
+
+!KaeruTitlesController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:30:21'!
+keyUp: aMorphicEvent
+
+	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			controllerMaster activate: #edit. viewMaster activate: #edit ].
+! !
+
+!KaeruTitlesController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:19:59'!
+state
+	^#titles! !
 
 !KaeruKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/24/2025 21:43:36'!
 isCopyKey: aMorphicEvent
@@ -844,6 +896,23 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:53:43'!
+advanceToNewLine
+
+	| rect hh |
+
+	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
+		
+	rect := (xx @yy) corner: displayRect corner x @ hh.
+	
+	canvas fillRectangle: rect color: background.
+		
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := yy + (lineSpace * dy / 2).
+
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 13:44:47'!
 calculateCursorRectangles	 
 	
@@ -859,6 +928,14 @@ clearCanvas
 
 	self reset.
 ! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:10:07'!
 displayStatus
@@ -916,67 +993,52 @@ moveRight
 
 	xx := xx + dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 11:53:52'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:00:32'!
 newDocument
-
-	self newSoftPage.
 	
-	pageNumber := 0.! !
+	separatorH := dy / 2.
+	
+	self advanceToNewLine; newPage.	
+	
+	pageNumber := 1.
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:44:11'!
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:59:44'!
 newLine
 
-	| rect hh |
-
-	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
-		
-	rect := (xx @yy) corner: displayRect corner x @ hh.
+	self advanceToNewLine.
 	
-	canvas fillRectangle: rect color: background.
-		
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := yy + (lineSpace * dy / 2).
-
 	lineNumber + lineSpace  < pageSize
 		ifTrue:[
 			lineNumber := lineNumber + lineSpace.
 			]
 		ifFalse:[
-			self newPage ].! !
+			separatorH := dy / 4. self newPage ].! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 11:25:25'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:02:18'!
 newPage
-	
+
 	yy + (dy/2) >= displayHeight
 		ifTrue:[^self].
-			
-	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ (dy / 2.0)) color: (Color fromHexString:'#BBBBBB').
+				
+	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
 	
-	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.125*dy))) font: pageNumberFont color: Color black.
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: pageNumberFont color: Color black.
 	
 	yy := yy + (0.5*dy).
-	
+
 	pageNumber := pageNumber + 1.
 	
-	lineNumber := 0.! !
+	lineNumber := 0.	
+! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 22:22:37'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:00:00'!
 newSoftPage
 
-	| rect hh |
+	separatorH := dy / 4.
 
-	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
-		
-	rect := (xx @yy) corner: displayRect corner x @ hh.
-	
-	canvas fillRectangle: rect color: background.
-		
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := yy + (lineSpace * dy / 2).
-
-	self newPage.! !
+	self advanceToNewLine; newPage.! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 13:36:00'!
 offsetCursorBy: anInteger
@@ -1006,15 +1068,7 @@ isNotAtEnd
 
 	^ yy  <= (dy * numLines)! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
-
-!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/23/2025 13:40:51'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/23/2025 16:58:29'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
@@ -1056,6 +1110,8 @@ initialize
 	pageNumber := 1.
 		
 	cursorOffset := 0.
+	
+	separatorH := dy / 4.
 	! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
@@ -1491,6 +1547,11 @@ globalIndex
 			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:35:13'!
+line
+
+	^ pars at: parIndex :: lineAt: lineIndex :: chars! !
+
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
 next
 
@@ -1818,7 +1879,7 @@ insert: aCharacter after: anIndex
 		
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'Df 9/21/2025 12:14:43'!
+!KLibrary methodsFor: 'inserting' stamp: 'Df 9/23/2025 17:33:02'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -1853,7 +1914,7 @@ insertBreakCharacter: aCharacter after: anIndex
 	
 	right := text copyFrom: ii+1 to: text size.
 
-	text at: ii :: isKLineSeparator 
+	ii > 0  and: [text at: ii :: isKLineSeparator ] ::
 		ifTrue:[
 			right := { aCharacter } , right]
 		ifFalse:[
@@ -2008,6 +2069,30 @@ invariant
 !KLibrary methodsFor: 'testing' stamp: 'Df 9/21/2025 19:12:07'!
 isEmpty
 	^ paragraphs isEmpty! !
+
+!KLibrary methodsFor: 'searching' stamp: 'Df 9/23/2025 17:57:45'!
+nonCircularSearchFrom: anAddress forwardFor: aString
+
+	" Search forward starting from anAddress iterator for a substring in text that is equal to aString. If found answer an iterator marking the character that follows the substring, otherwise answer nil. "
+		
+	| regex aKStream aMatcher result |
+	
+	regex := aString asRegexLiteral.
+	
+	aKStream := KForwardStream on: anAddress.
+	
+	aMatcher := RxMatcher forString: regex.
+	
+	result := aMatcher searchStream: aKStream.
+	
+	result ifTrue:[
+		
+		"the position answered by aMatcher is one character after the end of the substring "
+		
+		^ aKStream position].
+
+	^nil
+	! !
 
 !KLibrary methodsFor: 'searching' stamp: 'Df 9/23/2025 11:21:33'!
 searchFrom: anAddress backwardFor: aString
@@ -2165,6 +2250,10 @@ notEmpty
 !KLine methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:03:58'!
 charAt: anIndex
 	^chars at: anIndex! !
+
+!KLine methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:34:45'!
+chars
+	^chars! !
 
 !KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
 length
@@ -2565,24 +2654,32 @@ isNarrow
 isWide
 	^cursorState = #wide! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
-charIndexToIterator: anInteger
-	^text charIndexToIterator: anInteger ! !
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:26:39'!
+begin
+	^text begin! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
-charIndexToLineIndex: anInteger
-	^text charIndexToLineIndex: anInteger ! !
-
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:12:34'!
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:12:34'!
 cursor
 	^cursor
 	! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:22:44'!
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:22:44'!
 end
 	^text end! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:25:11'!
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:18:49'!
+pageSize
+	^text pageSize! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:12:38'!
+selection
+	^selection! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:11:55'!
+text: aKaeruLibrary
+	text := aKaeruLibrary ! !
+
+!KaeruEditor methodsFor: 'initialization' stamp: 'Df 9/22/2025 16:25:11'!
 initialize
 
 	super initialize.
@@ -2595,17 +2692,13 @@ initialize
 	
 	searchString := WriteStream on:''.! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:18:49'!
-pageSize
-	^text pageSize! !
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
+charIndexToIterator: anInteger
+	^text charIndexToIterator: anInteger ! !
 
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:12:38'!
-selection
-	^selection! !
-
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:11:55'!
-text: aKaeruLibrary
-	text := aKaeruLibrary ! !
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
+charIndexToLineIndex: anInteger
+	^text charIndexToLineIndex: anInteger ! !
 
 !KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 12:35:52'!
 appendAndSearchBack: aCharacter
@@ -2646,6 +2739,10 @@ eraseAndSearchForward
 	searchString skipBack.
 	
 	self searchForward.! !
+
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 17:58:29'!
+nonCircularSearchFrom: anAddress forwardFor: aString
+	^text nonCircularSearchFrom: anAddress forwardFor: aString! !
 
 !KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 12:27:05'!
 remember: anInteger
@@ -2712,6 +2809,11 @@ searchForward
 		
 		self changed: #search
 		! !
+
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 17:27:59'!
+searchFrom: it forwardFor: aString
+	^ text searchFrom: it forwardFor: aString
+! !
 
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
@@ -2802,7 +2904,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'Df 9/21/2025 20:11:22'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 17:25:09'!
 initialize
 
 	| editor |
@@ -2828,6 +2930,10 @@ initialize
 	view at: #help put: KaeruHelpMorph new.
 
 	view at: #sleep put: KaeruScreenSaverMorph new.
+
+	view at: #titles put: KaeruTitlesMorph new.
+
+	view at: #titles :: model: editor.
 		
 	view do:[:each | self addMorph: each.  ].
 	
@@ -2840,6 +2946,8 @@ initialize
 	controller at: #help putController: (KaeruHelpController new viewMaster: self; yourself). 
 
 	controller at: #sleep putController: (KaeruScreenSaverController new viewMaster: self; yourself). 
+
+	controller at: #titles putController: (KaeruTitlesController new viewMaster: self; yourself). 
 
 	controller activate: #edit.	
 	
@@ -3086,7 +3194,7 @@ updateWindowEnd
 			windowEnd := windowEnd + 1 ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 13:08:12'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 17:39:48'!
 initialize
 	
 	super initialize .
@@ -3100,9 +3208,7 @@ initialize
 	printer := KaeruPrinter new.
 	
 	wc := (rulerFont widthOf: $8) / 2.	
-	
-	editor := KaeruEditor new.
-	
+		
 	showCursor := false.! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:36:42'!
@@ -3244,7 +3350,7 @@ drawOn: aCanvas
 			printer putChar: each;  moveRight ] ].
 	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:11:09'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:21:56'!
 initialize 
 
 	super initialize.
@@ -3255,7 +3361,7 @@ initialize
 	
 	printer := KaeruPrinter new.
 	
-	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 602 ; numLines: 21.
+	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 600 ; numLines: 21.
 	
 	text := 
 'Kaeru Version 1.0
@@ -3296,6 +3402,56 @@ initialize
 	imageMorph morphPosition: 0@300.
 	
 	self addMorph: imageMorph 
+! !
+
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:00:05'!
+drawOn: aCanvas
+
+	| bb ee docSep |
+
+	super drawOn: aCanvas.
+	
+	printer canvas: aCanvas.
+
+	printer clearCanvas.
+		
+	docSep := Character newDocument asString.
+	
+	bb := editor begin.
+	
+	ee := editor end.
+	
+	[ printer isNotAtEnd and: [bb notNil] ]
+		whileTrue:[
+			bb line do:[:each | printer putChar: each; moveRight ].
+			printer newLine.
+			bb := editor nonCircularSearchFrom: bb forwardFor: docSep ].
+		! !
+
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:21:49'!
+initialize
+
+	super initialize.
+
+	self morphExtent: 1024@600.	
+	
+	color := Color black.
+	
+	printer := KaeruPrinter new.
+
+	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 600 ; numLines: 21.
+	
+! !
+
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:02:30'!
+model: aKaeruEditor
+
+	editor := aKaeruEditor.
+	
+	printer pageSize: editor pageSize.
+	
+	editor addDependent: self.
+	
 ! !
 
 !FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 21:47:37'!
@@ -4068,9 +4224,9 @@ copiesOf: anObject
 	
 	^anOrderedCollection ! !
 
-!Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:18:12'!
+!Character methodsFor: '*Kaeru-testing' stamp: 'Df 9/23/2025 13:49:58'!
 isKDocSeparator
-	^self = Character escape ! !
+	^self = Character newDocument ! !
 
 !Character methodsFor: '*Kaeru-testing' stamp: 'DF 8/2/2025 23:18:06'!
 isKLineSeparator
