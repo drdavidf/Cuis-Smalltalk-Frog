@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 23 September 2025 at 8:28:29 pm'!
+'From Cuis7.3 [latest update: #7041] on 24 September 2025 at 4:19:32 pm'!
 'Description '!
-!provides: 'Kaeru' 1 756!
+!provides: 'Kaeru' 1 768!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -405,27 +405,15 @@ initialize
 	
 	leapAgain := #up.! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 20:26:50'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:52:51'!
 keyDown: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
 		ifTrue:[
-			leapLeft = #up
-				ifTrue:[ "leap left button just pressed"
-					model isExtended
-						ifTrue:[
-							model collapseLeft]  
-					].
 			leapLeft := #down ].
 
 	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
 		ifTrue:[
-			leapRight = #up
-				ifTrue:[ "leap right button just pressed"
-					model isExtended
-						ifTrue:[
-							model collapseRight]  
-				].
 			leapRight := #down ].
 
 	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
@@ -455,7 +443,7 @@ keyStroke: aKeyboardEvent
 			^ self processLeapRight: aKeyboardEvent  ]
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:38'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 14:07:11'!
 keyUp: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
@@ -482,6 +470,10 @@ keyUp: aMorphicEvent
 		ifTrue:[
 			state := #right].
 ! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:46:15'!
+model
+	^model! !
 
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:08:49'!
 model: aKaeruLibrary
@@ -649,6 +641,10 @@ keyUp: aMorphicEvent
 	active keyUp: aMorphicEvent.
 	
 	Transcript show: active state; cr.! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:46:03'!
+model
+	^active model! !
 
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
@@ -1418,23 +1414,28 @@ twoLineSpaceIconSelected
 	
 ! !
 
-!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:53:53'!
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:33:20'!
 atEnd
 
-	^ kiterator isAtStart! !
+	^ kiterator isBeforeStart! !
 
-!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:54:23'!
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:18:04'!
 next
 
+	| cc |
+	
+	cc := kiterator char.
+	
 	kiterator prev.
-	^ kiterator char.
+	
+	^ cc
 ! !
 
-!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:54:57'!
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:36:37'!
 peek
 
-	^kiterator isAtStart
-		ifTrue:[ nil ] ifFalse:[ kiterator copy prev char ]! !
+	^kiterator isBeforeStart
+		ifTrue:[ nil ] ifFalse:[ kiterator char ]! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:51:45'!
 position
@@ -1523,6 +1524,11 @@ isAtEndOfLine
 isAtStart
 	
 	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 1]! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/24/2025 13:33:12'!
+isBeforeStart
+	
+	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 0]! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
 advance: anInteger
@@ -1699,20 +1705,25 @@ privPrevLine
 	charIndex := (pars at: parIndex :: lineAt: lineIndex :: length ).
 ! !
 
-!KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:25:48'!
+!KBidiIterator methodsFor: 'private' stamp: 'Df 9/24/2025 13:36:18'!
 privPrevPar
 
-	self assert: parIndex > 1.
+	self assert: parIndex >= 1.
 	
 	self assert: lineIndex =  1.
 
 	self assert: charIndex =  1.
+
+	parIndex > 1
+		ifTrue:[	
+			parIndex := parIndex - 1.
 	
-	parIndex := parIndex - 1.
+			lineIndex := 	pars at: parIndex :: numLines.
 	
-	lineIndex := 	pars at: parIndex :: numLines.
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+			charIndex := pars at: parIndex :: lineAt: lineIndex :: length]
+		ifFalse:[
+			" this makes it possible to move the iterator one place before the begining of text "
+			charIndex := 0].
 ! !
 
 !KBidiIterator methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:29:17'!
@@ -2108,7 +2119,7 @@ nonCircularSearchFrom: anAddress forwardFor: aString
 	^nil
 	! !
 
-!KLibrary methodsFor: 'searching' stamp: 'Df 9/23/2025 11:21:33'!
+!KLibrary methodsFor: 'searching' stamp: 'Df 9/24/2025 13:28:27'!
 searchFrom: anAddress backwardFor: aString
 
 	" Search backward starting from anAddress iterator for a substring in text that is equal to aString. If not found
@@ -2140,28 +2151,28 @@ searchFrom: anAddress backwardFor: aString
 	
 	result ifTrue:[
 		
-		"because we use a backward stream the position answered by aMatcher is on the beginning of the substring:
+		"because we use a backward stream the position answered by aMatcher is onne past the beginning of the substring:
 		
 		for example, looking for 'efg' from 9 in the text
 		
 		'abc efg hij'
 		
-		the matcher answers 5.
+		the matcher answers 4.
 		
-		5 is the index of e, as desired. "
+		thus we must add 1 to the result. 4+1 is the index of e, as desired. "
 		
-		^ aKStream position ].
+		^ aKStream position next ].
 
 	" not found after start so search again from the end "
 		
-	aKStream := KBackwardStream on: self end.
+	aKStream := KBackwardStream on: self end copy prev.
 	
 	aMatcher := RxMatcher forString: regex.
 	
 	result := aMatcher searchStream: aKStream.
 	
 	^result 
-		ifTrue:[aKStream position ]
+		ifTrue:[aKStream position next ]
 		ifFalse:[self end]! !
 
 !KLibrary methodsFor: 'searching' stamp: 'Df 9/23/2025 11:21:10'!
@@ -2628,16 +2639,18 @@ eraseNarrow
 	
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:14:40'!
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 15:42:22'!
 eraseSelection
 
 	text eraseFrom: selection first to: selection last.
 	
-	cursor := selection first.
+	cursor := selection first - 1.
 	
 	selection := cursor to: cursor.
 	
-	cursorState := #wide.
+	cursorState := text isEmpty 
+		ifTrue:[#narrow]
+		ifFalse:[#wide].
 	
 	self changed: #erase.! !
 
@@ -2656,16 +2669,81 @@ eraseWide
 		
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/21/2025 17:34:49'!
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 12:57:18'!
+import: aString
+
+	text := KLibrary new.
+
+	0 to: aString size - 1 do:[:ii | text insert: (aString at:ii + 1) after: ii.  ].
+	
+	cursor := aString size.
+	
+	cursorState := #wide.
+	
+	leapRegister := cursor.
+	
+	searchString reset.
+	
+	selection := cursor to: cursor.
+	
+	! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 15:32:50'!
 insert: aCharacter
 
-	text insert: aCharacter after: cursor. 
-	
-	cursor := cursor + 1.
+	cursorState = #narrow
+		ifTrue:[
+			cursor > 0
+				ifTrue:[
+					text insert: aCharacter after: cursor - 1]
+				ifFalse:[
+					text insert: aCharacter after: 0. cursor := 1. ] ]
+		ifFalse:[
+			text insert: aCharacter after: cursor.
+			cursor := cursor + 1.].		
+
 	
 	cursorState := #wide.
 	
 	self changed: #insert.! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 15:15:17'!
+moveSelectionAfterCursor
+
+	| bb ee stream |
+	
+	" Move the text marked by the selection after anIntegerIndex, provided that anIntegerIndex is not inside the
+	selection (if it is, do nothing and reset the cursor to a wide state) "
+	
+	selection first <= cursor and: [cursor < selection last] ::
+		ifTrue:[
+			cursorState := #wide.
+			^self ].
+	
+	stream := WriteStream on: ''.
+	
+	bb := text charIndexToIterator: selection first.
+	ee := text charIndexToIterator: selection last.
+	
+	[bb ~= ee] 
+		whileTrue:[
+			stream nextPut: bb char. bb next].
+		
+	cursor >= selection last
+		ifTrue:[
+			| ii |
+			ii := cursor - 1.
+			stream contents do:[:each | text insert: each after: ii. ii := ii + 1].
+			text eraseFrom: selection first to: selection last.
+			selection := cursor - stream contents size  to: cursor  ]
+		ifFalse:[
+			" cursor < selection first "
+			| ii |
+			text eraseFrom: selection first to: selection last.
+			ii := cursor - 1.
+			stream contents do:[:each | text insert: each after: ii. ii := ii + 1].
+			selection := cursor to: ii+1.
+			cursor := ii+1. ]! !
 
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/21/2025 19:23:37'!
 isCursorAtEnd
@@ -2709,6 +2787,10 @@ pageSize
 selection
 	^selection! !
 
+!KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/24/2025 12:46:47'!
+text
+	^text! !
+
 !KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:11:55'!
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
@@ -2750,12 +2832,12 @@ collapseRight
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:11:19'!
+!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/24/2025 15:50:34'!
 select
 
-	selection := (leapRegister min: cursor) to: (leapRegister max: cursor) + 1.
+	selection := ((leapRegister min: cursor) max:1) to: (leapRegister max: cursor) + 1.
 	
-	cursor := selection last.
+	cursor := selection last - 1.
 	
 	cursorState := #extended.
 	
@@ -2817,13 +2899,20 @@ nonCircularSearchFrom: anAddress forwardFor: aString
 remember: anInteger
 	positionRegister := anInteger.! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 20:00:54'!
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/24/2025 16:17:06'!
 searchBack
 
 	| cit it |
+
+	text isEmpty
+		ifTrue:[^self].
+			
+	cit := text charIndexToIterator: cursor.
 	
-	cit := text charIndexToIterator: (cursor max: 1).
-	
+	cit = text end
+		ifTrue:[
+			cit prev].
+		
 	it := text searchFrom:  cit backwardFor: searchString contents.
 	
 	cursor := it = text end
@@ -2834,7 +2923,7 @@ searchBack
 			to the remembered position. "
 			
 			searchString contents = Character newDocument asString
-				ifTrue:[0]
+				ifTrue:[leapRegister := positionRegister. 0]
 				ifFalse:[
 					positionRegister] ]
 		ifFalse:[
@@ -2847,7 +2936,7 @@ searchBack
 		
 		! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 20:01:06'!
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/24/2025 16:17:12'!
 searchForward
 
 	| it cit |
@@ -2864,12 +2953,9 @@ searchForward
 			to the remembered position. "
 			
 			searchString contents = Character newDocument asString
-				ifTrue:[ | ii |
-					" unless the text is empty we want to return the last position in the text because
-					inserting always happens one place after the position of the cursor "
-					ii := it globalIndex. 
-					ii > 0
-					ifTrue:[ii - 1] ifFalse:[ii] ]
+				ifTrue:[ 
+					leapRegister := positionRegister.
+					it globalIndex]
 				ifFalse:[
 					positionRegister] ]
 		ifFalse:[
@@ -3035,6 +3121,10 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
+model
+	^ controller model! !
+
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 20:14:27'!
 start
 
@@ -3087,7 +3177,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/23/2025 13:42:21'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/24/2025 16:04:39'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -3133,7 +3223,7 @@ drawTextOn: aCanvas
 					
 			cc := bb char. 
 
-			editor isWide and:[ bb = cit ] ::
+			bb = cit 
 				ifTrue:[
 					printer background: Color black; foreground: Color white ; putChar: cc; background: Color white; foreground: Color black ] 
 				ifFalse:[
@@ -3164,7 +3254,11 @@ drawTextOn: aCanvas
 									printer newLine ] ] ].
 				
 			bb next ].
-			! !
+	
+	printer isNotAtEnd and:[ee = cit] ::
+		ifTrue:[
+			"the cursor is past the end of the text but it is still visible on the display"
+			printer calculateCursorRectangles].! !
 
 !KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/21/2025 15:25:09'!
 scrollToCursor
@@ -4022,7 +4116,7 @@ testRegex
 	self assert: aKStream position next next char = $m.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 11:22:00'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:30:58'!
 testSearch
 
 	| t1 t2 text index lib pos |
@@ -4075,7 +4169,7 @@ testSearch
 	self assert: pos next char = $l.
 	self assert: pos next char = $a.
 		
-	pos := lib searchFrom: lib end backwardFor: 'himself'.
+	pos := lib searchFrom: lib end prev backwardFor: 'himself'.
 
 	self assert: pos char = $h.
 	self assert: pos next char = $i.
