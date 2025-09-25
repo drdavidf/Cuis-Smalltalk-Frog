@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 3:20:41 pm'!
+'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 3:26:46 pm'!
 'Description '!
-!provides: 'Kaeru' 1 803!
+!provides: 'Kaeru' 1 804!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -473,27 +473,14 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 14:58:03'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 15:26:25'!
 keyStroke: aKeyboardEvent
 
 	self doTransitionFor: #keyStroke.
 
 	state = #editingState
 		ifTrue:[
-			keyboardMapper isPageKey: aKeyboardEvent :: 
-				ifTrue:[
-					model insert: (Character newPage) . ^self ].
-
-			keyboardMapper isDocumentKey: aKeyboardEvent :: 
-				ifTrue:[
-					model insert: (Character newDocument) . ^self ].
-			
-			keyboardMapper isEraseKey: aKeyboardEvent ::
-				ifTrue:[
-					^model erase].
-			
-			model insert: aKeyboardEvent keyCharacter.
-	].
+			self processEditing: aKeyboardEvent ].
 
 	state = #leapLeftState or:[state = #searchLeftSelectState ] ::
 		ifTrue:[
@@ -531,21 +518,11 @@ model
 model: aKaeruLibrary
 	model := aKaeruLibrary ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 12:45:16'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 15:26:42'!
 processEditing: aKeyboardEvent
 
-	self assert: state = #editing. 
-"	
-	leapLeft = #down
-		ifTrue:[ 
-			state := #left . model clearSearchString ; remember: model cursor.
-			^self processLeapLeft: aKeyboardEvent ].
-		
-	leapRight = #down
-		ifTrue:[
-			state := #right . model clearSearchString ; remember: model cursor.
-			^self processLeapRight: aKeyboardEvent ].
-"	
+	self assert: state = #editingState. 
+
 	aKeyboardEvent keyCharacter = $n and:[ leapAgain = #down] :: 
 		ifTrue:[
 			
