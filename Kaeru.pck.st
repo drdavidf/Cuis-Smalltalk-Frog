@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 4:30:13 pm'!
+'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 5:50:46 pm'!
 'Description '!
-!provides: 'Kaeru' 1 807!
+!provides: 'Kaeru' 1 810!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -407,7 +407,7 @@ doTransitionFor: aSymbol
 			entry ].
 		! !
 
-!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 13:34:27'!
+!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
 initialize
 
 	super initialize.
@@ -439,9 +439,9 @@ initialize
 		
 		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
 		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
-		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState  . [:editor | editor restartSearch ] }.
+		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
 		
-		{ #leapRightSelectState . #leapRightUp } -> { #editingState .[:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
 		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
 		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
 		
@@ -3698,7 +3698,7 @@ initialize
 	
 	originx := 0.! !
 
-!FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 21:49:28'!
+!FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 17:49:29'!
 step
 	
 	index := index + 1. 
@@ -3709,11 +3709,20 @@ step
 		
 	image := Frames at: index.
 	
-	originx := originx + 48 mod: 1024.
+	originx := originx + (12 to: 64) atRandom mod: 1024.
 	
 	self morphPosition: originx @ self morphPosition y.
 	
 	self redrawNeeded ! !
+
+!FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 17:44:44'!
+stepTime
+
+	^ index = 1
+		ifTrue:[
+			1000]
+		ifFalse:[
+			200].! !
 
 !FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 21:43:39'!
 wantsSteps
