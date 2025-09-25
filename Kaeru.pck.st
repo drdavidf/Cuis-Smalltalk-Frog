@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 3:26:46 pm'!
+'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 4:18:13 pm'!
 'Description '!
-!provides: 'Kaeru' 1 804!
+!provides: 'Kaeru' 1 806!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -2662,25 +2662,27 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 20:14:58'!
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 16:08:24'!
 eraseNarrow
 
 	self assert: cursor >= 0.
+	
+	text isEmpty
+		ifTrue:[^self].
 		
 	cursor = 0
 		ifTrue:[
-			text isEmpty 
-				ifFalse:[
-					text eraseFrom: 1 to: 2] ]
+			text eraseFrom: 1 to: 2] 
 		ifFalse:[
-			text eraseFrom: cursor to: cursor + 1.
+			
+			" because the text is not empty then if the cursor is past the end then
+			it is at least 2, decreasing it by 1 makes it at least 1, safe for passing to erase "
 			self isCursorPastEnd
 				ifTrue:[
-					cursor := cursor - 1.
-					cursor > 0
-						ifTrue:[
-							cursorState := #wide] ] ].
-	
+					cursor := cursor - 1. 
+					cursorState := #wide ]
+				ifFalse:[
+					text eraseFrom: cursor to: cursor + 1 ] ].
 	self changed: #erase.! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 15:42:22'!
@@ -3320,12 +3322,14 @@ drawTextOn: aCanvas
 			"the cursor is past the end of the text but it is still visible on the display"
 			printer calculateCursorRectangles].! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/21/2025 15:25:09'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/25/2025 16:17:47'!
 scrollToCursor
 
 	"Ensure that the window includes the cursor "
 	
 	| cline |
+	
+	self updateWindowEnd. 
 	
 	cline := editor charIndexToLineIndex: editor cursor :: first.
 	
@@ -3335,7 +3339,7 @@ scrollToCursor
 			self updateWindowEnd. 
 			^self redrawNeeded ].
 
-	cline < windowEnd
+	cline <= windowEnd
 		ifTrue:[
 			" cursor is within the window, no need to do anything"
 			^self].
