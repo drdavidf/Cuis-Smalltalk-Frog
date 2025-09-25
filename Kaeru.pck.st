@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 4:18:13 pm'!
+'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 4:30:13 pm'!
 'Description '!
-!provides: 'Kaeru' 1 806!
+!provides: 'Kaeru' 1 807!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: 'Kaeru-Keyboard'!
@@ -960,11 +960,13 @@ calculateCursorRectangles
 	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 09:59:24'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/25/2025 16:30:01'!
 clearCanvas
 
 	canvas fillRectangle: displayRect color: Color white.
 
+	self background: Color white ; foreground: Color black.
+	
 	self reset.
 ! !
 
@@ -2754,7 +2756,7 @@ insert: aCharacter
 	
 	self changed: #insert.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 13:44:01'!
+!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 16:25:40'!
 moveSelectionAfterCursor
 
 	| bb ee stream |
@@ -2769,7 +2771,7 @@ moveSelectionAfterCursor
 	
 	stream := WriteStream on: ''.
 	
-	bb := text charIndexToIterator: selection first.
+	bb := text charIndexToIterator: (selection first max:1).
 	ee := text charIndexToIterator: selection last.
 	
 	[bb ~= ee] 
@@ -2787,7 +2789,7 @@ moveSelectionAfterCursor
 			" cursor < selection first "
 			| ii |
 			text eraseFrom: selection first to: selection last.
-			ii := cursor - 1.
+			ii := cursor - 1 max: 0.
 			stream contents do:[:each | text insert: each after: ii. ii := ii + 1].
 			selection := cursor to: ii+1.
 			cursor := ii+1. ].
