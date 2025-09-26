@@ -1,111 +1,111 @@
-'From Cuis7.3 [latest update: #7041] on 25 September 2025 at 5:50:46 pm'!
+'From Cuis7.5 [latest update: #7615] on 26 September 2025 at 8:10:59 pm'!
 'Description '!
-!provides: 'Kaeru' 1 810!
+!provides: 'Kaeru' 1 821!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
-SystemOrganization addCategory: 'Kaeru-Keyboard'!
+SystemOrganization addCategory: #'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
 SystemOrganization addCategory: #'Kaeru-Text'!
 SystemOrganization addCategory: #'Kaeru-Tools'!
 
 
-!classDefinition: #KaeruController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruController category: #'Kaeru-Keyboard'!
 Object subclass: #KaeruController
 	instanceVariableNames: 'controllerMaster keyboardMapper viewMaster'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruController class' category: #'Kaeru-Keyboard'!
 KaeruController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruEditorController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruEditorController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruEditorController
 	instanceVariableNames: 'state leapLeft leapRight leapAgain model transitions'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruEditorController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruEditorController class' category: #'Kaeru-Keyboard'!
 KaeruEditorController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruHelpController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruHelpController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruHelpController
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruHelpController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruHelpController class' category: #'Kaeru-Keyboard'!
 KaeruHelpController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruMasterController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruMasterController
 	instanceVariableNames: 'active controllers'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruMasterController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruMasterController class' category: #'Kaeru-Keyboard'!
 KaeruMasterController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruScreenSaverController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruScreenSaverController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruScreenSaverController
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruScreenSaverController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruScreenSaverController class' category: #'Kaeru-Keyboard'!
 KaeruScreenSaverController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruTitlesController category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruTitlesController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruTitlesController
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruTitlesController class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruTitlesController class' category: #'Kaeru-Keyboard'!
 KaeruTitlesController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardMapper category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardMapper category: #'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardMapper class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardMapper class' category: #'Kaeru-Keyboard'!
 KaeruKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #LinuxKeyboardMapper category: 'Kaeru-Keyboard'!
+!classDefinition: #LinuxKeyboardMapper category: #'Kaeru-Keyboard'!
 KaeruKeyboardMapper subclass: #LinuxKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'LinuxKeyboardMapper class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'LinuxKeyboardMapper class' category: #'Kaeru-Keyboard'!
 LinuxKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #LinuxRaspiKeyboardMapper category: 'Kaeru-Keyboard'!
+!classDefinition: #LinuxRaspiKeyboardMapper category: #'Kaeru-Keyboard'!
 LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
 	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'LinuxRaspiKeyboardMapper class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'LinuxRaspiKeyboardMapper class' category: #'Kaeru-Keyboard'!
 LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardStateMachine category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardStateMachine category: #'Kaeru-Keyboard'!
 Object subclass: #KaeruKeyboardStateMachine
 	instanceVariableNames: 'leapLeft leapRight leapAgain mapper'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardStateMachine class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardStateMachine class' category: #'Kaeru-Keyboard'!
 KaeruKeyboardStateMachine class
 	instanceVariableNames: ''!
 
@@ -219,13 +219,13 @@ ActiveModel subclass: #KaeruEditor
 KaeruEditor class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruKeyboardTester category: 'Kaeru-Keyboard'!
+!classDefinition: #KaeruKeyboardTester category: #'Kaeru-Keyboard'!
 PlacedMorph subclass: #KaeruKeyboardTester
 	instanceVariableNames: 'controller mapper'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardTester class' category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardTester class' category: #'Kaeru-Keyboard'!
 KaeruKeyboardTester class
 	instanceVariableNames: ''!
 
@@ -386,6 +386,15 @@ keyStroke: aKeyboardEvent
 keyUp: aMorphicEvent
 
 	self subclassResponsibility ! !
+
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/26/2025 14:28:06'!
+nullify
+	
+	controllerMaster := nil.
+	
+	keyboardMapper := nil.
+	
+	viewMaster := nil.! !
 
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:03:59'!
 viewMaster: aKaeruMorph
@@ -675,6 +684,13 @@ keyUp: aMorphicEvent
 model
 	^active model! !
 
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/26/2025 14:28:36'!
+nullify
+	
+	active := nil.
+	
+	controllers := nil.! !
+
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
 ! !
@@ -899,6 +915,22 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/23/2025 13:44:47'!
+calculateCursorRectangles	 
+	
+	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
+
 !KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
 reset
 
@@ -935,6 +967,12 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:05:43'!
+skipToSoftPage
+
+	^(lineSpace * dy / 2) + (0.5*dy).
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:53:43'!
 advanceToNewLine
 
@@ -952,14 +990,6 @@ advanceToNewLine
 
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 13:44:47'!
-calculateCursorRectangles	 
-	
-	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
-
-	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
-! !
-
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/25/2025 16:30:01'!
 clearCanvas
 
@@ -969,14 +999,6 @@ clearCanvas
 	
 	self reset.
 ! !
-
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:10:07'!
 displayStatus
@@ -2128,6 +2150,25 @@ invariant
 isEmpty
 	^ paragraphs isEmpty! !
 
+!KLibrary methodsFor: 'searching' stamp: 'DF 9/26/2025 20:08:46'!
+match: aString at: anIterator
+
+	| ee  bb ii |
+
+	bb := anIterator copy.
+		
+	ee := self end.
+	
+	ii := 1.
+	
+	[ bb ~= ee and: [ii <= aString size] and: [bb char = (aString at: ii) ] ] 
+		whileTrue:[
+			bb next.
+			ii := ii + 1].
+		
+	^ ii > aString size
+! !
+
 !KLibrary methodsFor: 'searching' stamp: 'Df 9/23/2025 17:57:45'!
 nonCircularSearchFrom: anAddress forwardFor: aString
 
@@ -2152,7 +2193,7 @@ nonCircularSearchFrom: anAddress forwardFor: aString
 	^nil
 	! !
 
-!KLibrary methodsFor: 'searching' stamp: 'Df 9/24/2025 20:12:24'!
+!KLibrary methodsFor: 'searching' stamp: 'DF 9/26/2025 20:08:58'!
 searchFrom: anAddress backwardFor: aString
 
 	" Search backward starting from anAddress iterator for a substring in text that is equal to aString. If not found
@@ -2175,7 +2216,13 @@ searchFrom: anAddress backwardFor: aString
 	| regex aKStream aMatcher result |
 	
 	self assert: anAddress ~= self end.
+		
+	"We start by matching the string at the position of anAddress. This is essential for correctly searching 
+	ever increasing prefixes of a string because otherwise the reverse search will not find the previous prefix."
 	
+	self match: aString at: anAddress ::
+		ifTrue:[^anAddress].
+		
 	regex := aString reverse asRegexLiteral.
 	
 	aKStream := KBackwardStream on: anAddress.
@@ -2186,7 +2233,7 @@ searchFrom: anAddress backwardFor: aString
 	
 	result ifTrue:[
 		
-		"because we use a backward stream the position answered by aMatcher is onne past the beginning of the substring:
+		"because we use a backward stream the position answered by aMatcher is one past the beginning of the substring:
 		
 		for example, looking for 'efg' from 9 in the text
 		
@@ -2717,12 +2764,17 @@ eraseWide
 		
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 12:30:34'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/26/2025 15:03:35'!
 import: aString
 
 	text := KLibrary new.
 
-	0 to: aString size - 1 do:[:ii | text insert: (aString at:ii + 1) after: ii.  ].
+	0 to: aString size - 1 do:[:ii | |cc| 
+		cc := aString at:ii + 1.
+		cc isLineSeparator
+			ifTrue:[
+				cc := Character cr]. 
+		text insert: cc after: ii.  ].
 	
 	cursor := aString size.
 	
@@ -2914,12 +2966,10 @@ appendAndSearchBack: aCharacter
 	self searchBack.		
 		! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/25/2025 13:40:22'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 9/26/2025 18:37:33'!
 appendAndSearchForward: aCharacter
 
 	searchString nextPut: aCharacter.
-
-	Transcript show: 'appendAndSearchForward: searchString = ' ; show: searchString ;cr .
 	
 	self searchForward! !
 
@@ -2958,7 +3008,7 @@ restartSearch.
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/24/2025 21:52:19'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 9/26/2025 20:09:12'!
 searchBack
 
 	| cit it |
@@ -2995,7 +3045,7 @@ searchBack
 		
 		! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/24/2025 21:52:29'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 9/26/2025 18:45:41'!
 searchForward
 
 	| it cit |
@@ -3394,7 +3444,7 @@ advance: aKaeruPrinter
 	^bb
 			! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'Df 9/21/2025 15:25:22'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:14:01'!
 updateWindowEnd
 	
 	" Find the last line visible on the display, without actually drawing "
@@ -3412,17 +3462,27 @@ updateWindowEnd
 	yy := printer displayRect origin y.	
 	
 	[ yy < printer displayRect height and: [bb ~= ee] ] 
-		whileTrue:[ | lineSpace |
+		whileTrue:[ | lineSpace cc hh |
 
 			lineSpace := bb attributes second.
 
 			printer lineSpace: lineSpace.
-									
+			
+			cc := bb line last.
+
+			hh := cc isPageSeparator
+				ifTrue:[
+					printer skipToSoftPage]
+				ifFalse:[						
+					printer skipToNewLine ].
+			
 			bb nextLine.
 			
-			yy := yy + printer skipToNewLine.
+			yy := yy + hh.
 			
-			windowEnd := windowEnd + 1 ].
+			yy < printer displayRect height
+				ifTrue:[
+					windowEnd := windowEnd + 1 ]. ].
 			! !
 
 !KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 17:39:48'!
@@ -3442,10 +3502,13 @@ initialize
 		
 	showCursor := false.! !
 
-!KaeruEditorMorph methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:36:42'!
+!KaeruEditorMorph methodsFor: 'accessing' stamp: 'Df 9/26/2025 14:34:57'!
 model: aKaeruEditor
 
 	editor := aKaeruEditor.
+	
+	editor isNil
+		ifTrue:[^self].
 	
 	editor addDependent: self.
 	
