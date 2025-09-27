@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 27 September 2025 at 4:05:29 pm'!
+'From Cuis7.5 [latest update: #7615] on 27 September 2025 at 6:01:37 pm'!
 'Description '!
-!provides: 'Kaeru' 1 825!
+!provides: 'Kaeru' 1 829!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -2789,19 +2789,17 @@ eraseWide
 		
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/26/2025 15:03:35'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/27/2025 16:45:40'!
 import: aString
-
-	text := KLibrary new.
 
 	0 to: aString size - 1 do:[:ii | |cc| 
 		cc := aString at:ii + 1.
 		cc isLineSeparator
 			ifTrue:[
 				cc := Character cr]. 
-		text insert: cc after: ii.  ].
+		text insert: cc after: cursor + ii.  ].
 	
-	cursor := aString size.
+	cursor := cursor + aString size.
 	
 	cursorState := #wide.
 	
@@ -3738,7 +3736,7 @@ initialize
 	self addMorph: imageMorph 
 ! !
 
-!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:00:05'!
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 18:01:20'!
 drawOn: aCanvas
 
 	| bb ee docSep |
@@ -3755,7 +3753,7 @@ drawOn: aCanvas
 	
 	ee := editor end.
 	
-	[ printer isNotAtEnd and: [bb notNil] ]
+	[ printer isNotAtEnd and: [bb ~= ee] ]
 		whileTrue:[
 			bb line do:[:each | printer putChar: each; moveRight ].
 			printer newLine.
@@ -3814,12 +3812,12 @@ step
 	
 	self redrawNeeded ! !
 
-!FrogAnimation methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 17:44:44'!
+!FrogAnimation methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:31:14'!
 stepTime
 
 	^ index = 1
 		ifTrue:[
-			1000]
+			1000 to:2000 :: atRandom ]
 		ifFalse:[
 			200].! !
 
