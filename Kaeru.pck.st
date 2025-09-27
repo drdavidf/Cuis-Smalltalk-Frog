@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 26 September 2025 at 8:10:59 pm'!
+'From Cuis7.5 [latest update: #7615] on 27 September 2025 at 4:05:29 pm'!
 'Description '!
-!provides: 'Kaeru' 1 821!
+!provides: 'Kaeru' 1 825!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -21,7 +21,7 @@ KaeruController class
 
 !classDefinition: #KaeruEditorController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruEditorController
-	instanceVariableNames: 'state leapLeft leapRight leapAgain model transitions'
+	instanceVariableNames: 'state leapLeft leapRight useFront model transitions'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
@@ -465,7 +465,7 @@ initialize
 	} asDictionary.
 	! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 12:38:46'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:03:22'!
 keyDown: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
@@ -477,8 +477,9 @@ keyDown: aMorphicEvent
 			self doTransitionFor: #leapRightDown ].
 
 	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #down ].
+		ifTrue:[ 
+			useFront := #down.
+			self possiblyLeapAgain ].
 
 ! !
 
@@ -502,7 +503,7 @@ keyStroke: aKeyboardEvent
 	
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 12:22:50'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 15:54:36'!
 keyUp: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
@@ -515,7 +516,7 @@ keyUp: aMorphicEvent
 
 	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[
-			leapAgain := #up ].
+			useFront := #up ].
 	
 ! !
 
@@ -527,28 +528,40 @@ model
 model: aKaeruLibrary
 	model := aKaeruLibrary ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 15:26:42'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:05:26'!
+possiblyLeapAgain
+
+	state = #leapLeftState or:[state = #searchLeftSelectState ] ::
+		ifTrue:[ 
+			model creepBack; searchBack ].
+		
+	state = #leapRightState or:[state = #searchRightSelectState ] ::
+		ifTrue:[
+			model creepForward; searchForward ].
+		! !
+
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 15:54:36'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
 
-	aKeyboardEvent keyCharacter = $n and:[ leapAgain = #down] :: 
+	aKeyboardEvent keyCharacter = $n and:[ useFront = #down] :: 
 		ifTrue:[
 			
 			" This will activate a different controller and control will get back to the editor
 			controller when the leap again key will be release. Therefore we set leapAgain to
 			up even if at this point it is still down. "
-			leapAgain := #up.
+			useFront := #up.
 			controllerMaster activate: #help. viewMaster activate: #help . ^self ].
 
-	aKeyboardEvent keyCharacter = $s and:[ leapAgain = #down] :: 
+	aKeyboardEvent keyCharacter = $s and:[ useFront = #down] :: 
 		ifTrue:[
-			leapAgain := #up.
+			useFront := #up.
 			controllerMaster activate: #sleep. viewMaster activate: #sleep. ^self ].
 
-	( keyboardMapper isPageKey: aKeyboardEvent ) and:[ leapAgain = #down] :: 
+	( keyboardMapper isPageKey: aKeyboardEvent ) and:[ useFront = #down] :: 
 		ifTrue:[
-			leapAgain := #up.
+			useFront := #up.
 			controllerMaster activate: #titles. viewMaster activate: #titles. ^self ].
 
 	keyboardMapper isPageKey: aKeyboardEvent :: 
@@ -2696,6 +2709,18 @@ example
 
 	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/27/2025 16:00:20'!
+creepBack
+
+	cursor > 1
+		ifTrue:[
+			cursor := cursor - 1 ].! !
+
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/27/2025 16:00:47'!
+creepForward
+
+	cursor := cursor + 1.! !
+
 !KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:08:36'!
 erase
 
@@ -3238,6 +3263,17 @@ activate: aSymbol
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
+
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 14:08:48'!
+nullify
+
+	view := nil.
+	
+	lib := nil.
+	
+	active := nil.
+	
+	controller := nil! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 20:14:27'!
 start
