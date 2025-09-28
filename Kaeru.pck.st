@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:00:35 pm'!
+'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:40:11 pm'!
 'Description '!
-!provides: 'Kaeru' 1 849!
+!provides: 'Kaeru' 1 851!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -2809,14 +2809,20 @@ eraseNarrow
 					text eraseFrom: cursor to: cursor + 1 ] ].
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 15:42:22'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:05:03'!
 eraseSelection
 
+	self assert: selection first > 1.
+	
+	self assert: selection first <= selection last.
+	
+	self assert: selection last <= self end globalIndex.
+	
 	text eraseFrom: selection first to: selection last.
 	
 	cursor := selection first - 1.
 	
-	selection := cursor to: cursor.
+	selection := selection last to: selection last.
 	
 	cursorState := text isEmpty 
 		ifTrue:[#narrow]
@@ -2880,13 +2886,17 @@ insert: aCharacter
 	
 	self changed: #insert.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 16:25:40'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:33:21'!
 moveSelectionAfterCursor
 
 	| bb ee stream |
 	
 	" Move the text marked by the selection after anIntegerIndex, provided that anIntegerIndex is not inside the
 	selection (if it is, do nothing and reset the cursor to a wide state) "
+	
+	self assert: cursor >= 1. 
+	
+	self assert: selection first >= 2. "we cannot select the very first document break character"
 	
 	selection first <= cursor and: [cursor < selection last] ::
 		ifTrue:[
@@ -2895,7 +2905,7 @@ moveSelectionAfterCursor
 	
 	stream := WriteStream on: ''.
 	
-	bb := text charIndexToIterator: (selection first max:1).
+	bb := text charIndexToIterator: selection first.
 	ee := text charIndexToIterator: selection last.
 	
 	[bb ~= ee] 
@@ -2905,18 +2915,44 @@ moveSelectionAfterCursor
 	cursor >= selection last
 		ifTrue:[
 			| ii |
+			
 			ii := cursor - 1.
+			
 			stream contents do:[:each | text insert: each after: ii. ii := ii + 1].
+			
 			text eraseFrom: selection first to: selection last.
-			selection := cursor - stream contents size  to: cursor  ]
+
+			"self assert:  cursor >= selection last. from guard"
+			
+			"self assert: selection last > (selection last - selection first) . because selection first > 1".
+
+			"self assert: 1 < cursor - (selection last - selection first). because stream contents size = selection last - selection first  "
+			
+			"self assert: 1 < cursor - stream contents size. because stream contents size = selection last - selection first + 1 "
+			
+			"self assert: cursor - stream contents size <= cursor. because size is a non negative number"
+			
+			"self assert: cursor <= self end globalIndex. true because of system invariant "
+			
+			selection := cursor - stream contents size to: cursor. 
+			
+			"
+			self assert: 1 < selection first.
+			self assert: selection first <= selection last.
+			self assert: selection last <= self end globalIndex.  " ]
 		ifFalse:[
 			" cursor < selection first "
 			| ii |
 			text eraseFrom: selection first to: selection last.
-			ii := cursor - 1 max: 0.
+			
+			cursor > 1 
+				ifTrue:[
+					cursor := cursor - 1].
+			
+			ii := cursor.
 			stream contents do:[:each | text insert: each after: ii. ii := ii + 1].
-			selection := cursor to: ii+1.
-			cursor := ii+1. ].
+			selection := cursor + 1 to: ii+1.
+			cursor := ii+1].
 		
 	self changed: #cursor! !
 
@@ -2974,7 +3010,7 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/28/2025 17:40:56'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/28/2025 19:04:17'!
 initialize
 
 	super initialize.
@@ -2983,38 +3019,44 @@ initialize
 	
 	leapRegister := 1.
 	
-	selection := 1 to: 1.
+	selection := 2 to: 2.
 	
 	cursorState := #narrow.
 	
 	searchString := WriteStream on:''.! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:25:55'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:01'!
 collapseLeft
 
 	cursor := selection first.
 
-	selection := cursor to: cursor.
+	selection := selection last to: selection last. " ensures that selection first > 1 "
 	
 	cursorState := #narrow.
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/23/2025 20:28:15'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:17'!
 collapseRight
 
 	cursor := selection last - 1.
 	
-	selection := cursor to: cursor.
+	selection := selection last to: selection last.
 	
 	cursorState := #wide.
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'Df 9/25/2025 14:53:42'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:40:07'!
 select
 
-	selection := ((leapRegister min: cursor) max:1) to: (leapRegister max: cursor) + 1.
+	cursor = self end globalIndex
+		ifTrue:[
+			cursor := cursor - 1].	
+		
+	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
+	
+	self assert: selection last <= self end globalIndex.
 	
 	cursor := selection last.
 		
