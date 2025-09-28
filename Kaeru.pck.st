@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 6:33:38 pm'!
+'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:00:35 pm'!
 'Description '!
-!provides: 'Kaeru' 1 848!
+!provides: 'Kaeru' 1 849!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -2204,9 +2204,16 @@ invariant
 	
 	^true! !
 
-!KLibrary methodsFor: 'testing' stamp: 'Df 9/21/2025 19:12:07'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 18:57:28'!
 isEmpty
-	^ paragraphs isEmpty! !
+
+	paragraphs size > 2 
+		ifTrue:[^false].
+	
+	paragraphs last numLines > 1 
+		ifTrue:[^false].
+		
+	^paragraphs last lastLine length = 1! !
 
 !KLibrary methodsFor: 'searching' stamp: 'DF 9/26/2025 20:08:46'!
 match: aString at: anIterator
@@ -2776,22 +2783,25 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/25/2025 16:08:24'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:00:32'!
 eraseNarrow
 
-	self assert: cursor >= 0.
+	self assert: cursor >= 1.
 	
 	text isEmpty
-		ifTrue:[^self].
-		
-	cursor = 0
 		ifTrue:[
+			^self].
+		
+	cursor = 1
+		ifTrue:[
+			
 			text eraseFrom: 1 to: 2] 
 		ifFalse:[
 			
-			" because the text is not empty then if the cursor is past the end then
-			it is at least 2, decreasing it by 1 makes it at least 1, safe for passing to erase "
-			self isCursorPastEnd
+			" Because the text is not empty then if the cursor is at the end 
+			it is at least 3, decreasing it by 1 makes it at least 2, safe for passing to erase "
+			
+			cursor = text end globalIndex
 				ifTrue:[
 					cursor := cursor - 1. 
 					cursorState := #wide ]
@@ -2814,16 +2824,16 @@ eraseSelection
 	
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/24/2025 20:14:58'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 18:52:33'!
 eraseWide
 
-	self assert: cursor >= 1.
-	self assert: self isCursorPastEnd not.
+	self assert: cursor > 1.
+	self assert: cursor < self end globalIndex.
 	
 	text eraseFrom: cursor to: cursor + 1.
 	cursor := cursor - 1.
 	
-	cursor = 0 
+	cursor = 1 
 		ifTrue:[			
 			cursorState := #narrow ]. 
 		
@@ -3745,7 +3755,7 @@ initialize
 	self addMorph: imageMorph 
 ! !
 
-!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 17:18:40'!
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:42:48'!
 drawOn: aCanvas
 
 	| bb ee docSep |
@@ -3758,7 +3768,7 @@ drawOn: aCanvas
 		
 	docSep := Character newDocument asString.
 	
-	bb := editor begin.
+	bb := editor begin next. "position bb on the first document "
 	
 	ee := editor end.
 	
