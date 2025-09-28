@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:42:57 pm'!
+'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 8:19:32 pm'!
 'Description '!
-!provides: 'Kaeru' 1 852!
+!provides: 'Kaeru' 1 855!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -2390,6 +2390,13 @@ buildFrom: aTokenStream limitBy: anIntegerWidth
 	
 	chars := aWriteStream contents.! !
 
+!KLine methodsFor: 'inserting' stamp: 'DF 9/28/2025 20:18:01'!
+fastInsert: aCharacter after: anIndex
+
+	chars := chars copyReplaceFrom: anIndex + 1 to: anIndex with: aCharacter asString.
+	
+	^true! !
+
 !KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:19'!
 isLineSeparating
 
@@ -2463,20 +2470,45 @@ buildFrom: aTokenStream
 		
 	! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:04:12'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 9/28/2025 20:19:27'!
+fastInsert: aCharacter after: anIndex
+
+	| lineIndex charIndex |
+	
+	lineIndex := 1. 
+	charIndex := anIndex.
+	
+	[ (lines at: lineIndex :: length + 1) < charIndex ]
+		whileTrue:[
+			charIndex := charIndex - (lines at: lineIndex :: length).
+			lineIndex := lineIndex + 1 ].
+
+	^(lines at: lineIndex :: length) + 1 <= self width ::
+		ifTrue:[
+			lines at: lineIndex :: fastInsert: aCharacter after: charIndex]
+		ifFalse:[
+			false]
+		! !
+
+!KParagraph methodsFor: 'inserting' stamp: 'DF 9/28/2025 20:15:36'!
 insert: aCharacter after: anIndex
 
 	"insert a character to the paragraph assuming that the character is not a line separator "
 	
-	| text  |
+	| text  result |
 	
 	self assert: aCharacter isKLineSeparator not.
-	 
-	text := self text asOrderedCollection.
 	
-	text add: aCharacter afterIndex: anIndex.
+	result := self fastInsert: aCharacter after: anIndex.
+	
+	result 
+		ifFalse:[
+	 
+			text := self text asOrderedCollection.
+	
+			text add: aCharacter afterIndex: anIndex.
 		
-	self rebuildFromText: text.! !
+			self rebuildFromText: text].! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:03:56'!
 rebuildFromText: aString
