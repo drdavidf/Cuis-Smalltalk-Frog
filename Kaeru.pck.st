@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 27 September 2025 at 6:01:37 pm'!
+'From Cuis7.3 [latest update: #6895] on 28 September 2025 at 3:15:00 pm'!
 'Description '!
-!provides: 'Kaeru' 1 829!
+!provides: 'Kaeru' 1 837!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -401,70 +401,6 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
-doTransitionFor: aSymbol
-
-	| entry |
-	
-	entry := transitions at: { state . aSymbol }.
-	
-	state := entry isArray
-		ifTrue:[
-			entry second value: model.
-			entry first ]
-		ifFalse:[
-			entry ].
-		! !
-
-!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
-initialize
-
-	super initialize.
-	
-	state := #editingState.
-	
-	transitions := { 
-		{ #editingState . #leapLeftDown } -> { #leapLeftState . [:editor | editor restartSearch ] }.
-		{ #editingState . #leapRightDown } -> { #leapRightState . [:editor | editor restartSearch ] }.
-		{ #editingState . #keyStroke } -> #editingState .
-		
-		{ #leapLeftState . #leapLeftUp } -> #editingState . 
-		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
-
-		{ #leapRightState . #leapRightUp } -> #editingState . 
-		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
-		{ #leapRightState . #keyStroke } -> #leapRightState . 
-
-		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
-		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
-		
-		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
-		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
-		
-		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
-		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
-		{ #selectingReadyState . #keyStroke } -> #editingState.
-		
-		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
-		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
-		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
-		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
-		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
-		
-		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
-		
-	} asDictionary.
-	! !
-
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:03:22'!
 keyDown: aMorphicEvent
 
@@ -621,6 +557,70 @@ translateToCharacter: aKeyboardEvent
 				ifFalse:[
 					aKeyboardEvent keyCharacter ] ].
 ! !
+
+!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
+doTransitionFor: aSymbol
+
+	| entry |
+	
+	entry := transitions at: { state . aSymbol }.
+	
+	state := entry isArray
+		ifTrue:[
+			entry second value: model.
+			entry first ]
+		ifFalse:[
+			entry ].
+		! !
+
+!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
+initialize
+
+	super initialize.
+	
+	state := #editingState.
+	
+	transitions := { 
+		{ #editingState . #leapLeftDown } -> { #leapLeftState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapRightDown } -> { #leapRightState . [:editor | editor restartSearch ] }.
+		{ #editingState . #keyStroke } -> #editingState .
+		
+		{ #leapLeftState . #leapLeftUp } -> #editingState . 
+		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+
+		{ #leapRightState . #leapRightUp } -> #editingState . 
+		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
+		{ #leapRightState . #keyStroke } -> #leapRightState . 
+
+		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
+		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
+		
+		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
+		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
+		
+		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
+		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
+		{ #selectingReadyState . #keyStroke } -> #editingState.
+		
+		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
+		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
+		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
+		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
+		
+		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
+		
+	} asDictionary.
+	! !
 
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
 keyDown: aMorphicEvent
@@ -928,64 +928,6 @@ leapLeft
 leapRight
 	^leapRight ! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/23/2025 13:44:47'!
-calculateCursorRectangles	 
-	
-	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
-
-	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
-! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
-reset
-
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
-
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
-skipToNewLine
-	
-	| hh |
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:05:43'!
-skipToSoftPage
-
-	^(lineSpace * dy / 2) + (0.5*dy).
-! !
-
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:53:43'!
 advanceToNewLine
 
@@ -1137,6 +1079,64 @@ putChar: aCharacter
 	
 	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
 	
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/23/2025 13:44:47'!
+calculateCursorRectangles	 
+	
+	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
+reset
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
+skipToNewLine
+	
+	| hh |
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:05:43'!
+skipToSoftPage
+
+	^(lineSpace * dy / 2) + (0.5*dy).
 ! !
 
 !KaeruPrinter methodsFor: 'testing' stamp: 'Df 9/19/2025 10:07:18'!
@@ -1480,10 +1480,10 @@ twoLineSpaceIconSelected
 	
 ! !
 
-!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:33:20'!
+!KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:14:46'!
 atEnd
 
-	^ kiterator isBeforeStart! !
+	^ kiterator isAtStart! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:18:04'!
 next
@@ -1577,9 +1577,16 @@ hash
 
 	^pars hash bitXor: ( parIndex hash bitXor: ( lineIndex hash bitXor: charIndex hash ) )! !
 
-!KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:25'!
+!KForwardIterator methodsFor: 'testing' stamp: 'DF 9/28/2025 15:06:25'!
 isAtEnd
-	^parIndex = (pars size + 1)
+
+	parIndex = pars size
+		ifFalse:[^false].
+	
+	lineIndex = (pars at: parIndex :: numLines) ::
+		ifFalse:[^false].
+	
+	^charIndex = (pars at: parIndex :: lineAt: lineIndex :: length).
 ! !
 
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/16/2025 22:01:36'!
@@ -1669,16 +1676,16 @@ pars: anOrderedCollection
 	pars := anOrderedCollection.
 ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 12:13:41'!
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
 	
-	" Set the iterator one place past the last character in the sequence of paragarphs. "
+	" Set the iterator to the last character in the text, this character must be a Character newDocument. "
 	
-	parIndex := pars size + 1.
+	parIndex := pars size.
 	
-	lineIndex := 1.
+	lineIndex := pars at: parIndex :: numLines .
 	
-	charIndex := 1.! !
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:54:55'!
 setAtStart
@@ -1957,9 +1964,13 @@ end
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'Df 9/21/2025 12:15:58'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 9/28/2025 14:34:06'!
 insert: aCharacter after: anIndex
 
+	self assert: anIndex > 0.
+	
+	self assert: anIndex < self end globalIndex.
+	
 	paragraphs isEmpty
 		ifTrue:[
 			paragraphs add: self newItem ].
@@ -2075,7 +2086,7 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'Df 9/21/2025 14:28:01'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 9/28/2025 14:29:16'!
 initialize
 
 	paragraphs := OrderedCollection new.
@@ -2086,7 +2097,21 @@ initialize
 	
 	defaultRightMargin := 76.
 	
-	defaultLineHeight := 2. " in half line units "! !
+	defaultLineHeight := 2. " in half line units "
+	
+	paragraphs add: self newInitialItem ; add: self newInitialItem.
+	! !
+
+!KLibrary methodsFor: 'factory' stamp: 'DF 9/28/2025 14:32:11'!
+newInitialItem
+
+	| aParagraph |
+	
+	aParagraph := self newItem.
+	
+	aParagraph lineAt:1 :: setupForEmptyLibrary.
+	
+	^aParagraph! !
 
 !KLibrary methodsFor: 'factory' stamp: 'Df 9/21/2025 14:27:39'!
 newItem
@@ -2103,10 +2128,14 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'Df 9/21/2025 19:37:57'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 9/28/2025 14:13:52'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi headText tailText par |
+	
+	self assert: aBeginIndex > 1.
+	
+	self assert: anEndIndex <= self end globalIndex.
 	
 	aBeginIndex = anEndIndex
 		ifTrue:[
@@ -2151,9 +2180,15 @@ eraseFrom: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'testing' stamp: 'DF 8/18/2025 11:56:28'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 09:35:25'!
 invariant
 
+	self assert: paragraphs size >= 1.
+	
+	self assert: (paragraphs first lineAt:1 :: charAt:1 :: = Character newDocument).
+	
+	self assert: (paragraphs last lastLine lastCharacter = Character newDocument).
+	
 	paragraphs allButLastDo: [:each |
 		self assert: each isLineBreaking ].
 	
@@ -2386,6 +2421,10 @@ charAt: anIndex
 chars
 	^chars! !
 
+!KLine methodsFor: 'accessing' stamp: 'DF 9/28/2025 09:35:17'!
+lastCharacter
+	^chars last! !
+
 !KLine methodsFor: 'accessing' stamp: 'DF 7/19/2025 16:33:49'!
 length
 
@@ -2401,7 +2440,14 @@ initialize
 
 	chars := ''! !
 
-!KParagraph methodsFor: 'initialization' stamp: 'Df 9/21/2025 10:59:50'!
+!KLine methodsFor: 'initialization' stamp: 'DF 9/28/2025 14:26:49'!
+setupForEmptyLibrary
+
+	self assert: chars isEmpty.
+	
+	chars := Character newDocument asString! !
+
+!KParagraph methodsFor: 'initialization' stamp: 'DF 9/28/2025 14:28:35'!
 initialize
 
 	lines := OrderedCollection new.
@@ -2410,7 +2456,7 @@ initialize
 	
 	leftMargin := 6.
 	
-	rightMargin := 6+8.
+	rightMargin := 76.
 	
 	lineHeight := 2. "in half line units"! !
 
@@ -2533,6 +2579,10 @@ charIndexToLineIndex: anIndex
 			pp := pp + 1].
 
 	^ { pp . ii }! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/28/2025 09:34:53'!
+lastLine
+	^lines last! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:28:39'!
 leftMargin: anInteger
@@ -4026,7 +4076,7 @@ testEverything
 		"(Delay forMilliseconds: 50) wait" ] "fork".
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 17:56:35'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:44:10'!
 testEmpty
 
 	| lib bb ee pp |
@@ -4039,19 +4089,19 @@ testEmpty
 	
 	ee := lib end.
 	
-	self assert: bb = ee.
+	self assert: bb ~= ee.
 	
 	pp := lib charIndexToIterator: 1.
 	
-	self assert: pp = ee.
+	self assert: pp = bb.
 	
-	lib insert: $a after:0.
+	lib insert: $a after: 1.
 	
-	lib eraseFrom: 1 to: 2.
+	lib eraseFrom: 2 to: 3.
 	
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 14:59:55'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:54:58'!
 testEraseBetweenParagraphs
 
 	| t1 t2 text index lib |
@@ -4062,30 +4112,30 @@ testEraseBetweenParagraphs
 
 	lib := KLibrary new.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | lib insert:each after: index. index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | lib insert:each after: index. index := index + 1 ]. 
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
 	
 	self assert: lib invariant.
 	
 	" erase in the same paragraph "
 	
-	lib eraseFrom: 12 to: 56.
+	lib eraseFrom: 13 to: 57.
 	
-	self assert: lib text = ( (text copyFrom: 1 to:11), (text copyFrom: 56 to: text size) ).
+	self assert: lib text = (Character newDocument asString,  (text copyFrom: 1 to:11), (text copyFrom: 56 to: text size), Character newDocument asString).
 	
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 15:00:36'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:57:13'!
 testEraseInParagraph
 
 	| t1 t2 text index lib |
@@ -4096,28 +4146,28 @@ testEraseInParagraph
 
 	lib := KLibrary new.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | lib insert:each after: index. index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | lib insert:each after: index. index := index + 1 ]. 
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
 	
 	" erase in the same paragraph "
 	
-	lib eraseFrom: 18 to: 81.
+	lib eraseFrom: 19 to: 82.
 	
-	self assert: lib text = ( (text copyFrom: 1 to:17), (text copyFrom: 81 to: text size) ).
+	self assert: lib text = ( Character newDocument asString,  (text copyFrom: 1 to:17), (text copyFrom: 81 to: text size) , Character newDocument asString ).
 	
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 12:15:04'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:22:03'!
 testInsert
 
 	| text lib |
@@ -4128,15 +4178,15 @@ testInsert
 
 	self assert: lib invariant.
 	
-	0 to: text size - 1 do:[:ii | lib insert: (text at:ii + 1) after: ii.  ].
+	1 to: text size do:[:ii | lib insert: (text at:ii) after: ii.  ].
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
 	
 	self assert: lib invariant.
 	
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/18/2025 16:30:04'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:36:31'!
 testInsertBreaks
 
 	| t1 t2 index lib |
@@ -4149,26 +4199,26 @@ testInsertBreaks
 	
 	self assert: lib invariant.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
 		index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
-		index := index + 1 ]. 
+		index := index + 1. ]. 
 	
-	self assert: lib text = (t1,t2).
+	self assert: lib text = (Character newDocument asString, t1,t2, Character newDocument asString).
 	
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:17:03'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:07:00'!
 testIterators
 
 	| t1 t2 text index lib bb ee |
@@ -4181,14 +4231,14 @@ testIterators
 	
 	self assert: lib invariant.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
 		index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | 
 		lib insert:each after: index. 
@@ -4197,7 +4247,7 @@ testIterators
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
 	
 	self assert: lib invariant.
 
@@ -4205,18 +4255,22 @@ testIterators
 	
 	ee := lib end.
 	
-	self assert: ee globalIndex = (text size + 1).
+	self assert: ee globalIndex = (text size + 2). "because we count the first and last document breaks"
 	
 	index := 1.
+	
+	bb next.
 	
 	[bb ~= ee]
 		whileTrue:[
 			self assert: (bb char = (text at: index)).
-			self assert: bb globalIndex = index.
+			self assert: bb globalIndex = (index + 1).
 			bb next.
 			index := index + 1 ].
 	
 	bb := lib begin.
+	
+	bb next.
 	
 	index := text size + 1.
 	
@@ -4224,15 +4278,15 @@ testIterators
 		whileTrue:[
 			ee prev.
 			index := index - 1.
-			self assert: (ee char = (text at: index)) ].
+			self assert: (ee char = (text at: index )) ].
 	
 	1 to: text size do:[:each | 
-		bb := lib charIndexToIterator: each.
+		bb := lib charIndexToIterator: each + 1.
 		self assert: bb char = (text at:each) ].
 	
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 12:31:30'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:05:34'!
 testRegex
 
 	| t1 t2 text index lib aKStream aMatcher |
@@ -4245,14 +4299,14 @@ testRegex
 	
 	self assert: lib invariant.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
 		index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | 
 		lib insert:each after: index. 
@@ -4261,7 +4315,7 @@ testRegex
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString)..
 	
 	self assert: lib invariant.
 
@@ -4281,18 +4335,18 @@ testRegex
 	
 	self assert: (aMatcher matchesStreamPrefix: aKStream) not.
 	
-	aKStream := KBackwardStream on: lib end.
+	aKStream := KBackwardStream on: lib end prev.
 	
 	aMatcher := RxMatcher forString: '.*', 'himself' reverse.
 	
 	self assert: (aMatcher matchesStreamPrefix: aKStream).
 	
-	self assert: aKStream position char = $h.
-	self assert: aKStream position next char = $i.
-	self assert: aKStream position next next char = $m.
+	self assert: aKStream position char = Character space.
+	self assert: aKStream position next char = $h.
+	self assert: aKStream position next next char = $i.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 13:30:58'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:08:05'!
 testSearch
 
 	| t1 t2 text index lib pos |
@@ -4305,14 +4359,14 @@ testSearch
 	
 	self assert: lib invariant.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
 		index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | 
 		lib insert:each after: index. 
@@ -4321,17 +4375,17 @@ testSearch
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
 	
 	self assert: lib invariant.
 	
 	pos := lib searchFrom: lib begin forwardFor: 'e'.
 	
-	self assert: pos globalIndex = 7.
+	self assert: pos globalIndex = 8.
 
 	pos := lib searchFrom: pos backwardFor: 's'.
 	
-	self assert: pos globalIndex = 624.
+	self assert: pos globalIndex = 625.
 
 	pos := lib searchFrom: lib begin forwardFor: 'himself'.
 	
@@ -4358,7 +4412,7 @@ testSearch
 	self assert: pos next char = Character space.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 18:00:04'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:13:45'!
 testStream
 
 	| t1 t2 text index lib aKStream aStream |
@@ -4371,14 +4425,14 @@ testStream
 	
 	self assert: lib invariant.
 	
-	index := 0.
+	index := 1.
 	
 	t2 do:[:each | 
 		lib insert:each after: index. 
 		self assert: lib invariant.
 		index := index + 1.  ].
 
-	index := 0.
+	index := 1.
 	
 	t1 do:[:each | 
 		lib insert:each after: index. 
@@ -4387,11 +4441,13 @@ testStream
 	
 	text := t1,t2.
 	
-	self assert: lib text = text.
+	self assert: lib text =  (Character newDocument asString, text, Character newDocument asString).
 	
 	self assert: lib invariant.
 
 	aKStream := KForwardStream on: lib begin.
+	
+	aKStream next.
 	
 	aStream := ReadStream on: text.
 	
@@ -4408,18 +4464,18 @@ testStream
 		
 	self assert: aStream atEnd.
 
-	aKStream := KBackwardStream on: lib end.
+	aKStream := KBackwardStream on: lib end prev. "move back one character before the last document break character, this positions the stream on the last character in the text"
 	
-	index := text size.
+	index := text size+1.
 	
 	[aKStream atEnd]
 		whileFalse:[ | cc |
-			self assert: index > 0.
+			self assert: index > 1.
 			cc := aKStream next.
-			self assert: cc = (text at:index).
+			self assert: cc = (text at:index - 1).
 			index := index - 1].
 	
-	self assert: index = 0.
+	self assert: index = 1.
 
 	! !
 
