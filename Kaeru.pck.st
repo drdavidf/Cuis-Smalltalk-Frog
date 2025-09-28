@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:40:11 pm'!
+'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 7:42:57 pm'!
 'Description '!
-!provides: 'Kaeru' 1 851!
+!provides: 'Kaeru' 1 852!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -2234,7 +2234,7 @@ match: aString at: anIterator
 	^ ii > aString size
 ! !
 
-!KLibrary methodsFor: 'searching' stamp: 'DF 9/28/2025 18:31:44'!
+!KLibrary methodsFor: 'searching' stamp: 'DF 9/28/2025 19:42:50'!
 searchFrom: anAddress backwardFor: aString
 
 	" Search backward starting from anAddress iterator for a substring in text that is equal to aString. If not found
@@ -2287,8 +2287,6 @@ searchFrom: anAddress backwardFor: aString
 		^ aKStream position next ].
 
 	" not found after start so search again from the end "
-	
-	self halt.
 	
 	aKStream := KBackwardStream on: self end.
 	
