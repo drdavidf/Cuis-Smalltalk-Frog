@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 28 September 2025 at 8:19:32 pm'!
+'From Cuis7.5 [latest update: #7615] on 29 September 2025 at 9:14:46 pm'!
 'Description '!
-!provides: 'Kaeru' 1 855!
+!provides: 'Kaeru' 1 891!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -39,6 +39,16 @@ KaeruController subclass: #KaeruHelpController
 KaeruHelpController class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruLeftMarginController category: #'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruLeftMarginController
+	instanceVariableNames: 'model left margin right'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruLeftMarginController class' category: #'Kaeru-Keyboard'!
+KaeruLeftMarginController class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruMasterController
 	instanceVariableNames: 'active controllers'
@@ -47,6 +57,16 @@ KaeruController subclass: #KaeruMasterController
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruMasterController class' category: #'Kaeru-Keyboard'!
 KaeruMasterController class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruRightMarginController category: #'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruRightMarginController
+	instanceVariableNames: 'model left margin right'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruRightMarginController class' category: #'Kaeru-Keyboard'!
+KaeruRightMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruScreenSaverController category: #'Kaeru-Keyboard'!
@@ -111,7 +131,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber leftMargin dx dy yy xx foreground background canvas font lineSpace displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont rightMargin cursorRect rulerCursorRect cursorOffset separatorH'
+	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -161,7 +181,7 @@ KForwardStream class
 
 !classDefinition: #KLibrary category: #'Kaeru-Text'!
 Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs border pageSize defaultLeftMargin defaultRightMargin defaultLineHeight'
+	instanceVariableNames: 'paragraphs border pageSize defaultParagraphAttributes'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -181,7 +201,7 @@ KLine class
 
 !classDefinition: #KParagraph category: #'Kaeru-Text'!
 Object subclass: #KParagraph
-	instanceVariableNames: 'leftMargin rightMargin lineHeight lines'
+	instanceVariableNames: 'lines attributes'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -211,7 +231,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Text'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull'
+	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull showLeftMargin showRightMargin'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -357,6 +377,11 @@ pressing both leap keys
 
 this necessarily means that one is pressed after the other. !
 
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:35'!
+acceptControl
+
+	! !
+
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:59'!
 controllerMaster: aKaeruMasterController
 
@@ -386,15 +411,6 @@ keyStroke: aKeyboardEvent
 keyUp: aMorphicEvent
 
 	self subclassResponsibility ! !
-
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/26/2025 14:28:06'!
-nullify
-	
-	controllerMaster := nil.
-	
-	keyboardMapper := nil.
-	
-	viewMaster := nil.! !
 
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:03:59'!
 viewMaster: aKaeruMorph
@@ -540,7 +556,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 15:54:36'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:59:02'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -553,6 +569,20 @@ processEditing: aKeyboardEvent
 			up even if at this point it is still down. "
 			useFront := #up.
 			controllerMaster activate: #help. viewMaster activate: #help . ^self ].
+
+	aKeyboardEvent keyCharacter = $` and:[ useFront = #down] :: 
+		ifTrue:[
+			
+			useFront := #up.
+			model showLeftMargin: true.
+			controllerMaster activate: #leftMargin . ^self ].
+
+	aKeyboardEvent keyCharacter = $= and:[ useFront = #down] :: 
+		ifTrue:[
+			
+			useFront := #up.
+			model showRightMargin: true.
+			controllerMaster activate: #rightMargin . ^self ].
 
 	aKeyboardEvent keyCharacter = $s and:[ useFront = #down] :: 
 		ifTrue:[
@@ -643,12 +673,84 @@ keyUp: aMorphicEvent
 state
 	^#help! !
 
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:53:06'!
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:00:50'!
+acceptControl
+
+	margin := model leftMargin! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:48'!
+initialize
+
+	super initialize.
+	
+	left := #up.
+	
+	right := #up.
+	
+	margin := 6.! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:21'!
+keyDown: aMorphicEvent
+
+	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			left := #down ].
+		
+	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			right := #down ].
+! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:27'!
+keyStroke: aMorphicEvent
+
+	! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:09:20'!
+keyUp: aMorphicEvent
+
+	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin - 1 max: 0.
+			
+			model setLeftMargin: margin].
+		
+	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			left := #up ].
+
+	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin + 1 min: 79.
+			
+			model setLeftMargin: margin].
+		
+	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			right := #up ].
+
+	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			model showLeftMargin: false.
+			controllerMaster activate: #edit.  ].
+! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:27:51'!
+model: aKaeruEditor
+	model := aKaeruEditor ! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:57'!
+state
+	^#leftMargin! !
+
+!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
 
 	Transcript show: ('activating {1}' format:{aSymbol}); cr.
 	
-	active := controllers at: aSymbol ! !
+	active := controllers at: aSymbol .
+	
+	active acceptControl! !
 
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:59'!
 at: aSymbol putController: aKaeruController
@@ -697,12 +799,77 @@ keyUp: aMorphicEvent
 model
 	^active model! !
 
-!KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/26/2025 14:28:36'!
-nullify
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:01:02'!
+acceptControl
+
+	margin := model rightMargin! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
+initialize
+
+	super initialize.
 	
-	active := nil.
+	left := #up.
 	
-	controllers := nil.! !
+	right := #up.
+	
+	margin := 6.! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
+keyDown: aMorphicEvent
+
+	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			left := #down ].
+		
+	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			right := #down ].
+! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
+keyStroke: aMorphicEvent
+
+	! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:23:53'!
+keyUp: aMorphicEvent
+
+	self assert: model showRightMargin.
+		
+	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin - 1 max: 0.
+			
+			model setRightMargin: margin].
+		
+	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			left := #up ].
+
+	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin + 1 min: 79.
+			
+			model setRightMargin: margin].
+		
+	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			right := #up ].
+
+	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[ 
+			model showRightMargin: false.
+			controllerMaster activate: #edit.  ].
+! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
+model: aKaeruEditor
+	model := aKaeruEditor ! !
+
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:37'!
+state
+	^#rightMargin! !
 
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
@@ -944,8 +1111,12 @@ computeDisplayArea
 	
 	! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 09:59:17'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
 reset
+
+	| leftMargin |
+	
+	leftMargin := attributes at: #leftMargin.
 
 	xx := displayRect origin x + (leftMargin * dx).
 	
@@ -956,10 +1127,12 @@ reset
 	pageNumber := 1.
 ! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/19/2025 13:28:55'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
 skipToNewLine
 	
-	| hh |
+	| hh lineSpace |
+
+	lineSpace := attributes at: #lineHeight.
 	
 	hh := lineSpace * dy / 2.
 	
@@ -980,17 +1153,25 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:05:43'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
 skipToSoftPage
+
+	| lineSpace |
+	
+	lineSpace := attributes at: #lineHeight.
 
 	^(lineSpace * dy / 2) + (0.5*dy).
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:53:43'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:16:11'!
 advanceToNewLine
 
-	| rect hh |
+	| rect hh lineSpace leftMargin |
 
+	lineSpace := attributes at: #lineHeight.
+
+	leftMargin := attributes at: #leftMargin.
+	
 	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
 		
 	rect := (xx @yy) corner: displayRect corner x @ hh.
@@ -1013,10 +1194,12 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/21/2025 20:10:07'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:11'!
 displayStatus
 
-	| rulerY xl | 
+	| rulerY xl lineSpace | 
+
+	lineSpace := attributes at: #lineHeight.
 
 	rulerY := displayRect corner y + 1.
 
@@ -1064,6 +1247,18 @@ drawCursor
 
 ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 21:10:18'!
+drawMargin
+	
+	| mx |
+	
+	mx := marginRegister * dx + displayRect origin x.
+	
+	canvas line: mx @ displayRect origin y to: mx @ displayRect corner y width:2 color: Color red.
+	
+	
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
 moveRight
 
@@ -1080,8 +1275,12 @@ newDocument
 
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 16:59:44'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:22'!
 newLine
+
+	| lineSpace |
+	
+	lineSpace := attributes at: #lineHeight.
 
 	self advanceToNewLine.
 	
@@ -1120,10 +1319,12 @@ newSoftPage
 offsetCursorBy: anInteger
 	cursorOffset := anInteger * dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/19/2025 10:56:37'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:35'!
 putChar: aCharacter
 	
-	| hh |
+	| hh lineSpace |
+	
+	lineSpace := attributes at: #lineHeight.
 
 	hh := (dy * lineSpace / 2) min: displayRect corner y - yy.
 	
@@ -1132,7 +1333,7 @@ putChar: aCharacter
 	
 	yy + hh <= displayRect corner y 
 	"
-	 
+	
 	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
 	
 	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
@@ -1144,7 +1345,7 @@ isNotAtEnd
 
 	^ yy  <= (dy * numLines)! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'Df 9/23/2025 16:58:29'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 9/29/2025 20:53:21'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
@@ -1165,13 +1366,14 @@ initialize
 
 	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
 	
-	lineSpace := 2. " in half line units "
+	attributes := Dictionary new.
 	
-	leftMargin := 6.
-
-	rightMargin := 70.
+	attributes at: #lineSpace put: 2 " in half line units "
+			; at: #leftMargin put: 6
+			; at: #rightMargin put: 76
+			; at: #indent put:0.
 	
-	xx := displayRect origin x + (leftMargin * dx).
+	xx := displayRect origin x + ((attributes at: #leftMargin) * dx).
 	
 	yy := displayRect origin y.	
 	
@@ -1188,7 +1390,13 @@ initialize
 	cursorOffset := 0.
 	
 	separatorH := dy / 4.
+
+	marginRegister := 0.
 	! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:20:10'!
+attributes: aDictionary
+	attributes := aDictionary! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 21:32:43'!
 background: aColor
@@ -1227,24 +1435,32 @@ font: aFont
 foreground: aColor
 	foreground := aColor! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/16/2025 20:59:00'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:58'!
 leftMargin: aNumber
-	leftMargin := aNumber! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:31:53'!
+	attributes at: #leftMargin put: aNumber! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:28'!
 leftMarginOriginX
+
+	| leftMargin |
+	
+	leftMargin := attributes at: #leftMargin.
+
 	^ displayRect origin x + (leftMargin * dx)! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:36'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:38'!
 leftMarginX
+
+	| leftMargin |
+	
+	leftMargin := attributes at: #leftMargin.
+
 	^ displayRect origin x + (leftMargin * dx)! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 19:25:24'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:14:01'!
 lineSpace: anInteger
-	
-	self assert: anInteger >= 2.
-	
-	lineSpace := anInteger! !
+	attributes at: #lineHeight put: anInteger.! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 22:14:02'!
 numLines
@@ -1264,21 +1480,43 @@ pageSize: anInteger
 	
 	pageSize := anInteger! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:48'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:14:57'!
 rightMargin: anInteger
-	rightMargin := anInteger.! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:32:33'!
+	attributes at: #rightMargin put: anInteger.
+! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:17:46'!
 rightMarginOriginX
+
+	| rightMargin |
+	
+	rightMargin := attributes at: #rightMargin.
+
 	^ displayRect origin x + (rightMargin * dx)! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:35:45'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:17:54'!
 rightMarginX
+
+	| rightMargin |
+	
+	rightMargin := attributes at: #rightMargin.
+
 	^ displayRect origin x + (rightMargin * dx)! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:50'!
 rulerCursorRectangle
 	^ rulerCursorRect ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 20:56:29'!
+setLeftMarginRegister
+
+	marginRegister := attributes at:#leftMargin! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 20:56:37'!
+setRightMarginRegister
+
+	marginRegister := attributes at:#rightMargin! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:42'!
 textCursorRectangle
@@ -1677,6 +1915,11 @@ nextLine
 		ifTrue:[
 			self privNextPar]! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:30:18'!
+paragraph
+
+	^ pars at: parIndex ! !
+
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
 pars: anOrderedCollection
 
@@ -1844,10 +2087,10 @@ next
 	
 	^cc! !
 
-!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:32:35'!
+!KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 16:45:04'!
 peek
 
-	^kiterator isAtEnd
+	^kiterator isPastEnd
 		ifTrue:[ nil ] ifFalse:[ kiterator char ]! !
 
 !KForwardStream methodsFor: 'as yet unclassified' stamp: 'DF 8/30/2025 17:46:04'!
@@ -2096,18 +2339,20 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 9/28/2025 14:29:16'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:08:23'!
 initialize
 
 	paragraphs := OrderedCollection new.
 			
 	pageSize := 110. " in half line units. 110 half lines, equals 55 lines "
 	
-	defaultLeftMargin := 6.
+	defaultParagraphAttributes := Dictionary new.
 	
-	defaultRightMargin := 76.
-	
-	defaultLineHeight := 2. " in half line units "
+	defaultParagraphAttributes 
+		at: #leftMargin put: 6; 
+		at: #rightMargin put: 76;
+		at: #indent put: 0;
+		at: #lineHeight put: 2. " in half line units "
 	
 	paragraphs add: self newInitialItem ; add: self newInitialItem.
 	! !
@@ -2123,18 +2368,14 @@ newInitialItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'factory' stamp: 'Df 9/21/2025 14:27:39'!
+!KLibrary methodsFor: 'factory' stamp: 'DF 9/29/2025 17:33:10'!
 newItem
 
 	| aParagraph |
 	
 	aParagraph := KParagraph new.
 	
-	aParagraph leftMargin: defaultLeftMargin.
-	
-	aParagraph rightMargin: defaultRightMargin.
-	
-	aParagraph lineHeight: defaultLineHeight.
+	aParagraph attributes: defaultParagraphAttributes.
 	
 	^aParagraph! !
 
@@ -2447,18 +2688,14 @@ setupForEmptyLibrary
 	
 	chars := Character newDocument asString! !
 
-!KParagraph methodsFor: 'initialization' stamp: 'DF 9/28/2025 14:28:35'!
+!KParagraph methodsFor: 'initialization' stamp: 'DF 9/29/2025 17:28:20'!
 initialize
 
 	lines := OrderedCollection new.
 	
 	lines add: self newItem.
 	
-	leftMargin := 6.
-	
-	rightMargin := 76.
-	
-	lineHeight := 2. "in half line units"! !
+! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:30:48'!
 buildFrom: aTokenStream
@@ -2560,17 +2797,15 @@ notEmpty
 newItem
 	^KLine new! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/19/2025 14:38:49'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:27:18'!
 attributes
 
-	^ { leftMargin . lineHeight . rightMargin }! !
+	^ attributes! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 19:36:28'!
-attributes: anOrderedCollection
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:27:36'!
+attributes: aDictionary
 
-	leftMargin := anOrderedCollection at:1.
-	lineHeight := anOrderedCollection at:2.
-	rightMargin := anOrderedCollection at:3.
+	attributes := aDictionary 
 ! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
@@ -2605,13 +2840,39 @@ charIndexToLineIndex: anIndex
 
 	^ { pp . ii }! !
 
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:08:54'!
+indent: anInteger
+
+	| text |
+	
+	attributes := attributes copy.
+	
+	attributes at: #indent put: anInteger.
+	
+	text := self text.
+	
+	self rebuildFromText: text.
+	
+	! !
+
 !KParagraph methodsFor: 'accessing' stamp: 'DF 9/28/2025 09:34:53'!
 lastLine
 	^lines last! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:28:39'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:29:06'!
 leftMargin: anInteger
-	leftMargin := anInteger ! !
+
+	| text |
+	
+	attributes := attributes copy.
+	
+	attributes at: #leftMargin put: anInteger.
+	
+	text := self text.
+	
+	self rebuildFromText: text.
+	
+	! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:05:32'!
 length
@@ -2624,9 +2885,12 @@ length
 lineAt: anIndex
 	^ lines at: anIndex! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:27:14'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:30:03'!
 lineHeight: anInteger
-	lineHeight := anInteger! !
+
+	attributes := attributes copy.
+	
+	attributes at: #lineHeight put: anInteger! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:16:24'!
 lineIndexToCharIndex: anIntegerLineNumber
@@ -2649,9 +2913,19 @@ lineNum
 numLines
 	^lines size! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:28:47'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:29:40'!
 rightMargin: anInteger
-	rightMargin := anInteger ! !
+
+	| text |
+	
+	attributes := attributes copy.
+	
+	attributes at: #rightMargin put: anInteger.
+		
+	text := self text.
+	
+	self rebuildFromText: text.
+	! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:31:29'!
 text
@@ -2684,9 +2958,9 @@ textInto: aWriteStream
 	lines do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 7/19/2025 15:54:50'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:28:05'!
 width
-	^rightMargin - leftMargin! !
+	^ (attributes at:#rightMargin) - (attributes at:#leftMargin)! !
 
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
@@ -3040,7 +3314,7 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/28/2025 19:04:17'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:58:21'!
 initialize
 
 	super initialize.
@@ -3052,6 +3326,10 @@ initialize
 	selection := 2 to: 2.
 	
 	cursorState := #narrow.
+	
+	showLeftMargin := false.
+	
+	showRightMargin := false.
 	
 	searchString := WriteStream on:''.! !
 
@@ -3200,6 +3478,119 @@ searchFrom: it forwardFor: aString
 	^ text searchFrom: it forwardFor: aString
 ! !
 
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 19:56:05'!
+leftMargin
+
+	"Anser the left margin of the paragraph in which the cursor is located  "
+	
+	| it par |
+	
+	it := text charIndexToIterator: cursor.
+	
+	par := it paragraph.
+	
+	^ par attributes at:#leftMargin.
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 19:55:55'!
+rightMargin
+
+	"Anser the right margin of the paragraph in which the cursor is located  "
+	
+	| it par |
+	
+	it := text charIndexToIterator: cursor.
+	
+	par := it paragraph.
+	
+	^ par attributes at:#rightMargin.
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 18:37:44'!
+setLeftMargin: anInteger
+
+	"Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
+	rightMargin - 6 "
+	
+	| it par rightm |
+	
+	it := text charIndexToIterator: cursor.
+	
+	it = text begin
+		ifTrue:[^self].
+		
+	it = text end
+		ifTrue:[^self].
+	
+	anInteger <= 0
+		ifTrue:[^self].
+
+	par := it paragraph.
+	
+	rightm := par attributes at: #rightMargin.
+	
+	anInteger >= (rightm - 6)
+		ifTrue:[^self].
+		
+	it paragraph leftMargin: anInteger.
+	
+	self changed: #margins
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 18:38:02'!
+setRightMargin: anInteger
+
+	"Set the right margin of the paragraph in which the cursor is located to anInteger, provided that anInteger is between leftMargin + 6 and 79 "
+	
+	| it par leftm |
+	
+	it := text charIndexToIterator: cursor.
+	
+	it = text begin
+		ifTrue:[^self].
+		
+	it = text end
+		ifTrue:[^self].
+	
+	anInteger >= 80
+		ifTrue:[^self].
+
+	par := it paragraph.
+	
+	leftm := par attributes at:#leftMargin.
+	
+	anInteger <= (leftm + 6)
+		ifTrue:[^self].
+		
+	it paragraph rightMargin: anInteger.
+	
+	self changed: #margins
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:10:39'!
+showLeftMargin
+
+	^showLeftMargin! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:11:43'!
+showLeftMargin: aBoolean
+
+	showLeftMargin := aBoolean.
+	
+	self changed: #margins! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:03:13'!
+showRightMargin
+
+	^showRightMargin ! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:11:55'!
+showRightMargin: aBoolean
+	
+	showRightMargin := aBoolean.
+	
+	self changed: #margins! !
+
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
 	^true! !
@@ -3289,7 +3680,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 17:25:09'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:55:20'!
 initialize
 
 	| editor |
@@ -3334,6 +3725,9 @@ initialize
 
 	controller at: #titles putController: (KaeruTitlesController new viewMaster: self; yourself). 
 
+	controller at: #leftMargin putController: (KaeruLeftMarginController new viewMaster: self; model:editor; yourself). 
+	controller at: #rightMargin putController: (KaeruRightMarginController new viewMaster: self; model:editor; yourself). 
+
 	controller activate: #edit.	
 	
 	self activate: #edit.
@@ -3369,24 +3763,36 @@ start
 
 	view at: #edit :: startBlinking.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 19:58:48'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 19:04:51'!
 drawCursorOn: aCanvas
 
 	printer canvas: aCanvas.
 
-	printer drawCursor ! !
+	printer drawCursor.
+	
+	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/21/2025 20:00:54'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 20:53:55'!
+drawMarginOn: aCanvas
+
+	printer drawMargin.
+	! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 20:59:54'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
 	[
 		self drawRulerOn: aCanvas ; drawTextOn: aCanvas.
-		
+				
 		showCursor 
 			ifTrue:[
 				self drawCursorOn: aCanvas].
+			
+		editor showLeftMargin or: [editor showRightMargin] ::
+			ifTrue:[  
+				self drawMarginOn: aCanvas].
 	
 	]
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].! !
@@ -3416,7 +3822,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/28/2025 18:05:16'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 20:57:28'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -3440,18 +3846,8 @@ drawTextOn: aCanvas
 	ee := editor end next. "so that we will draw the last document break that marks the end of text "
 	
 	[ printer isNotAtEnd and: [bb ~= ee] ] 
-		whileTrue:[ | cc attrs lineSpace |
+		whileTrue:[ | cc  |
 
-			attrs := bb attributes.
-
-			lineSpace := attrs second.
-			
-			printer leftMargin: attrs first.
-	
-			printer lineSpace: lineSpace.
-			
-			printer rightMargin: attrs third.
-			
 			editor isExtended and: [bb = selectionB] ::
 				ifTrue:[
 					printer background: Color cyan ; foreground: Color red].
@@ -3476,12 +3872,26 @@ drawTextOn: aCanvas
 						ifFalse:[
 							printer offsetCursorBy:0].
 					
-					printer calculateCursorRectangles ; displayStatus ].
+					printer calculateCursorRectangles ; displayStatus.
+					
+					editor showLeftMargin
+						ifTrue:[
+							printer setLeftMarginRegister].
+
+					editor showRightMargin
+						ifTrue:[
+							printer setRightMarginRegister] ].
 			
 			printer moveRight.
 			
 			bb isAtEndOfLine 
-				ifTrue:[
+				ifTrue:[ "If the iterator is not past the end, set the margins and line height according
+					to the next paragraph before starting a new line. This ensures that the new line
+					starts at the correct position. "
+					bb ~= editor end
+						ifTrue:[ 							
+							printer attributes: bb copy next attributes ].
+					
 					cc = Character newPage 
 						ifTrue:[
 							printer newSoftPage]
@@ -3497,7 +3907,9 @@ drawTextOn: aCanvas
 	printer isNotAtEnd and:[ee = cit] ::
 		ifTrue:[
 			"the cursor is past the end of the text but it is still visible on the display"
-			printer calculateCursorRectangles].! !
+			printer calculateCursorRectangles].
+		
+	! !
 
 !KaeruEditorMorph methodsFor: 'scrolling' stamp: 'Df 9/25/2025 16:17:47'!
 scrollToCursor
@@ -3542,7 +3954,7 @@ scrollToCursor
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'Df 9/21/2025 15:19:56'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:14:06'!
 advance: aKaeruPrinter
 
 	" Move the line and page numbers of aKaeruPrinter to the line that corresponds to window "
@@ -3558,9 +3970,9 @@ advance: aKaeruPrinter
 	[ line < window and: [bb ~= ee] ] 
 		whileTrue:[ | lineHeight |
 
-			lineHeight := bb attributes second.
+			lineHeight := bb attributes at: #lineHeight.
 			
-			aKaeruPrinter lineSpace: lineHeight.
+			aKaeruPrinter lineSpace: lineHeight. 
 			bb nextLine.
 			
 			line := line + 1.
@@ -3569,7 +3981,7 @@ advance: aKaeruPrinter
 	^bb
 			! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 9/26/2025 19:14:01'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 9/29/2025 17:32:36'!
 updateWindowEnd
 	
 	" Find the last line visible on the display, without actually drawing "
@@ -3589,7 +4001,7 @@ updateWindowEnd
 	[ yy < printer displayRect height and: [bb ~= ee] ] 
 		whileTrue:[ | lineSpace cc hh |
 
-			lineSpace := bb attributes second.
+			lineSpace := bb attributes at: #lineHeight.
 
 			printer lineSpace: lineSpace.
 			
@@ -3827,7 +4239,7 @@ initialize
 	self addMorph: imageMorph 
 ! !
 
-!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:42:48'!
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 22:35:30'!
 drawOn: aCanvas
 
 	| bb ee docSep |
@@ -3840,12 +4252,13 @@ drawOn: aCanvas
 		
 	docSep := Character newDocument asString.
 	
-	bb := editor begin next. "position bb on the first document "
+	bb := editor begin.
 	
 	ee := editor end.
 	
 	[ printer isNotAtEnd and: [bb ~= ee] ]
 		whileTrue:[
+			bb next.
 			bb line do:[:each | printer putChar: each; moveRight ].
 			printer newLine.
 			bb := editor searchFrom: bb forwardFor: docSep ].
