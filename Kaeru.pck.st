@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 29 September 2025 at 9:14:46 pm'!
+'From Cuis7.5 [latest update: #7615] on 30 September 2025 at 10:07:36 pm'!
 'Description '!
-!provides: 'Kaeru' 1 891!
+!provides: 'Kaeru' 1 892!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -1194,7 +1194,7 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:11'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/30/2025 21:43:53'!
 displayStatus
 
 	| rulerY xl lineSpace | 
@@ -1215,7 +1215,7 @@ displayStatus
 	xl := dx * 50.
 
 	{ #left . #centre . #right. #justify } do:[:eachIndex |
-		canvas image: (self class selectJustifyIcon: #left for: eachIndex) at: xl @ (rulerY + 32).
+		canvas image: (self class selectJustifyIcon: #left for: eachIndex) at: xl @ (rulerY + 33).
 		xl := xl + 28
 	].
 
@@ -1224,7 +1224,7 @@ displayStatus
 	xl := dx * 62.
 
 	2 to:4 do:[:eachIndex | 					
-		canvas image: (self class selectLineIcon: lineSpace for: eachIndex) at: xl @ (rulerY + 32).
+		canvas image: (self class selectLineIcon: lineSpace for: eachIndex) at: xl @ (rulerY + 33).
 		xl := xl + 28
 	].
 
@@ -2236,7 +2236,7 @@ insert: aCharacter after: anIndex
 		
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'Df 9/23/2025 17:33:02'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 9/30/2025 21:25:11'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -2283,6 +2283,8 @@ insertBreakCharacter: aCharacter after: anIndex
 		ifTrue:[
 			newPar := self newItem.
 	
+			newPar attributes: (paragraphs at:pp) attributes.
+			
 			newPar rebuildFromText: right.
 	
 			paragraphs add: newPar afterIndex: pp].
@@ -2379,11 +2381,11 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 9/28/2025 14:13:52'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 9/30/2025 21:38:54'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi headText tailText par |
-	
+		
 	self assert: aBeginIndex > 1.
 	
 	self assert: anEndIndex <= self end globalIndex.
@@ -2412,7 +2414,7 @@ eraseFrom: aBeginIndex to: anEndIndex
 	
 			paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) ]
 
-		ifFalse:[ | origin |
+		ifFalse:[ | origin | 
 					
 			origin := paragraphs at: beginPi first.
 			
@@ -3087,7 +3089,7 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:00:32'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 22:01:08'!
 eraseNarrow
 
 	self assert: cursor >= 1.
@@ -3099,7 +3101,7 @@ eraseNarrow
 	cursor = 1
 		ifTrue:[
 			
-			text eraseFrom: 1 to: 2] 
+			text eraseFrom: 2 to: 3] 
 		ifFalse:[
 			
 			" Because the text is not empty then if the cursor is at the end 
@@ -3134,18 +3136,16 @@ eraseSelection
 	
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 18:52:33'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 22:05:27'!
 eraseWide
 
-	self assert: cursor > 1.
+	self assert: cursor > 0.
 	self assert: cursor < self end globalIndex.
 	
-	text eraseFrom: cursor to: cursor + 1.
-	cursor := cursor - 1.
-	
-	cursor = 1 
-		ifTrue:[			
-			cursorState := #narrow ]. 
+	cursor > 1 
+		ifTrue:[
+			text eraseFrom: cursor to: cursor + 1.
+			cursor := cursor - 1].
 		
 	self changed: #erase.! !
 
@@ -3172,19 +3172,26 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 17:39:20'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 21:59:42'!
 insert: aCharacter
 
 	self assert: cursor > 0.
 	self assert: cursor <= text end globalIndex.
 	
-	cursor < text end globalIndex
+	cursorState = #wide 
 		ifTrue:[
-			text insert: aCharacter after: cursor]
+			cursor < text end globalIndex
+				ifTrue:[
+					text insert: aCharacter after: cursor]
+				ifFalse:[
+					text insert: aCharacter after: cursor - 1].
+			cursor := cursor + 1 ]
 		ifFalse:[
-			text insert: aCharacter after: cursor - 1].
-
-	cursor := cursor + 1.
+			cursor > 1
+				ifTrue:[
+					text insert: aCharacter after: cursor - 1]
+				ifFalse:[
+					text insert: aCharacter after: cursor ] ].
 	
 	cursorState := #wide.
 	
@@ -3314,7 +3321,7 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:58:21'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/30/2025 22:03:46'!
 initialize
 
 	super initialize.
@@ -3325,7 +3332,7 @@ initialize
 	
 	selection := 2 to: 2.
 	
-	cursorState := #narrow.
+	cursorState := #wide..
 	
 	showLeftMargin := false.
 	
