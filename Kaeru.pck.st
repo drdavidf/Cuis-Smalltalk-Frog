@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 30 September 2025 at 10:07:36 pm'!
+'From Cuis7.5 [latest update: #7615] on 1 October 2025 at 9:33:38 pm'!
 'Description '!
-!provides: 'Kaeru' 1 892!
+!provides: 'Kaeru' 1 898!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -131,7 +131,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister'
+	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth lineNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -1194,7 +1194,7 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/30/2025 21:43:53'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:33:35'!
 displayStatus
 
 	| rulerY xl lineSpace | 
@@ -1208,7 +1208,7 @@ displayStatus
 	
 	" Draw the line number "
 	
-	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 5 @ (displayHeight + 33) font: statusFont color: Color white. 
+	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3.25 @ (displayHeight + 34) font: lineNumberFont color: Color white. 
 
 	" Draw the justification selection icons "
 
@@ -1259,6 +1259,12 @@ drawMargin
 	
 ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:29:52'!
+indentBy: anInteger
+
+	xx := xx + (dx* anInteger) 
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/17/2025 19:56:03'!
 moveRight
 
@@ -1291,7 +1297,7 @@ newLine
 		ifFalse:[
 			separatorH := dy / 4. self newPage ].! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:02:18'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:32:29'!
 newPage
 
 	yy + (dy/2) >= displayHeight
@@ -1299,7 +1305,7 @@ newPage
 				
 	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
 	
-	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: pageNumberFont color: Color black.
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: lineNumberFont color: Color black.
 	
 	yy := yy + (0.5*dy).
 
@@ -1345,20 +1351,20 @@ isNotAtEnd
 
 	^ yy  <= (dy * numLines)! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 9/29/2025 20:53:21'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/1/2025 21:32:29'!
 initialize
 
-	pageNumberFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 12.	
 
-	statusFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 12.
+	statusFont := FontFamily familyName: 'Courier Prime' pointSize: 10.
 
-	font := FontFamily familyName: 'CMU Typewriter Text' pointSize: 14.
+	font := FontFamily familyName: 'Courier Prime' pointSize: 12.
 	
 	dx :=  font widthOf:$M.
 	
 	dy := font lineSpacing.
 
-	numLines := 18. "how many line units fit on the physical display"
+	numLines := 23. "how many line units fit on the physical display"
 
 	displayWidth := 80 * dx.
 
@@ -1830,6 +1836,11 @@ isAtEnd
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/16/2025 22:01:36'!
 isAtEndOfLine
 	^charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length )! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'DF 10/1/2025 21:28:19'!
+isAtFirstLineInParagraph
+	
+	^ lineIndex = 1 and:[charIndex = 1]! !
 
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:29'!
 isAtStart
@@ -2699,8 +2710,17 @@ initialize
 	
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 21:30:48'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/1/2025 21:18:35'!
 buildFrom: aTokenStream
+
+	" The first line is indented by attributes at:#indent "
+	
+	aTokenStream first notEmpty 
+		ifTrue:[
+			lines add: self newItem.
+			lines last buildFrom: aTokenStream limitBy: self width - (self attributes at:#indent) ].
+	
+	" Now do the rest of the lines "
 	
 	[aTokenStream first notEmpty ]
 		whileTrue:[
@@ -3829,7 +3849,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 20:57:28'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/1/2025 21:27:58'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor "
@@ -3862,7 +3882,11 @@ drawTextOn: aCanvas
 			editor isExtended and: [bb = selectionE] ::
 				ifTrue:[
 					printer background: Color white ; foreground: Color black].
-					
+
+			bb isAtFirstLineInParagraph 
+				ifTrue:[
+					printer indentBy: (bb attributes at:#indent) ].
+				
 			cc := bb char. 
 
 			bb = cit 
@@ -3896,7 +3920,7 @@ drawTextOn: aCanvas
 					to the next paragraph before starting a new line. This ensures that the new line
 					starts at the correct position. "
 					bb ~= editor end
-						ifTrue:[ 							
+						ifTrue:[ 	
 							printer attributes: bb copy next attributes ].
 					
 					cc = Character newPage 
@@ -3906,8 +3930,9 @@ drawTextOn: aCanvas
 							cc = Character newDocument
 								ifTrue:[
 									printer newDocument]
-								ifFalse:[
-									printer newLine ] ] ].
+								ifFalse:[ 									
+									printer newLine.
+									 ] ] ].
 				
 			bb next ].
 	
@@ -4029,14 +4054,14 @@ updateWindowEnd
 					windowEnd := windowEnd + 1 ]. ].
 			! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'Df 9/23/2025 17:39:48'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/1/2025 20:57:35'!
 initialize
 	
 	super initialize .
 
 	color := Color black.
 	
-	rulerFont := FontFamily familyName: 'CMU Typewriter Text' pointSize: 10.	
+	rulerFont := FontFamily familyName: 'Courier Prime' pointSize: 10.	
 	
 	self morphExtent: 1024@600.	
 
@@ -4174,7 +4199,7 @@ pageNumberIcon
  	offset: 0@0`
 	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 22:43:06'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:16'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
@@ -4189,10 +4214,10 @@ drawOn: aCanvas
 			ifTrue:[
 				printer newLine]
 			ifFalse:[
-			printer putChar: each;  moveRight ] ].
+				printer putChar: each;  moveRight ] ].
 	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:21:56'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:24'!
 initialize 
 
 	super initialize.
@@ -4203,10 +4228,11 @@ initialize
 	
 	printer := KaeruPrinter new.
 	
-	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 600 ; numLines: 21.
+	printer leftMargin: 1; lineSpace: 2; displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
 	
 	text := 
-'Kaeru Version 1.0
+'Kaeru Copyright (c) David Faitelson 2025 Version 1.0
+
 To type, just type. All typed text is inserted. Line endings and page endings 
      are automatic. Use [RETURN] to end paragraphs. [PAGE] forces a page to 
      end. [SHIFT]-[DOCUMENT] begins a new document. If you make a mistake, 
