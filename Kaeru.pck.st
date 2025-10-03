@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 1 October 2025 at 9:33:38 pm'!
+'From Cuis7.5 [latest update: #7615] on 3 October 2025 at 12:11:56 am'!
 'Description '!
-!provides: 'Kaeru' 1 898!
+!provides: 'Kaeru' 1 905!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -1247,6 +1247,17 @@ drawCursor
 
 ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:38:01'!
+drawDocumentBreak
+
+	yy + (dy/2) >= displayHeight
+		ifTrue:[^self].
+				
+	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
+	
+	
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 21:10:18'!
 drawMargin
 	
@@ -1256,6 +1267,18 @@ drawMargin
 	
 	canvas line: mx @ displayRect origin y to: mx @ displayRect corner y width:2 color: Color red.
 	
+	
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:16:36'!
+drawSoftPage
+
+	yy + (dy/2) >= displayHeight
+		ifTrue:[^self].
+				
+	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
+	
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: lineNumberFont color: Color black.
 	
 ! !
 
@@ -1270,14 +1293,18 @@ moveRight
 
 	xx := xx + dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:00:32'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:40:00'!
 newDocument
 	
 	separatorH := dy / 2.
 	
-	self advanceToNewLine; newPage.	
+	self advanceToNewLine; drawDocumentBreak.	
+	
+	yy := yy + (0.5*dy).
 	
 	pageNumber := 1.
+
+	lineNumber := 0.	
 
 ! !
 
@@ -1297,29 +1324,39 @@ newLine
 		ifFalse:[
 			separatorH := dy / 4. self newPage ].! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:32:29'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:36:46'!
 newPage
 
-	yy + (dy/2) >= displayHeight
-		ifTrue:[^self].
-				
-	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
+	| dashLen color |
 	
-	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: lineNumberFont color: Color black.
+	color := Color white.
 	
-	yy := yy + (0.5*dy).
-
+	dashLen := 16.
+	
+	displayRect origin x to: displayRect corner x - dashLen by: dashLen do:[:px | 
+		
+		color := color = Color black ifTrue:[Color white] ifFalse:[Color black].
+		
+		canvas line: px@(yy-2) to: px + dashLen @ (yy - 2) width:2 color: color ].
+	
 	pageNumber := pageNumber + 1.
 	
 	lineNumber := 0.	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 17:00:00'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:39:55'!
 newSoftPage
 
 	separatorH := dy / 4.
 
-	self advanceToNewLine; newPage.! !
+	self advanceToNewLine; drawSoftPage.
+	
+	yy := yy + (0.5*dy).
+	
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.	
+! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'Df 9/23/2025 13:36:00'!
 offsetCursorBy: anInteger
@@ -1894,6 +1931,20 @@ globalIndex
 			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/2/2025 22:15:29'!
+height 
+
+	" Answer the number of half lines up to the line referenced by self "
+	
+	| hh |
+	
+	hh := 0.
+	
+	1 to: parIndex - 1 do:[: ii | 
+		hh := hh + (pars at: ii) height ].
+	
+	^hh + (lineIndex * (pars at: parIndex :: attributes at: #lineHeight) )! !
+
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:35:13'!
 line
 
@@ -1936,6 +1987,95 @@ pars: anOrderedCollection
 
 	pars := anOrderedCollection.
 ! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 00:11:55'!
+physicalPageIndexForPageSize: anIntegerPageSize
+
+	" Answer the physical page and line number of the character referenced by self.
+	
+	A physical page has a fixed number of half lines (given by anIntegerPageSize). A paragarph has a lineHeight
+	that determines how many half lines a single logical (KLine) occupies on the physical page. For example a
+	paragraph with 5 lines and a lineHeight of 3 will occupy 15 half lines. Assume the page size is 8 (4 full lines) then the first 2 logical lines (occupying 6 half lines will go on the first page, the other 2 will go on the second page, and the last line will start a third page.
+	
+	2
+	1
+	2
+	1
+	
+	2
+	1
+	2
+	1
+	
+	2
+	1	
+	
+	In general if a paragraph has a line height of k and a page has m half lines left, then we can take at most m div:k lines from the paragraph before we have to start a new page.
+	
+	"
+	
+	| nn kk pn pi par |
+
+	pn := 0. "the number of pages so far".
+	
+	nn := anIntegerPageSize. "the amount of free lines in the current (pn) page (in half line units) "
+
+	pi := 1.
+	
+	[ pi < parIndex ]
+		whileTrue:[
+
+			par := pars at: pi.
+	
+			kk := par numLines. " the amount of lines not yet taken from the current paragraph (pars at:pi) "
+
+			[ (nn div: par lineHeight) <= kk ]
+				whileTrue:[
+					" the paragarph has more lines then the page can take. take as much as possible and
+					move to a new page "
+					kk := kk - (nn div: par lineHeight).
+					pn := pn + 1.
+					nn := anIntegerPageSize ].
+				
+			"it must be that (nn div: par lineHeight) > kk"
+			
+			" we take everything from the paragraph and move to the next paragraph "
+			
+			nn := nn - (kk * par lineHeight).
+			
+			"if the paragraph ends with a page break we move to a new page and reset the counters"
+			
+			par isPageBreaking 
+				ifTrue:[
+					pn := pn + 1.
+					nn := anIntegerPageSize].
+			
+			pi := pi + 1].
+
+	" now for the paragraph that the iterator references "
+	
+	par := pars at: pi.
+	
+	kk := lineIndex. " the amount of lines not yet taken from the current paragraph (pars at:pi) "
+
+	[ (nn div: par lineHeight) <= kk ]
+		whileTrue:[
+			" the paragarph has more lines then the page can take. take as much as possible and
+			move to a new page "
+			kk := kk - (nn div: par lineHeight).
+			pn := pn + 1.
+			nn := anIntegerPageSize ].
+				
+	"it must be that (nn div: par lineHeight) > kk"
+			
+	" we take everything from the paragraph and finish "
+			
+	nn := nn - (kk * par lineHeight).
+			
+	^ { pn . anIntegerPageSize - nn }
+					
+			
+					! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
@@ -2352,18 +2492,18 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:08:23'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 10/2/2025 23:48:27'!
 initialize
 
 	paragraphs := OrderedCollection new.
 			
-	pageSize := 110. " in half line units. 110 half lines, equals 55 lines "
+	pageSize := 10. " in half line units. 110 half lines, equals 55 lines "
 	
 	defaultParagraphAttributes := Dictionary new.
 	
 	defaultParagraphAttributes 
 		at: #leftMargin put: 6; 
-		at: #rightMargin put: 76;
+		at: #rightMargin put: 16;
 		at: #indent put: 0;
 		at: #lineHeight put: 2. " in half line units "
 	
@@ -2862,6 +3002,20 @@ charIndexToLineIndex: anIndex
 
 	^ { pp . ii }! !
 
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/2/2025 21:58:54'!
+height
+
+	| hh |
+	
+	
+	hh := lines size * (attributes at: #lineHeight).
+	
+	^self isPageBreaking 
+		ifTrue:[
+			hh +1]
+		ifFalse:[
+			hh]! !
+
 !KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:08:54'!
 indent: anInteger
 
@@ -2907,6 +3061,11 @@ length
 lineAt: anIndex
 	^ lines at: anIndex! !
 
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/2/2025 23:41:38'!
+lineHeight
+
+	^attributes at: #lineHeight ! !
+
 !KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:30:03'!
 lineHeight: anInteger
 
@@ -2926,10 +3085,6 @@ lineIndexToCharIndex: anIntegerLineNumber
 		index := index + line length ].
 	
 	^index! !
-
-!KParagraph methodsFor: 'accessing' stamp: 'Df 9/10/2025 19:22:34'!
-lineNum
-	^ lines size! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:20:18'!
 numLines
