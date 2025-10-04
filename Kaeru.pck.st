@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 4 October 2025 at 8:55:35 am'!
+'From Cuis7.3 [latest update: #6895] on 4 October 2025 at 9:52:32 pm'!
 'Description '!
-!provides: 'Kaeru' 1 924!
+!provides: 'Kaeru' 1 936!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -1214,6 +1214,25 @@ drawSoftPage
 	
 ! !
 
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/4/2025 21:51:17'!
+drawTabStops
+	
+	| tstops ii mx |
+	
+	tstops := attributes at: #tabStops.
+	
+	mx := 0.
+	
+	ii := 1.
+	
+	[ii <= tstops size]
+		whileTrue:[
+			mx := dx / 2 +  displayRect origin x + (dx * (tstops at:ii)).
+			canvas line: mx @ (displayRect corner y + 6) to: mx + 3 @ (displayRect corner y + 10) width:1 color: Color white.
+			canvas line: mx @ (displayRect corner y + 6) to: mx - 3 @ (displayRect corner y + 10) width:1 color: Color white.
+			ii := ii + 1.
+		]! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:29:52'!
 indentBy: anInteger
 
@@ -1224,6 +1243,24 @@ indentBy: anInteger
 moveRight
 
 	xx := xx + dx.! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/4/2025 21:24:21'!
+moveToNextTab
+
+	| markers mx ii |
+	
+	markers := attributes at:#tabStops.
+	
+	mx := displayRect origin x + (dx * markers first).
+	
+	ii := 1.
+	
+	[ii <= markers size and:[mx <= xx]] 
+		whileTrue:[
+			mx := displayRect origin x + (dx * (markers at:ii)).
+			ii := ii + 1].
+		
+	xx := mx.! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:40:00'!
 newDocument
@@ -1391,7 +1428,7 @@ isNotAtEnd
 
 	^ yy < (dy * (numLines - 1))! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/1/2025 21:32:29'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/4/2025 16:53:10'!
 initialize
 
 	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 12.	
@@ -1416,7 +1453,7 @@ initialize
 	
 	attributes at: #lineSpace put: 2 " in half line units "
 			; at: #leftMargin put: 6
-			; at: #rightMargin put: 76
+			; at: #rightMargin put: 71
 			; at: #indent put:0.
 	
 	xx := displayRect origin x + ((attributes at: #leftMargin) * dx).
@@ -1427,7 +1464,7 @@ initialize
 	
 	foreground := Color black.
 	
-	pageSize := 10. "in half line units"
+	pageSize := 110. "in half line units, 53*2 for a standard (LibreOffice compliant) number of lines in an A4 page"
 	
 	lineNumber := 0. 
 	
@@ -2551,20 +2588,21 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 10/2/2025 23:48:27'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 10/4/2025 17:34:09'!
 initialize
 
 	paragraphs := OrderedCollection new.
 			
-	pageSize := 10. " in half line units. 110 half lines, equals 55 lines "
+	pageSize := 106. " in half line units. 110 half lines, equals 55 lines "
 	
 	defaultParagraphAttributes := Dictionary new.
 	
 	defaultParagraphAttributes 
 		at: #leftMargin put: 6; 
-		at: #rightMargin put: 16;
+		at: #rightMargin put: 72;
 		at: #indent put: 0;
-		at: #lineHeight put: 2. " in half line units "
+		at: #lineHeight put: 2; " in half line units "
+		at: #tabStops put: (11 to: 72 by:5 :: asArray).
 	
 	paragraphs add: self newInitialItem ; add: self newInitialItem.
 	! !
@@ -2812,25 +2850,33 @@ searchFrom: anAddress forwardFor: aString
 		ifTrue:[aKStream position retreat: aString size]
 		ifFalse:[nil]! !
 
-!KLine methodsFor: 'inserting' stamp: 'Df 9/25/2025 15:18:34'!
-buildFrom: aTokenStream limitBy: anIntegerWidth
+!KLine methodsFor: 'inserting' stamp: 'DF 10/4/2025 21:10:38'!
+buildFrom: aTokenStream limitBy: markers
 
-	"build a line assuming that the token stream has no line separator or a single line separator at the end "
+	"build a line assuming that the token stream has no line separator or a single line separator at the end.
 	
-	| token aWriteStream count |
+	The ordered collection markers is a sequence that begins with the left margin, continues with the tab stops and
+	ends with the right margin. "
+	
+	| width token aWriteStream count ww |
 
 	aWriteStream := WriteStream on: ''.
 	
+	width := markers last - markers first.
+	
 	token := aTokenStream first.
 
-	count := 0.
-			
-	[token notEmpty and: [ count + token size <= anIntegerWidth] ]
+	count := markers first.
+
+	ww := self tokenWidth: token at: count  markers: markers.
+		
+	[token notEmpty and: [ count + ww <= markers last] ]
 		whileTrue:[
 			aWriteStream nextPutAll: token.
-			count := count + token size.
-			aTokenStream nextUpTo: anIntegerWidth.
-			token := aTokenStream first ].
+			count := count + ww.
+			aTokenStream nextUpTo: width.
+			token := aTokenStream first.
+			ww := self tokenWidth: token at: count markers: markers  ].
 	
 	" If the token stream is not empty and the last token is a single space add it to the line (even if this means
 	that the line's length exceeds the limit) because we don't want the next line to start with a space character
@@ -2839,7 +2885,7 @@ buildFrom: aTokenStream limitBy: anIntegerWidth
 	token size = 1 and: [ (token at:1) = Character space] :: 
 		ifTrue:[
 			aWriteStream nextPutAll: token.
-			aTokenStream nextUpTo: anIntegerWidth ].
+			aTokenStream nextUpTo: width ].
 	
 	chars := aWriteStream contents.! !
 
@@ -2849,6 +2895,40 @@ fastInsert: aCharacter after: anIndex
 	chars := chars copyReplaceFrom: anIndex + 1 to: anIndex with: aCharacter asString.
 	
 	^true! !
+
+!KLine methodsFor: 'inserting' stamp: 'DF 10/4/2025 21:14:39'!
+tokenWidth: aToken at:index markers: markers
+
+	"Answer the width of a token. For a regular token it is its size, for a tab character it is the
+	distance from the current index to the closest marker.
+	
+	For example, when markers = #(6 11 16 21) and index = 13, the answer is 16 - 13 = 3.
+	
+	"
+	
+	aToken size = 1 and:[aToken first = Character tab] ::
+		ifTrue:[ | mm ii |
+			
+			"set mm to the first marker that is greater than position. If all markers are not greater
+			than position set mm to 1 + the last marker "
+			
+			mm := markers first.
+			ii := 1.
+			
+			[ii <= markers size and: [mm <= index] ]
+				whileTrue:[
+					ii := ii + 1.
+					mm := markers at: ii ].
+				
+			ii > markers size 
+				ifTrue:[
+					mm := markers last + 1].
+			
+			^ mm - index ].
+	
+	^aToken size
+			
+			! !
 
 !KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:19'!
 isLineSeparating
@@ -2909,22 +2989,31 @@ initialize
 	
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 10/1/2025 21:18:35'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/4/2025 18:06:51'!
 buildFrom: aTokenStream
 
-	" The first line is indented by attributes at:#indent "
+	| markers |
 	
+	" The first line is indented by attributes at:#indent "
+
+	markers := OrderedCollection new.
+	markers add: (attributes at:#leftMargin) - (attributes at:#indent).
+	markers addAll: (attributes at: #tabStops).
+	markers add: (attributes at:#rightMargin).
+				
 	aTokenStream first notEmpty 
-		ifTrue:[
+		ifTrue:[ 
 			lines add: self newItem.
-			lines last buildFrom: aTokenStream limitBy: self width - (self attributes at:#indent) ].
+			lines last buildFrom: aTokenStream limitBy: markers ].
 	
 	" Now do the rest of the lines "
+
+	markers at: 1 put: (attributes at:#leftMargin).
 	
 	[aTokenStream first notEmpty ]
 		whileTrue:[
 			lines add: self newItem.
-			lines last buildFrom: aTokenStream limitBy: self width ].
+			lines last buildFrom: aTokenStream limitBy: markers ].
 		
 	! !
 
@@ -4073,7 +4162,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/4/2025 08:49:09'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/4/2025 21:45:21'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor 
@@ -4134,7 +4223,7 @@ drawTextOn: aCanvas
 						ifFalse:[
 							printer offsetCursorBy:0].
 					
-					printer calculateCursorRectangles ; displayStatus.
+					printer calculateCursorRectangles ; displayStatus; drawTabStops.
 					
 					editor showLeftMargin
 						ifTrue:[
@@ -4144,7 +4233,11 @@ drawTextOn: aCanvas
 						ifTrue:[
 							printer setRightMarginRegister] ].
 			
-			printer moveRight.
+			cc = Character tab
+				ifFalse:[
+					printer moveRight]
+				ifTrue:[
+					printer moveToNextTab].
 			
 			bb isAtEndOfLine 
 				ifTrue:[ "If the iterator is not past the end, set the margins and line height according
