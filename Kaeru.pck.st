@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:11:57 pm'!
+'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:25:26 pm'!
 'Description '!
-!provides: 'Kaeru' 1 950!
+!provides: 'Kaeru' 1 951!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -4128,13 +4128,15 @@ drawCursorOn: aCanvas
 	
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 9/29/2025 20:53:55'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 17:24:48'!
 drawMarginOn: aCanvas
 
+	printer canvas: aCanvas.
+	
 	printer drawMargin.
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 17:10:30'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 17:25:24'!
 drawOn: aCanvas
 	
 	[
@@ -4146,6 +4148,7 @@ drawOn: aCanvas
 			
 		editor showLeftMargin or: [editor showRightMargin] ::
 			ifTrue:[  
+				Transcript show:'margin!!';cr.
 				self drawMarginOn: aCanvas].
 	
 	]
