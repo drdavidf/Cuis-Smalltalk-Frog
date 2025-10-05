@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:25:26 pm'!
+'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:38:39 pm'!
 'Description '!
-!provides: 'Kaeru' 1 951!
+!provides: 'Kaeru' 1 952!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -4631,7 +4631,7 @@ drawOn: aCanvas
 			bb := editor searchFrom: bb forwardFor: docSep ].
 		! !
 
-!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 18:21:49'!
+!KaeruTitlesMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 17:37:34'!
 initialize
 
 	super initialize.
@@ -4642,7 +4642,7 @@ initialize
 	
 	printer := KaeruPrinter new.
 
-	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 600 ; numLines: 21.
+	printer leftMargin: 1; lineSpace: 2; pageSize: 40 ; displayHeight: 538 + (2 * printer dy ) ; numLines: 25.
 	
 ! !
 
