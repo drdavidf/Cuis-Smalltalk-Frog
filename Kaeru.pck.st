@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 3:49:06 pm'!
+'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:11:57 pm'!
 'Description '!
-!provides: 'Kaeru' 1 939!
+!provides: 'Kaeru' 1 950!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -432,7 +432,7 @@ doTransitionFor: aSymbol
 			entry ].
 		! !
 
-!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:08:11'!
 initialize
 
 	super initialize.
@@ -440,13 +440,21 @@ initialize
 	state := #editingState.
 	
 	transitions := { 
-		{ #editingState . #leapLeftDown } -> { #leapLeftState . [:editor | editor restartSearch ] }.
-		{ #editingState . #leapRightDown } -> { #leapRightState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
 		{ #editingState . #keyStroke } -> #editingState .
+		
+		{ #startLeapLeftState . #leapLeftUp } -> { #editingState . [:editor | editor creepBack] }.
+		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
 		
 		{ #leapLeftState . #leapLeftUp } -> #editingState . 
 		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+
+		{ #startLeapRightState . #leapRightUp } -> { #editingState . [:editor | editor creepForward ] }.
+		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapRightState . #keyStroke } -> #leapRightState.
 
 		{ #leapRightState . #leapRightUp } -> #editingState . 
 		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
@@ -499,7 +507,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'Df 9/25/2025 15:26:25'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 16:08:35'!
 keyStroke: aKeyboardEvent
 
 	self doTransitionFor: #keyStroke.
@@ -508,11 +516,11 @@ keyStroke: aKeyboardEvent
 		ifTrue:[
 			self processEditing: aKeyboardEvent ].
 
-	state = #leapLeftState or:[state = #searchLeftSelectState ] ::
+	{ #startLeapLeftState . #leapLeftState . #searchLeftSelectState } includes: state ::
 		ifTrue:[
 			self processLeapLeft: aKeyboardEvent ].
 		
-	state = #leapRightState or:[state = #searchRightSelectState ] ::
+	{ #startLeapRightState . #leapRightState . #searchRightSelectState } includes: state ::
 		ifTrue:[ 
 			self processLeapRight: aKeyboardEvent ].
 
@@ -3756,7 +3764,7 @@ restartSearch.
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:47:47'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:54:38'!
 searchBack
 
 	| cit it |
@@ -4094,19 +4102,19 @@ nullify
 	
 	controller := nil! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 20:14:27'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 17:11:53'!
 start
 
-	view at: #edit :: startBlinking.! !
+	view at: #edit :: renderText; startBlinking.! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/4/2025 08:53:56'!
-captureCursorRectangle: aCanvas
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:19'!
+captureCursorRectangle
 
 	| rect |
 	
-	rect := (self externalizeBoundsToWorld:(printer textCursorRectangle merge: printer rulerCursorRectangle)).
+	rect := printer textCursorRectangle merge: printer rulerCursorRectangle.
 	
-	snapshot := aCanvas form copy: rect.
+	snapshot := self imageForm copy: rect.
 	
 	
 ! !
@@ -4126,17 +4134,11 @@ drawMarginOn: aCanvas
 	printer drawMargin.
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/4/2025 08:51:13'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 17:10:30'!
 drawOn: aCanvas
-
-	super drawOn: aCanvas.
 	
 	[
-		aCanvas clipRect extent x > 100
-			ifTrue:[
-				self drawRulerOn: aCanvas ; drawTextOn: aCanvas].
-				
-		aCanvas image: snapshot at: printer textCursorRectangle origin.
+		aCanvas image: snapshot at: 0@0.
 	
 		showCursor 
 			ifTrue:[
@@ -4177,7 +4179,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/4/2025 21:45:21'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:10'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor 
@@ -4275,9 +4277,21 @@ drawTextOn: aCanvas
 				
 			bb next ].
 	
-	self captureCursorRectangle: aCanvas.
 	
-	Transcript show: '*';cr.! !
+! !
+
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 17:11:09'!
+renderText
+
+	| aCanvas |
+	
+	aCanvas := MorphicCanvas onForm: snapshot.
+	
+	aCanvas
+		fillRectangle: self localBounds
+		color: Color black.
+		
+	self drawRulerOn: aCanvas ; drawTextOn: aCanvas.! !
 
 !KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/5/2025 15:28:20'!
 scrollToCursor
@@ -4372,7 +4386,7 @@ locateFirstLineInWindow
 
 	^bb! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/1/2025 20:57:35'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:42:49'!
 initialize
 	
 	super initialize .
@@ -4387,7 +4401,9 @@ initialize
 	
 	wc := (rulerFont widthOf: $8) / 2.	
 		
-	showCursor := false.! !
+	showCursor := false.
+	
+	snapshot := Form extent: self morphExtent depth: Display depth.! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/3/2025 11:27:31'!
 model: aKaeruEditor
@@ -4405,10 +4421,10 @@ model: aKaeruEditor
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/3/2025 11:37:12'!
+!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/5/2025 16:43:04'!
 update: aSymbol
-		
-	self scrollToCursor ; redrawNeeded ! !
+	
+	self scrollToCursor ; renderText ; redrawNeeded ! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:17'!
 invalidateCursorRectangles
