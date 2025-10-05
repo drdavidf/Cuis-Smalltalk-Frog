@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 4 October 2025 at 9:52:32 pm'!
+'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 3:49:06 pm'!
 'Description '!
-!provides: 'Kaeru' 1 936!
+!provides: 'Kaeru' 1 939!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -417,6 +417,70 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
+!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
+doTransitionFor: aSymbol
+
+	| entry |
+	
+	entry := transitions at: { state . aSymbol }.
+	
+	state := entry isArray
+		ifTrue:[
+			entry second value: model.
+			entry first ]
+		ifFalse:[
+			entry ].
+		! !
+
+!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
+initialize
+
+	super initialize.
+	
+	state := #editingState.
+	
+	transitions := { 
+		{ #editingState . #leapLeftDown } -> { #leapLeftState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapRightDown } -> { #leapRightState . [:editor | editor restartSearch ] }.
+		{ #editingState . #keyStroke } -> #editingState .
+		
+		{ #leapLeftState . #leapLeftUp } -> #editingState . 
+		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+
+		{ #leapRightState . #leapRightUp } -> #editingState . 
+		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
+		{ #leapRightState . #keyStroke } -> #leapRightState . 
+
+		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
+		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
+		
+		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
+		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
+		
+		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
+		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
+		{ #selectingReadyState . #keyStroke } -> #editingState.
+		
+		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
+		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
+		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
+		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
+		
+		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
+		
+	} asDictionary.
+	! !
+
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:03:22'!
 keyDown: aMorphicEvent
 
@@ -587,70 +651,6 @@ translateToCharacter: aKeyboardEvent
 				ifFalse:[
 					aKeyboardEvent keyCharacter ] ].
 ! !
-
-!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
-doTransitionFor: aSymbol
-
-	| entry |
-	
-	entry := transitions at: { state . aSymbol }.
-	
-	state := entry isArray
-		ifTrue:[
-			entry second value: model.
-			entry first ]
-		ifFalse:[
-			entry ].
-		! !
-
-!KaeruEditorController methodsFor: 'initialization' stamp: 'Df 9/25/2025 17:21:56'!
-initialize
-
-	super initialize.
-	
-	state := #editingState.
-	
-	transitions := { 
-		{ #editingState . #leapLeftDown } -> { #leapLeftState . [:editor | editor restartSearch ] }.
-		{ #editingState . #leapRightDown } -> { #leapRightState . [:editor | editor restartSearch ] }.
-		{ #editingState . #keyStroke } -> #editingState .
-		
-		{ #leapLeftState . #leapLeftUp } -> #editingState . 
-		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
-
-		{ #leapRightState . #leapRightUp } -> #editingState . 
-		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
-		{ #leapRightState . #keyStroke } -> #leapRightState . 
-
-		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
-		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
-		
-		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
-		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
-		
-		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
-		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
-		{ #selectingReadyState . #keyStroke } -> #editingState.
-		
-		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
-		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
-		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
-		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
-		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
-		
-		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
-		
-	} asDictionary.
-	! !
 
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
 keyDown: aMorphicEvent
@@ -1095,6 +1095,77 @@ leapLeft
 leapRight
 	^leapRight ! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
+calculateCursorRectangles	 
+	
+	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+
+	cursorRect := cursorRect encompassingIntegerRectangle.
+	
+	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
+reset
+
+	| leftMargin |
+	
+	leftMargin := attributes at: #leftMargin.
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
+skipToNewLine
+	
+	| hh lineSpace |
+
+	lineSpace := attributes at: #lineHeight.
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
+skipToSoftPage
+
+	| lineSpace |
+	
+	lineSpace := attributes at: #lineHeight.
+
+	^(lineSpace * dy / 2) + (0.5*dy).
+! !
+
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:16:11'!
 advanceToNewLine
 
@@ -1352,77 +1423,6 @@ putChar: aCharacter
 	
 ! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
-calculateCursorRectangles	 
-	
-	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
-
-	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
-
-	cursorRect := cursorRect encompassingIntegerRectangle.
-	
-	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
-reset
-
-	| leftMargin |
-	
-	leftMargin := attributes at: #leftMargin.
-
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
-
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
-skipToNewLine
-	
-	| hh lineSpace |
-
-	lineSpace := attributes at: #lineHeight.
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
-skipToSoftPage
-
-	| lineSpace |
-	
-	lineSpace := attributes at: #lineHeight.
-
-	^(lineSpace * dy / 2) + (0.5*dy).
-! !
-
 !KaeruPrinter methodsFor: 'testing' stamp: 'DF 10/3/2025 17:03:12'!
 isNotAtEnd
 
@@ -1550,6 +1550,10 @@ lineNumber: anInteger
 !KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:14:01'!
 lineSpace: anInteger
 	attributes at: #lineHeight put: anInteger.! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/5/2025 15:26:44'!
+numHalfLines
+	^numLines * 2! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/18/2025 22:14:02'!
 numLines
@@ -3392,10 +3396,15 @@ creepBack
 		ifFalse:[
 			cursor := self end globalIndex ]! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/27/2025 16:00:47'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/5/2025 15:48:38'!
 creepForward
 
-	cursor := cursor + 1.! !
+	cursor = self end globalIndex
+		ifTrue:[
+			cursor := 1
+		]
+		ifFalse:[
+			cursor := cursor + 1].! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:08:36'!
 erase
@@ -3747,10 +3756,13 @@ restartSearch.
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 9/28/2025 18:16:38'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:47:47'!
 searchBack
 
 	| cit it |
+
+	searchString contents isEmpty
+		ifTrue:[^self].
 
 	cit := text charIndexToIterator: cursor.
 	
@@ -3769,13 +3781,16 @@ searchBack
 		self changed: #search
 ! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 9/28/2025 18:15:27'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:47:40'!
 searchForward
 
 	| bb it cit |
 
 	self assert: cursor > 0.
-		
+
+	searchString contents isEmpty
+		ifTrue:[^self].
+				
 	cit := text charIndexToIterator: cursor.
 	
 	bb := cit = text end next
@@ -4264,13 +4279,13 @@ drawTextOn: aCanvas
 	
 	Transcript show: '*';cr.! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/3/2025 13:21:59'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/5/2025 15:28:20'!
 scrollToCursor
 
 	"Ensure that the window includes the cursor "
 	
 	| cit ch |
-	
+		
 	cit := editor charIndexToIterator: editor cursor.
 	
 	ch := cit height.
@@ -4280,24 +4295,24 @@ scrollToCursor
 			window := ch.
 			^self redrawNeeded ].
 
-	ch <= (window + printer numLines)
+	ch <= (window + printer numHalfLines)
 		ifTrue:[
 			" cursor is within the window, no need to do anything"
 			^self].
 	
 	" If the window is further than numLines from cline move it such that window + numLines = ch.
 	
-	window := ch - printer numLines.
+	window := ch - printer numHalfLines.
 	
-	{ window + printer numLines = ch }
+	{ window + printer numHalfLines = ch }
 	
 	"
-	window := ch - printer numLines.
+	window := ch - printer numHalfLines.
 	
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/3/2025 16:52:02'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/5/2025 15:27:01'!
 locateFirstLineInWindow
 
 	" Answers an iterator to the first line that should be displayed in the window, also adjusts the window
@@ -4311,7 +4326,7 @@ locateFirstLineInWindow
 	
 	self assert: window <= ch.
 	
-	self assert: ch <= (window + printer numLines).
+	self assert: ch <= (window +printer numHalfLines).
 	
 	bb := cit copy.
 	
@@ -4320,7 +4335,7 @@ locateFirstLineInWindow
 	"	
 	gap := bb height - window.
 	
-	[gap > 0 and: [window + gap + printer numLines - bb lineHeight > ch ] ]
+	[gap > 0 and: [window + gap + printer numHalfLines - bb lineHeight > ch ] ]
 		whileTrue:[
 			bb prevLine.
 			bb isAtLastLineInParagraph and:[bb paragraph isPageBreaking] ::
