@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 5 October 2025 at 5:38:39 pm'!
+'From Cuis7.5 [latest update: #7615] on 6 October 2025 at 5:37:31 pm'!
 'Description '!
-!provides: 'Kaeru' 1 952!
+!provides: 'Kaeru' 1 972!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -137,6 +137,16 @@ Object subclass: #KaeruPrinter
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruPrinter class' category: #'Kaeru-Morphic'!
 KaeruPrinter class
+	instanceVariableNames: ''!
+
+!classDefinition: #DisjointIntervalSequence category: #'Kaeru-Text'!
+Object subclass: #DisjointIntervalSequence
+	instanceVariableNames: 'intervals'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'DisjointIntervalSequence class' category: #'Kaeru-Text'!
+DisjointIntervalSequence class
 	instanceVariableNames: ''!
 
 !classDefinition: #KBackwardStream category: #'Kaeru-Text'!
@@ -319,6 +329,16 @@ TestCase subclass: #ExhaustiveTestKLibrary
 ExhaustiveTestKLibrary class
 	instanceVariableNames: ''!
 
+!classDefinition: #TestDisjointIntervalSeq category: #'Kaeru-Text'!
+TestCase subclass: #TestDisjointIntervalSeq
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestDisjointIntervalSeq class' category: #'Kaeru-Text'!
+TestDisjointIntervalSeq class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #TestKLibrary
 	instanceVariableNames: ''
@@ -349,6 +369,11 @@ TestCase subclass: #TestKTokenStream
 TestKTokenStream class
 	instanceVariableNames: ''!
 
+
+!DisjointIntervalSequence commentStamp: '<historical>' prior: 0!
+This data structure represents a set of non overlapping semi-open intervals ordered such that the end of an interval is at most equal to the beginning of the next interval.
+
+!
 
 !KLibrary commentStamp: '<historical>' prior: 0!
 A KLibrary holds a collection of KDocuments
@@ -1830,6 +1855,261 @@ twoLineSpaceIconSelected
 	
 ! !
 
+!DisjointIntervalSequence methodsFor: 'testing' stamp: 'DF 10/6/2025 13:28:16'!
+includes: anInteger
+
+	^intervals anySatisfy:[:any |
+		any first <= anInteger and:[anInteger < any last] ]! !
+
+!DisjointIntervalSequence methodsFor: 'testing' stamp: 'DF 10/6/2025 13:47:29'!
+invariant
+
+	| ii |
+	
+	ii := 1.
+	
+	[ii <= (intervals size - 1) ]
+		whileTrue:[
+			self assert: (intervals at: ii) last < (intervals at:ii +1) first. 
+			ii := ii + 1].
+		
+	^true! !
+
+!DisjointIntervalSequence methodsFor: 'initialization' stamp: 'DF 10/6/2025 13:06:16'!
+initialize
+
+	intervals := OrderedCollection new! !
+
+!DisjointIntervalSequence methodsFor: 'editing' stamp: 'DF 10/6/2025 17:04:40'!
+erase: anInterval 
+
+	intervals := self erase: anInterval from: intervals ! !
+
+!DisjointIntervalSequence methodsFor: 'editing' stamp: 'DF 10/6/2025 17:07:04'!
+erase: anInterval from: anOrderedCollection
+
+	| head left right fragments |
+
+	self assert: anInterval first <= anInterval last.
+
+	anOrderedCollection isEmpty
+		ifTrue:[
+			^anOrderedCollection ].
+
+	head := anOrderedCollection at:1.
+	
+	head last < anInterval first
+		ifTrue:[
+			^(OrderedCollection with: head), (self erase: anInterval from: anOrderedCollection allButFirst) ].
+		
+	anInterval last < head first
+		ifTrue:[
+			^anOrderedCollection ].
+
+	" anInterval and head overlap. if they are equal we answer the remaining collection.
+	
+	otherwise we remove the overlap from head. if head becomes empty we recursively erase what remains from the rest of the collection. 
+	
+	if anInterval becomes empty we answer the remaining head and the rest of the collection "
+	 
+	anInterval = head
+		ifTrue:[
+			^ anOrderedCollection allButFirst ].
+	
+	" they are not equal so we subtract anInterval from head ...
+	
+	... here's how to implement set substraction in terms of intervals 
+	
+	[b,e) \ [x,y) = 
+		[b,e) ∩ ( [-inf,x) ∪ [y, inf) ) =
+		( [b,e) ∩ [-inf,x) ) ∪ ( [b,e) ∩ [y, inf) ) =					
+		( [b,e min: x) ) ∪ ( [b max: y,e)  
+	
+	note that this union must be included entirely in [b,e) --- as is appropriate
+	since we only substract from [b,e) --- when will it actually be two intervals?
+	
+	excactly when 
+	
+	e min:x < b max: y 
+	
+	otherwise they overlap and we can merge them to form the interval
+	
+	[b min: (b max: y) , e max: (e min:x ) ) = [b, e)
+			
+	surprise :) 
+	
+	if they overlap they form the original head ...  
+	
+	but note that each part may be empty. 
+	
+	 "
+
+	left := head first to: (head last min: anInterval first).
+	
+	right := (head first max: anInterval last) to: head last.
+
+	fragments := OrderedCollection new.
+	
+	left first < left last 
+		ifTrue:[
+			fragments add: left ].
+		
+	right first < right last
+		ifTrue:[
+			fragments add: right].
+		
+	^fragments , (self erase: anInterval from: anOrderedCollection allButFirst).
+	! !
+
+!DisjointIntervalSequence methodsFor: 'editing' stamp: 'DF 10/6/2025 15:10:05'!
+insert: anInterval
+
+	" 
+	insert anInterval into the sequence while maintaining its invariant. 
+	
+	[1,4) , [6,8) + [4,6) = [1,8)
+	
+	[1,4) , [9,11) , [12, 15) + [6,13) = [1,4) , [6,15) "
+							
+	intervals := self insert: anInterval into: intervals
+! !
+
+!DisjointIntervalSequence methodsFor: 'editing' stamp: 'DF 10/6/2025 15:10:40'!
+insert: anInterval into: anOrderedCollection
+
+	" 
+	insert anInterval into anOrderedCollection of disjoint intervales while maintaining its invariant. 
+	
+	[1,4) , [6,8) + [4,6) = [1,8)
+	
+	[1,4) , [9,11) , [12, 15) + [6,13) = [1,4) , [6,15) 
+
+	To achieve this we iterate over the existing sequence and decide either to insert 
+	an interval into the result sequence or to enlarge the inverval  that we are about
+	to insert. For example, to insert [5,7) into the sequence
+		
+		[1,3) , [6,13)
+				
+	we add [1,3) to the result, but then enlarge [5,7) to [5,13) before adding it to get 
+	the final result [1,3) , [5,13)
+			
+	The recursion is as follows:
+
+	for an empty collection we answer a collection with the inverval.
+	
+	otherwise, if the interval at the head of the collection appears before anInterval we 
+	recursively insert anInterval into the tail and answer the result prefixed with the head
+	interval. 
+	
+	otherwise, if anInterval appears before the head interval we answer the collection prefixed
+	with anInterval
+	
+	otherwise, we merge anInterval with the head interval and answer the result of recursively
+	inserting the merged interval into the tail.
+	
+	"
+	
+	| head  |
+
+	self assert: anInterval first <= anInterval last.
+
+	anOrderedCollection isEmpty
+		ifTrue:[
+			^ OrderedCollection with: anInterval ].
+	
+	head := anOrderedCollection at:1.
+	
+	head last < anInterval first
+		ifTrue:[
+			^(OrderedCollection with: head), (self insert: anInterval into: anOrderedCollection allButFirst) ].
+		
+	anInterval last < head first
+		ifTrue:[
+			^(OrderedCollection with: anInterval), anOrderedCollection ].
+
+	^self insert: ((head first min: anInterval first) to: (head last max: anInterval last)) into: anOrderedCollection allButFirst.
+				
+! !
+
+!DisjointIntervalSequence methodsFor: 'shifting' stamp: 'DF 10/6/2025 17:30:38'!
+shiftBack: aNumber from: anIndex
+
+	" Decrease by aNumber all the boundaries of intervals that are bigger than anIndex. Remove 
+	any invervals that become empty as a result. 
+	
+	For example,
+	
+	[1,3), [4,6) , [10, 12), [15, 20) shiftBack: 3 from: 6 = [1,3), [7, 9), [12,17)
+
+	the [4,6) interval was dropped because it became [4,3) => empty. 
+			
+	Note that we don't shift the entire interval, only the member that appears after anIndex.
+	
+	shifting can create overlapping intervals. for example, 
+	
+	[1,4) [6,9) shiftBack: 3 from: 5 = [1,4) [3, 6)
+	
+	123456789
+	12349
+	
+	thus after creating the shifted intervals we use insert to rebuild the correct data structure.
+	
+	"
+	
+	| result |
+	
+	self assert: anIndex - aNumber > 0.
+	
+	result := OrderedCollection new.
+	
+	intervals do:[:each |
+		
+		each last < anIndex
+			ifTrue:[ " the interval appears before anIndex, don't shift it "
+				result add: each ]
+			ifFalse:[
+				each first >= anIndex
+					ifTrue:[ " the entire interval appears after the index. shift the entire interval "
+						result add: (each first - aNumber to: each last - aNumber)]
+					ifFalse:[ " only the interval's end is after the index. shift just the end but don't add to the result if the interval becomes empty "
+						each first < (each last - aNumber)
+							ifTrue:[
+								result add: (each first to: each last - aNumber) ] ] ] ].	
+	
+	intervals := OrderedCollection new.
+	
+	result do:[:each |
+		self insert: each ].
+	! !
+
+!DisjointIntervalSequence methodsFor: 'shifting' stamp: 'DF 10/6/2025 17:36:54'!
+shiftForward: aNumber from: anIndex
+
+	" Increase by aNumber all the boundaries of intervals that are bigger than anIndex. Remove 
+	any invervals that become empty as a result. 
+	
+	For example,
+	
+	[1,3), [4,6) , [10, 12), [15, 20) shiftForward: 3 from: 5 = [1,3), [4,9), [13, 15), [18, 23)
+
+	Note that we don't shift the entire interval, only the member that appears after anIndex.
+	
+	shifting forward cannot create overlapping intervals because it can only increase the distance
+	within and between intervals "
+	
+	1 to: intervals size do:[:ii | | each |
+		
+		each := intervals at:ii.
+		
+		each last >= anIndex
+			ifTrue:[ 
+				each first >= anIndex
+					ifTrue:[ " the entire interval appears after the index. shift the entire interval "
+						intervals at: ii put: (each first + aNumber to: each last + aNumber)]
+					ifFalse:[ " only the interval's end is after the index. shift just the end  "
+						intervals at:ii put: (each first to: each last + aNumber) ] ] ] .	
+! !
+
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
 
@@ -2578,6 +2858,27 @@ insertLetter: aCharacter after: anIndex
 					paragraphs add: self newItem] ].
 		
 	(paragraphs at:pp) insert: aCharacter after: ii! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/5/2025 21:24:35'!
+setAttribute: aTextAttribute from: aBeginIndex to: anEndIndex
+
+	| beginPi endPi |
+	
+	" Add a text attribute to all the text between aBeginIndex and anEndIndex (exclusive) "
+	
+	self assert: aBeginIndex > 1.
+	
+	self assert: anEndIndex <= self end globalIndex.
+	
+	aBeginIndex = anEndIndex
+		ifTrue:[
+			^self].
+		
+	beginPi := self charIndexToParIndex: aBeginIndex .
+	
+	endPi := self charIndexToParIndex: anEndIndex .
+
+		! !
 
 !KLibrary methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:31:34'!
 pageSize
@@ -4900,6 +5201,72 @@ testEverything
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 17:05:50'!
 wrap: aString
 	^ (Character newDocument asString), aString, (Character newDocument asString)! !
+
+!TestDisjointIntervalSeq methodsFor: 'as yet unclassified' stamp: 'DF 10/6/2025 17:05:34'!
+testErase
+
+	| dis |
+	
+	dis := DisjointIntervalSequence new.
+	
+	self assert: dis invariant.
+	
+	dis insert: (1 to: 3) ; insert: (14 to: 15); insert: (8 to: 9).
+	
+	self assert: dis invariant.
+
+	dis erase: (2 to:11).
+
+	self assert: dis invariant.	
+	
+	self assert: (dis includes:1).
+
+	self assert: (dis includes:14).
+	
+	self assert: (dis includes:8) not.! !
+
+!TestDisjointIntervalSeq methodsFor: 'as yet unclassified' stamp: 'DF 10/6/2025 17:03:51'!
+testInsert
+
+	| dis |
+	
+	dis := DisjointIntervalSequence new.
+	
+	self assert: dis invariant.
+	
+	dis insert: (1 to: 3) ; insert: (14 to: 15); insert: (8 to: 9).
+	
+	self assert: dis invariant.
+	
+	self assert: (dis includes: 0) not.
+	
+	self assert: (dis includes: 1).
+	
+	self assert: (dis includes: 2).
+	
+	self assert: (dis includes: 3) not.
+	
+	self assert: (dis includes: 13) not.
+	
+	self assert: (dis includes: 14).
+	
+	self assert: (dis includes: 7) not.
+	
+	self assert: (dis includes: 8).
+	
+	self assert: (dis includes: 9) not.
+	
+	dis insert: (3 to: 4).
+	
+	self assert: dis invariant.
+	
+	dis insert: (9 to:11).
+	
+	self assert: dis invariant.
+	
+	dis insert: (11 to:14).
+	
+	self assert: dis invariant.	! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:44:10'!
 testEmpty
