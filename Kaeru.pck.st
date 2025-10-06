@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 October 2025 at 5:37:31 pm'!
+'From Cuis7.5 [latest update: #7615] on 6 October 2025 at 6:35:34 pm'!
 'Description '!
-!provides: 'Kaeru' 1 972!
+!provides: 'Kaeru' 1 983!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -131,7 +131,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth lineNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister'
+	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth lineNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister boldFont'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -191,7 +191,7 @@ KForwardStream class
 
 !classDefinition: #KLibrary category: #'Kaeru-Text'!
 Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs border pageSize defaultParagraphAttributes'
+	instanceVariableNames: 'paragraphs pageSize defaultParagraphAttributes'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -211,7 +211,7 @@ KLine class
 
 !classDefinition: #KParagraph category: #'Kaeru-Text'!
 Object subclass: #KParagraph
-	instanceVariableNames: 'lines attributes'
+	instanceVariableNames: 'lines attributes emphasis'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -261,7 +261,7 @@ KaeruKeyboardTester class
 
 !classDefinition: #KaeruMasterMorph category: #'Kaeru-Morphic'!
 BoxMorph subclass: #KaeruMasterMorph
-	instanceVariableNames: 'view lib active controller'
+	instanceVariableNames: 'view active controller'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -1435,8 +1435,20 @@ newSoftPage
 offsetCursorBy: anInteger
 	cursorOffset := anInteger * dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:35'!
-putChar: aCharacter
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/6/2025 18:21:04'!
+putBoldChar: aCharacter 
+	
+	self putChar: aCharacter font: boldFont
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/6/2025 18:20:57'!
+putChar: aCharacter 
+	
+	self putChar: aCharacter font: font
+! !
+
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/6/2025 18:20:45'!
+putChar: aCharacter font: aFont
 	
 	| hh lineSpace |
 	
@@ -1452,7 +1464,7 @@ putChar: aCharacter
 	
 	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
 	
-	canvas drawString: aCharacter asString  at: xx@yy font: font color: foreground.
+	canvas drawString: aCharacter asString  at: xx@yy font: aFont color: foreground.
 	
 ! !
 
@@ -1461,7 +1473,7 @@ isNotAtEnd
 
 	^ yy < (dy * (numLines - 1))! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/4/2025 16:53:10'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/6/2025 18:20:05'!
 initialize
 
 	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 12.	
@@ -1469,6 +1481,8 @@ initialize
 	statusFont := FontFamily familyName: 'Courier Prime' pointSize: 10.
 
 	font := FontFamily familyName: 'Courier Prime' pointSize: 12.
+
+	boldFont := font emphasized: 1.
 	
 	dx :=  font widthOf:$M.
 	
@@ -2248,24 +2262,19 @@ isPastEnd
 	
 	^ parIndex = (pars size + 1)! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
-advance: anInteger
-
-	anInteger timesRepeat: [self next].
-	
-	^self! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:11'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/12/2025 16:37:11'!
 attributes
 
 	^ pars at: parIndex :: attributes! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:16'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/6/2025 17:58:08'!
 char
 
+	" answer the character pointed to by self "
+	
 	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/22/2025 16:15:54'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:15:54'!
 globalIndex
 
 	"Answers the global character index represented by this iterator "
@@ -2285,7 +2294,7 @@ globalIndex
 			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 16:45:30'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/3/2025 16:45:30'!
 height 
 
 	" Answer the number of half lines up to the line referenced by self "
@@ -2299,61 +2308,46 @@ height
 	
 	^hh + ((lineIndex -1) * (pars at: parIndex :: attributes at: #lineHeight) )! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/23/2025 17:35:13'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/6/2025 18:05:11'!
+isBold
+
+	| par ii |
+	
+	par := self paragraph.
+
+	par emphasis ifNil:[ " the paragraph has no emphasis at all "	
+
+		^false].
+	
+	par emphasis at: #bold ifAbsent:[ " the paragraph has no bold emphasis "
+		
+		^false].
+	
+	" calculate the relative character position in the paragraph "
+	
+	ii := (par lineIndexToCharIndex: lineIndex) + charIndex.
+	
+	^par emphasis at:#bold :: includes: ii
+	! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:35:13'!
 line
 
 	^ pars at: parIndex :: lineAt: lineIndex :: chars! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:57:04'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/3/2025 12:57:04'!
 lineHeight 
 
 	" Answer the number of half line units for the current paragraph "
 	
 	^ pars at: parIndex :: attributes at: #lineHeight! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
-next
-
-	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
-		ifTrue:[
-			^self privNextChar ].
-		
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-	
-	self privNextPar! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
-nextLine
-
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-		
-	parIndex < pars size 
-		ifTrue:[
-			^self privNextPar].
-		
-	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
-	are located on the last line in the last paragraph "
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-	
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:30:18'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:30:18'!
 paragraph
 
 	^ pars at: parIndex ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
-pars: anOrderedCollection
-
-	pars := anOrderedCollection.
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 00:11:55'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/3/2025 00:11:55'!
 physicalPageIndexForPageSize: anIntegerPageSize
 
 	" Answer the physical page and line number of the character referenced by self.
@@ -2441,6 +2435,50 @@ physicalPageIndexForPageSize: anIntegerPageSize
 					
 			
 					! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
+advance: anInteger
+
+	anInteger timesRepeat: [self next].
+	
+	^self! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
+next
+
+	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
+		ifTrue:[
+			^self privNextChar ].
+		
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
+nextLine
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+		
+	parIndex < pars size 
+		ifTrue:[
+			^self privNextPar].
+		
+	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
+	are located on the last line in the last paragraph "
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
+pars: anOrderedCollection
+
+	pars := anOrderedCollection.
+! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
@@ -3350,7 +3388,7 @@ fastInsert: aCharacter after: anIndex
 			false]
 		! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 9/28/2025 20:15:36'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/6/2025 18:34:24'!
 insert: aCharacter after: anIndex
 
 	"insert a character to the paragraph assuming that the character is not a line separator "
@@ -3368,7 +3406,15 @@ insert: aCharacter after: anIndex
 	
 			text add: aCharacter afterIndex: anIndex.
 		
-			self rebuildFromText: text].! !
+			self rebuildFromText: text].
+		
+	" update any emphasis intervals "
+	
+	emphasis ifNotNil:[
+		
+		emphasis do:[:each |
+			each shiftForward: 1 from: anIndex ] ].
+	! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:03:56'!
 rebuildFromText: aString
@@ -3599,6 +3645,25 @@ textInto: aWriteStream
 !KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:28:05'!
 width
 	^ (attributes at:#rightMargin) - (attributes at:#leftMargin)! !
+
+!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 17:55:56'!
+boldFrom: aBegin to: anEnd 
+
+	"mark the characters in this paragraph from relative (to the current paragraph) location aBegin to anEnd (exclusive) as bold"
+	
+	emphasis ifNil:[
+		
+		emphasis := Dictionary new].
+	
+	emphasis at:#bold ifAbsent:[ 
+		
+		emphasis at:#bold put: DisjointIntervalSequence new].
+	
+	emphasis at:#bold :: insert: (aBegin to: anEnd).	! !
+
+!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 18:12:35'!
+emphasis
+	^emphasis! !
 
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
@@ -4325,7 +4390,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 9/29/2025 18:55:20'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/6/2025 18:10:12'!
 initialize
 
 	| editor |
@@ -4340,11 +4405,9 @@ initialize
 	
 	view at: #edit put: KaeruEditorMorph new.
 	
-	lib := KLibrary new.
-
 	editor := KaeruEditor new.
 	
-	editor text: lib.
+	editor text: KLibrary new.
 	
 	view at: #edit :: model: editor.
 	
@@ -4391,17 +4454,6 @@ activate: aSymbol
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 14:08:48'!
-nullify
-
-	view := nil.
-	
-	lib := nil.
-	
-	active := nil.
-	
-	controller := nil! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 17:11:53'!
 start
@@ -4483,7 +4535,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:10'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/6/2025 18:25:02'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor 
@@ -4518,7 +4570,7 @@ drawTextOn: aCanvas
 			
 			editor isExtended and: [bb = selectionB] ::
 				ifTrue:[
-					printer background: Color cyan ; foreground: Color red].
+					printer background: Color black ; foreground: Color white].
 				
 			editor isExtended and: [bb = selectionE] ::
 				ifTrue:[
@@ -4534,7 +4586,11 @@ drawTextOn: aCanvas
 				ifTrue:[
 					printer background: Color black; foreground: Color white ; putChar: cc; background: Color white; foreground: Color black ] 
 				ifFalse:[
-					printer putChar: cc].
+					bb isBold
+						ifTrue:[ 
+							printer putBoldChar: cc]
+						ifFalse:[
+							printer putChar: cc] ].
 								
 			bb = cit
 				ifTrue:[ 
@@ -5266,6 +5322,23 @@ testInsert
 	
 	dis insert: (11 to:14).
 	
+	self assert: dis invariant.	! !
+
+!TestDisjointIntervalSeq methodsFor: 'as yet unclassified' stamp: 'DF 10/6/2025 17:43:12'!
+testShiftBack
+
+	| dis |
+	
+	dis := DisjointIntervalSequence new.
+	
+	self assert: dis invariant.
+	
+	dis insert: (1 to: 3) ; insert: (5 to: 7); insert: (8 to: 12); insert: (18 to: 19).
+	
+	self assert: dis invariant.
+	
+	dis shiftBack: 5 from: 6.
+
 	self assert: dis invariant.	! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:44:10'!
