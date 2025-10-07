@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 2:55:40 pm'!
+'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 4:04:18 pm'!
 'Description '!
-!provides: 'Kaeru' 1 998!
+!provides: 'Kaeru' 1 1004!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -1451,10 +1451,10 @@ putChar: aCharacter
 	self putChar: aCharacter font: font
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/6/2025 18:20:45'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/7/2025 15:52:02'!
 putChar: aCharacter font: aFont
 	
-	| hh lineSpace |
+	| cc hh lineSpace |
 	
 	lineSpace := attributes at: #lineHeight.
 
@@ -1466,9 +1466,19 @@ putChar: aCharacter font: aFont
 	yy + hh <= displayRect corner y 
 	"
 	
+	cc := aCharacter = Character newDocument
+		ifTrue:[
+			Character codePoint: 167]
+		ifFalse:[
+			aCharacter = Character newPage
+				ifTrue:[
+					Character codePoint:182]
+				ifFalse:[
+					aCharacter] ].
+			
 	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
 	
-	canvas drawString: aCharacter asString  at: xx@yy font: aFont color: foreground.
+	canvas drawString: cc asString at: xx@yy font: aFont color: foreground.
 	
 ! !
 
@@ -1477,10 +1487,10 @@ isNotAtEnd
 
 	^ yy < (dy * (numLines - 1))! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/6/2025 18:20:05'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/7/2025 16:03:15'!
 initialize
 
-	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 12.	
+	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
 
 	statusFont := FontFamily familyName: 'Courier Prime' pointSize: 10.
 
@@ -3211,7 +3221,7 @@ searchFrom: anAddress forwardFor: aString
 		ifTrue:[aKStream position retreat: aString size]
 		ifFalse:[nil]! !
 
-!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 13:19:03'!
+!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 15:31:40'!
 emphasize: aSymbol from: aBeginIndex to: anEndIndex
 
 	" Mark all the characters from aBeginIndex to anEndIndex (exclusive) with the emphasis given by aSymbol.
@@ -3248,6 +3258,10 @@ emphasize: aSymbol from: aBeginIndex to: anEndIndex
 	" Otherwise, we ephasize from beginPi second up to the end of the paragraph, then
 	emphasize the entire paragraphs after beginPi and before endPi, and finally emphasize
 	the paragraph endPi first from 1 to endPi second "
+	
+	pp := paragraphs at: beginPi first .
+	
+	pp emphasize: aSymbol from: beginPi second to: pp length.
 	
 	pi := beginPi first + 1.
 	
@@ -3542,7 +3556,7 @@ rebuildFromText: aString
 	self buildFrom: stream.
 ! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:47:28'!
+!KParagraph methodsFor: 'erasing' stamp: 'DF 10/7/2025 15:32:24'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| text left right |
@@ -3564,11 +3578,11 @@ eraseFrom: aBeginIndex to: anEndIndex
 	emphasis ifNotNil:[
 		
 		emphasis do:[:each |
-			each shiftBack: anEndIndex - aBeginIndex from: aBeginIndex ] ].
+			each shiftBack: anEndIndex - aBeginIndex from: aBeginIndex ] .
 	
-	emphasis isEmpty 
-		ifTrue:[
-			emphasis := nil].! !
+		emphasis isEmpty 
+			ifTrue:[
+				emphasis := nil] ].! !
 
 !KParagraph methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:10:08'!
 merge: aParagraph
@@ -3943,10 +3957,8 @@ creepForward
 		ifFalse:[
 			cursor := cursor + 1].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 14:52:44'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:30:05'!
 erase
-
-self halt.
 
 	cursorState = #narrow
 		ifTrue:[ 
@@ -4006,7 +4018,7 @@ eraseSelection
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 22:05:27'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:40:11'!
 eraseWide
 
 	self assert: cursor > 0.
@@ -4015,7 +4027,10 @@ eraseWide
 	cursor > 1 
 		ifTrue:[
 			text eraseFrom: cursor to: cursor + 1.
-			cursor := cursor - 1].
+			cursor := cursor - 1.
+			
+			cursor = 1 ifTrue:[
+				cursorState := #narrow ] ].
 		
 	self changed: #erase.! !
 
@@ -4042,7 +4057,7 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 21:59:42'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:41:35'!
 insert: aCharacter
 
 	self assert: cursor > 0.
@@ -4061,7 +4076,8 @@ insert: aCharacter
 				ifTrue:[
 					text insert: aCharacter after: cursor - 1]
 				ifFalse:[
-					text insert: aCharacter after: cursor ] ].
+					text insert: aCharacter after: cursor. 
+					cursor := cursor + 1 ] ].
 	
 	cursorState := #wide.
 	
