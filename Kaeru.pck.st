@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 October 2025 at 6:35:34 pm'!
+'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 2:47:40 pm'!
 'Description '!
-!provides: 'Kaeru' 1 983!
+!provides: 'Kaeru' 1 997!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -589,7 +589,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:59:02'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 13:31:47'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -621,6 +621,10 @@ processEditing: aKeyboardEvent
 		ifTrue:[
 			useFront := #up.
 			controllerMaster activate: #sleep. viewMaster activate: #sleep. ^self ].
+
+	aKeyboardEvent keyCharacter = $w and:[ useFront = #down] :: 
+		ifTrue:[
+			model toggleSelectionEmphasisFor: #bold. ^self ].
 
 	( keyboardMapper isPageKey: aKeyboardEvent ) and:[ useFront = #down] :: 
 		ifTrue:[
@@ -2045,7 +2049,7 @@ insert: anInterval into: anOrderedCollection
 				
 ! !
 
-!DisjointIntervalSequence methodsFor: 'shifting' stamp: 'DF 10/6/2025 17:30:38'!
+!DisjointIntervalSequence methodsFor: 'shifting' stamp: 'DF 10/7/2025 14:46:19'!
 shiftBack: aNumber from: anIndex
 
 	" Decrease by aNumber all the boundaries of intervals that are bigger than anIndex. Remove 
@@ -2072,8 +2076,6 @@ shiftBack: aNumber from: anIndex
 	
 	| result |
 	
-	self assert: anIndex - aNumber > 0.
-	
 	result := OrderedCollection new.
 	
 	intervals do:[:each |
@@ -2083,8 +2085,10 @@ shiftBack: aNumber from: anIndex
 				result add: each ]
 			ifFalse:[
 				each first >= anIndex
-					ifTrue:[ " the entire interval appears after the index. shift the entire interval "
-						result add: (each first - aNumber to: each last - aNumber)]
+					ifTrue:[ " the entire interval appears after the index. shift the entire interval. if the entire interval is pushed below 1, do not add it. "
+						each last - aNumber >= 1
+							ifTrue:[
+								result add: (each first - aNumber to: each last - aNumber)] ]
 					ifFalse:[ " only the interval's end is after the index. shift just the end but don't add to the result if the interval becomes empty "
 						each first < (each last - aNumber)
 							ifTrue:[
@@ -2123,6 +2127,11 @@ shiftForward: aNumber from: anIndex
 					ifFalse:[ " only the interval's end is after the index. shift just the end  "
 						intervals at:ii put: (each first to: each last + aNumber) ] ] ] .	
 ! !
+
+!DisjointIntervalSequence methodsFor: 'enumerating' stamp: 'DF 10/7/2025 14:08:46'!
+do: aBlock
+
+	intervals do:aBlock! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
@@ -2216,6 +2225,28 @@ on: aKIterator
 	^( self = aKIterator ) not
 ! !
 
+!KForwardIterator methodsFor: 'testing' stamp: 'DF 10/7/2025 13:27:00'!
+hasEmphasis: aSymbol
+
+	| par ii |
+	
+	par := self paragraph.
+
+	par emphasis ifNil:[ " the paragraph has no emphasis at all "	
+
+		^false].
+	
+	par emphasis at: aSymbol ifAbsent:[ " the paragraph has no aSymbol emphasis "
+		
+		^false].
+	
+	" calculate the relative character position in the paragraph "
+	
+	ii := (par lineIndexToCharIndex: lineIndex) + charIndex.
+	
+	^par emphasis at:aSymbol :: includes: ii
+	! !
+
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:21'!
 hash
 
@@ -2256,6 +2287,11 @@ isAtStart
 isBeforeStart
 	
 	^ parIndex = 1 and:[ lineIndex = 1] and:[ charIndex = 0]! !
+
+!KForwardIterator methodsFor: 'testing' stamp: 'DF 10/7/2025 13:27:45'!
+isBold
+
+	^self hasEmphasis: #bold! !
 
 !KForwardIterator methodsFor: 'testing' stamp: 'DF 9/28/2025 18:19:42'!
 isPastEnd
@@ -2307,28 +2343,6 @@ height
 		hh := hh + (pars at: ii) height ].
 	
 	^hh + ((lineIndex -1) * (pars at: parIndex :: attributes at: #lineHeight) )! !
-
-!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/6/2025 18:05:11'!
-isBold
-
-	| par ii |
-	
-	par := self paragraph.
-
-	par emphasis ifNil:[ " the paragraph has no emphasis at all "	
-
-		^false].
-	
-	par emphasis at: #bold ifAbsent:[ " the paragraph has no bold emphasis "
-		
-		^false].
-	
-	" calculate the relative character position in the paragraph "
-	
-	ii := (par lineIndexToCharIndex: lineIndex) + charIndex.
-	
-	^par emphasis at:#bold :: includes: ii
-	! !
 
 !KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:35:13'!
 line
@@ -2980,10 +2994,10 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 9/30/2025 21:38:54'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:22:42'!
 eraseFrom: aBeginIndex to: anEndIndex
 
-	| beginPi endPi headText tailText par |
+	| beginPi endPi bp ep |
 		
 	self assert: aBeginIndex > 1.
 	
@@ -2997,40 +3011,36 @@ eraseFrom: aBeginIndex to: anEndIndex
 	
 	endPi := self charIndexToParIndex: anEndIndex .
 	
-	headText := paragraphs at: beginPi first :: textFrom: 1 to: beginPi second.
+	" we erase in a single paragraph so there's no need to rebuild the paragraphs sequence "
+	
+	beginPi first = endPi first ifTrue:[
+		^ paragraphs at: beginPi first :: eraseFrom: beginPi second to: endPi second ].
+	
+	" erase the tail of the first paragraph "
+	
+	bp := paragraphs at: beginPi first.
+	
+	bp eraseFrom: beginPi second to: bp length + 1.
 
-	" If endPi exceeds the number of paragraphs in the text it means that we erase all the text after beginPi until the end of text
-	therefore just keep the text before beginPi. Otherwise we have to erase the beginning of the paragraph marked by endPi and
-	keep the text that follows."
+	"Because we use sentinels at the beginning and end of the text we will never erase the last paragraph (it will always has the sentinel at the end). "
 	
-	endPi first <= paragraphs size
-		ifTrue:[
-			par := paragraphs at: endPi first.
+	"  we erase the head of the paragraph marked by endPi "
 	
-			tailText := par textFrom: endPi second.
-	
-			par rebuildFromText: headText, tailText.
-	
-			paragraphs := (paragraphs copyFrom:1 to: beginPi first - 1) , { par } , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) ]
+	self assert: endPi first <= paragraphs size.
 
-		ifFalse:[ | origin | 
-					
-			origin := paragraphs at: beginPi first.
-			
-			paragraphs := paragraphs copyFrom:1 to: beginPi first - 1.
-			
-			headText isEmpty
-				ifFalse:[ 
-					
-					par := KParagraph new.
-					
-					par attributes: origin attributes.
-					
-					par rebuildFromText: headText.
-					paragraphs add: par ] ].
+	ep := paragraphs at: endPi first.
 	
+	ep eraseFrom: 1 to: endPi second.
+
+	" append the content of the last paragraph into the first "		
 	
-! !
+	bp merge: ep.
+
+	" discard all the paragraphs in between including ep but keeping bp "
+	
+	paragraphs := (paragraphs copyFrom:1 to: beginPi first) , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) 
+
+	! !
 
 !KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 09:35:25'!
 invariant
@@ -3201,6 +3211,106 @@ searchFrom: anAddress forwardFor: aString
 		ifTrue:[aKStream position retreat: aString size]
 		ifFalse:[nil]! !
 
+!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 13:19:03'!
+emphasize: aSymbol from: aBeginIndex to: anEndIndex
+
+	" Mark all the characters from aBeginIndex to anEndIndex (exclusive) with the emphasis given by aSymbol.
+	
+	aSymbol can be either bold, underline, or italic.
+		
+	"
+	
+	| beginPi endPi pi pp |
+
+	self assert: ({ #bold . #underline . #italic } includes: aSymbol).
+		
+	self assert: aBeginIndex > 1.
+	
+	self assert: anEndIndex <= self end globalIndex.
+	
+	aBeginIndex = anEndIndex
+		ifTrue:[
+			^self].
+		
+	beginPi := self charIndexToParIndex: aBeginIndex .
+	
+	endPi := self charIndexToParIndex: anEndIndex .
+	
+	beginPi first = endPi first
+		ifTrue:[ "emphasis is limited to a single paragraph"
+			
+			pp := paragraphs at: beginPi first .
+			
+			pp emphasize: aSymbol from: beginPi second to: endPi second.
+			
+			^self ].
+		
+	" Otherwise, we ephasize from beginPi second up to the end of the paragraph, then
+	emphasize the entire paragraphs after beginPi and before endPi, and finally emphasize
+	the paragraph endPi first from 1 to endPi second "
+	
+	pi := beginPi first + 1.
+	
+	[pi < endPi first]
+		whileTrue:[ 
+			pp := paragraphs at: pi.
+			pp emphasize: aSymbol from: 1 to: pp length.
+			pi := pi + 1 ].
+	
+	pp := paragraphs at: pi.
+	pp emphasize: aSymbol from: 1 to: endPi second.
+	
+! !
+
+!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 13:21:41'!
+unemphasize: aSymbol from: aBeginIndex to: anEndIndex
+
+	" Remove the emphasis aSymbol from all the characters from aBeginIndex to anEndIndex (exclusive).
+		
+	"
+	
+	| beginPi endPi pi pp |
+	
+	self assert: ({ #bold . #underline . #italic } includes: aSymbol).
+	
+	self assert: aBeginIndex > 1.
+	
+	self assert: anEndIndex <= self end globalIndex.
+	
+	aBeginIndex = anEndIndex
+		ifTrue:[
+			^self].
+		
+	beginPi := self charIndexToParIndex: aBeginIndex .
+	
+	endPi := self charIndexToParIndex: anEndIndex .
+	
+	beginPi first = endPi first
+		ifTrue:[ " remove the emphasis from a single paragraph"
+			
+			pp := paragraphs at: beginPi first .
+			
+			pp unemphasize: aSymbol from: beginPi second to: endPi second.
+			
+			^self ].
+		
+	" Otherwise, we must remove the ephasis from beginPi second up to the end of the paragraph, then
+	from the entire paragraphs after beginPi and before endPi, and finally from the paragraph endPi first 
+	from 1 to endPi second "
+	
+	pi := beginPi first + 1.
+	
+	[pi < endPi first]
+		whileTrue:[ 
+			pp := paragraphs at: pi.
+			pp unemphasize: aSymbol from: 1 to: pp length.
+			pi := pi + 1 ].
+	
+	pp := paragraphs at: pi.
+	pp unemphasize: aSymbol from: 1 to: endPi second.
+	
+! !
+
 !KLine methodsFor: 'inserting' stamp: 'DF 10/4/2025 21:10:38'!
 buildFrom: aTokenStream limitBy: markers
 
@@ -3368,7 +3478,7 @@ buildFrom: aTokenStream
 		
 	! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 9/28/2025 20:19:27'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/7/2025 13:56:15'!
 fastInsert: aCharacter after: anIndex
 
 	| lineIndex charIndex |
@@ -3376,7 +3486,7 @@ fastInsert: aCharacter after: anIndex
 	lineIndex := 1. 
 	charIndex := anIndex.
 	
-	[ (lines at: lineIndex :: length + 1) < charIndex ]
+	[ (lines at: lineIndex :: length) < charIndex ]
 		whileTrue:[
 			charIndex := charIndex - (lines at: lineIndex :: length).
 			lineIndex := lineIndex + 1 ].
@@ -3388,7 +3498,7 @@ fastInsert: aCharacter after: anIndex
 			false]
 		! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 10/6/2025 18:34:24'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/7/2025 14:37:09'!
 insert: aCharacter after: anIndex
 
 	"insert a character to the paragraph assuming that the character is not a line separator "
@@ -3413,7 +3523,7 @@ insert: aCharacter after: anIndex
 	emphasis ifNotNil:[
 		
 		emphasis do:[:each |
-			each shiftForward: 1 from: anIndex ] ].
+			each shiftForward: 1 from: anIndex + 1 ] ].
 	! !
 
 !KParagraph methodsFor: 'inserting' stamp: 'DF 8/16/2025 22:03:56'!
@@ -3432,21 +3542,60 @@ rebuildFromText: aString
 	self buildFrom: stream.
 ! !
 
-!KParagraph methodsFor: 'erasing' stamp: 'DF 8/18/2025 11:01:41'!
-eraseFrom: abeginIndex to: anEndIndex
+!KParagraph methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:47:28'!
+eraseFrom: aBeginIndex to: anEndIndex
 
 	| text left right |
 	
-	self assert: abeginIndex > 1.
-	
+	self assert: aBeginIndex >= 1.
+		
 	text := self text.
+
+	self assert: anEndIndex <= (text size + 1).
 	
-	left := text copyFrom: 1 to: abeginIndex - 1.
+	left := text copyFrom: 1 to: aBeginIndex - 1.
 	
 	right := text copyFrom: anEndIndex to: text size.
 	
 	self rebuildFromText: left, right.
-	! !
+
+	" update any emphasis intervals "
+	
+	emphasis ifNotNil:[
+		
+		emphasis do:[:each |
+			each shiftBack: anEndIndex - aBeginIndex from: aBeginIndex ] ].
+	
+	emphasis isEmpty 
+		ifTrue:[
+			emphasis := nil].! !
+
+!KParagraph methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:10:08'!
+merge: aParagraph
+
+	" Append the text in aParagraph at the end of this paragraph while keeping the emphasis in both paragraphs
+	in sync in the modified paragraph. "
+	
+	| stext pem |
+	
+	stext := self text.
+	
+	pem := aParagraph emphasis.
+	
+	self rebuildFromText: stext , aParagraph text.
+	
+	pem notNil ifTrue:[
+		
+		" move the intervals in aParagraph by the size of the text in self "
+		
+		pem do:[:each | each shiftForward: stext size from: 1 ].
+		
+		" add the intervals in aParagraph to each emphasis in self "
+		
+		pem keys do:[:eachKey | 
+			
+			(pem at: eachKey) do:[ :ival |
+				self emphasize: eachKey from: ival first to: ival last ] ] ].! !
 
 !KParagraph methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:35'!
 isLineBreaking
@@ -3646,24 +3795,38 @@ textInto: aWriteStream
 width
 	^ (attributes at:#rightMargin) - (attributes at:#leftMargin)! !
 
-!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 17:55:56'!
-boldFrom: aBegin to: anEnd 
+!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 18:12:35'!
+emphasis
+	^emphasis! !
 
-	"mark the characters in this paragraph from relative (to the current paragraph) location aBegin to anEnd (exclusive) as bold"
+!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/7/2025 13:08:49'!
+emphasize: aSymbol from: aBegin to: anEnd 
+
+	"mark the characters in this paragraph from relative (to the current paragraph) location aBegin to anEnd (exclusive) as emphasized according to a Symbol. see also KLibrary >> emphasize: from: to: "
 	
 	emphasis ifNil:[
 		
 		emphasis := Dictionary new].
 	
-	emphasis at:#bold ifAbsent:[ 
+	emphasis at:aSymbol ifAbsent:[ 
 		
-		emphasis at:#bold put: DisjointIntervalSequence new].
+		emphasis at:aSymbol put: DisjointIntervalSequence new].
 	
-	emphasis at:#bold :: insert: (aBegin to: anEnd).	! !
+	emphasis at:aSymbol :: insert: (aBegin to: anEnd).	! !
 
-!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 18:12:35'!
-emphasis
-	^emphasis! !
+!KParagraph methodsFor: 'emphasis' stamp: 'DF 10/7/2025 13:17:48'!
+unemphasize: aSymbol from: aBegin to: anEnd 
+
+	"remove the emphasis from all the characters between the paragraph relative ocation aBegin to anEnd (exclusive) "
+	
+	emphasis ifNil:[
+		^self].
+	
+	emphasis at:aSymbol ifAbsent:[ 
+		
+		^self ].
+	
+	emphasis at:aSymbol :: erase: (aBegin to: anEnd).	! !
 
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
@@ -3821,7 +3984,7 @@ eraseNarrow
 					text eraseFrom: cursor to: cursor + 1 ] ].
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:05:03'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 13:00:32'!
 eraseSelection
 
 	self assert: selection first > 1.
@@ -3837,9 +4000,8 @@ eraseSelection
 	selection := selection last to: selection last.
 	
 	cursorState := text isEmpty 
-		ifTrue:[#narrow]
-		ifFalse:[#wide].
-	
+		ifTrue:[#wide].
+			
 	self changed: #erase.! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 22:05:27'!
@@ -4300,6 +4462,24 @@ showRightMargin: aBoolean
 	showRightMargin := aBoolean.
 	
 	self changed: #margins! !
+
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/7/2025 13:30:25'!
+toggleSelectionEmphasisFor: aSymbol
+
+	| it |
+	
+	it := self charIndexToIterator: selection first.
+	
+	it hasEmphasis: aSymbol :: ifTrue:[
+		
+		text unemphasize: aSymbol from: selection first to: selection last ]
+	
+	ifFalse:[
+		
+		text emphasize: aSymbol from: selection first to: selection last ].
+	
+	self changed: #emphasis
+		! !
 
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
