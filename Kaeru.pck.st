@@ -1,7 +1,8 @@
-'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 4:04:18 pm'!
+'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 5:56:20 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1004!
+!provides: 'Kaeru' 1 1015!
 !requires: 'Regex-Core' 1 6 nil!
+!requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
@@ -147,6 +148,16 @@ Object subclass: #DisjointIntervalSequence
 	category: 'Kaeru-Text'!
 !classDefinition: 'DisjointIntervalSequence class' category: #'Kaeru-Text'!
 DisjointIntervalSequence class
+	instanceVariableNames: ''!
+
+!classDefinition: #DocBookWriter category: #'Kaeru-Text'!
+Object subclass: #DocBookWriter
+	instanceVariableNames: 'klib'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'DocBookWriter class' category: #'Kaeru-Text'!
+DocBookWriter class
 	instanceVariableNames: ''!
 
 !classDefinition: #KBackwardStream category: #'Kaeru-Text'!
@@ -2143,6 +2154,111 @@ do: aBlock
 
 	intervals do:aBlock! !
 
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:25:53'!
+asXML: aKaeruAttributeDictionary
+
+	| attrs |
+
+	attrs := aKaeruAttributeDictionary.
+	
+	^{
+	
+	'leftMargin' -> (attrs at: #leftMargin) asString .
+	'rightMargin' -> (attrs at: #rightMargin) asString .
+	'indent' -> (attrs at:#indent) asString  .
+	'lineHeight' -> (attrs at:#lineHeight) asString . 
+	'tabStops' -> 
+		( String streamContents:[:s | (attrs at:#tabStops) printAsNakedList: s] ) } asDictionary! !
+
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 16:52:18'!
+library: aKLibrary
+	klib := aKLibrary ! !
+
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:52:47'!
+renderDocumentAt: anIterator on: anXMLWriter
+
+	| bb title |
+	
+	anXMLWriter  startTag: 'book' ; endTag.
+	
+	bb := anIterator.
+	
+	title := bb line.
+	
+	anXMLWriter startTag: 'title'; endTag.
+	
+	anXMLWriter pcData: title ; endTag: 'title'.
+	
+	[ bb paragraph isDocBreaking ]
+		whileFalse:[
+			self renderParagraphAt: bb on: anXMLWriter.
+			bb nextParagraph ].
+
+	self renderParagraphAt: bb on: anXMLWriter.
+	bb nextParagraph.
+	
+	anXMLWriter endTag: 'book'.
+	
+	^bb ! !
+
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:59'!
+renderLibraryOn: anXMLWriter
+
+	| bb ee attrs |
+
+	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
+
+	attrs := self asXML: klib attributes.
+	
+	attrs at: 'xmlns' put: 'http://docbook.org/ns/docbook' .
+	
+	anXMLWriter  startElement: 'set' attributeList: attrs ; endTag.
+	
+	ee := klib end.
+	bb := klib begin.
+	
+	[ bb ~= ee ]
+	
+		whileTrue:[			
+			bb next.
+			bb := self renderDocumentAt: bb on: anXMLWriter ] .
+	
+	anXMLWriter endTag: 'set'.! !
+
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:56:09'!
+renderParagraphAt: anIterator on: anXMLWriter
+
+	| text pp defaults |
+	
+	defaults := klib attributes.
+	
+	pp := anIterator paragraph.
+	
+	pp attributes == defaults ifTrue:[
+		anXMLWriter startTag: 'par'  ; endTag.
+	]
+	ifFalse:[
+		
+		anXMLWriter startElement: 'par' attributeList: (self asXML: pp attributes ) ; endTag.
+	].
+
+	text := anIterator paragraph text.
+	
+	anXMLWriter pcData: text.
+	
+	pp emphasis ifNotNil:[
+		anXMLWriter startTag: 'emphasis' ; endTag.
+			
+			pp emphasis keys do:[:each |
+			
+				pp emphasis at: each :: do:[:ival |
+					anXMLWriter startElement: 'interval' attributeList: { 'first' -> ival first asString . 'last' -> ival last asString } asDictionary ; endEmptyTag: 'interval' ] ].
+		
+		anXMLWriter endTag: 'emphasis' ].
+		
+	anXMLWriter endTag: 'par'.	
+	! !
+
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
 
@@ -2495,6 +2611,18 @@ nextLine
 	are located on the last line in the last paragraph "
 	
 	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
+nextParagraph
+
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+
+	parIndex < pars size 
+		ifTrue:[
+			self privNextPar. 
+			charIndex := 1]
 	
 ! !
 
@@ -2941,6 +3069,10 @@ setAttribute: aTextAttribute from: aBeginIndex to: anEndIndex
 	endPi := self charIndexToParIndex: anEndIndex .
 
 		! !
+
+!KLibrary methodsFor: 'accessing' stamp: 'DF 10/7/2025 17:09:49'!
+attributes
+	^ defaultParagraphAttributes ! !
 
 !KLibrary methodsFor: 'accessing' stamp: 'Df 9/21/2025 14:31:34'!
 pageSize
@@ -3405,6 +3537,12 @@ tokenWidth: aToken at:index markers: markers
 			
 			! !
 
+!KLine methodsFor: 'testing' stamp: 'DF 10/7/2025 17:45:22'!
+isDocSeparating
+
+	^chars size > 0 and: [chars last isKDocSeparator ]
+	! !
+
 !KLine methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:19'!
 isLineSeparating
 
@@ -3610,6 +3748,11 @@ merge: aParagraph
 			
 			(pem at: eachKey) do:[ :ival |
 				self emphasize: eachKey from: ival first to: ival last ] ] ].! !
+
+!KParagraph methodsFor: 'testing' stamp: 'DF 10/7/2025 17:45:36'!
+isDocBreaking
+
+	^ lines size > 0 and: [lines last isDocSeparating ]! !
 
 !KParagraph methodsFor: 'testing' stamp: 'DF 8/18/2025 11:55:35'!
 isLineBreaking
@@ -6045,6 +6188,11 @@ test
 
 	self assert: aKTokenStream first = {} asOrderedCollection.
 	! !
+
+!Array methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 17:20:14'!
+printAsNakedList: aStream
+	self do: [:each| each printAsLiteralOn: aStream] separatedBy: [aStream space].
+! !
 
 !CharacterSequence methodsFor: '*Kaeru-unittest' stamp: 'DF 6/19/2025 18:35:16'!
 eraseFrom: bIndex to: eIndex
