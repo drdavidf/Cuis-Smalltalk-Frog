@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 2:47:40 pm'!
+'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 2:55:40 pm'!
 'Description '!
-!provides: 'Kaeru' 1 997!
+!provides: 'Kaeru' 1 998!
 !requires: 'Regex-Core' 1 6 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -3943,8 +3943,10 @@ creepForward
 		ifFalse:[
 			cursor := cursor + 1].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'Df 9/23/2025 20:08:36'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 14:52:44'!
 erase
+
+self halt.
 
 	cursorState = #narrow
 		ifTrue:[ 
@@ -4463,7 +4465,7 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/7/2025 13:30:25'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/7/2025 14:55:09'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
@@ -4477,6 +4479,10 @@ toggleSelectionEmphasisFor: aSymbol
 	ifFalse:[
 		
 		text emphasize: aSymbol from: selection first to: selection last ].
+	
+	cursorState := #wide.
+	
+	cursor := selection last.
 	
 	self changed: #emphasis
 		! !
