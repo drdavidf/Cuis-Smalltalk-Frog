@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 5:56:20 pm'!
+'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 10:43:18 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1015!
+!provides: 'Kaeru' 1 1045!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -240,6 +240,16 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
+!classDefinition: #SimpleScanner category: #'Kaeru-Text'!
+Object subclass: #SimpleScanner
+	instanceVariableNames: 'stream'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'SimpleScanner class' category: #'Kaeru-Text'!
+SimpleScanner class
+	instanceVariableNames: ''!
+
 !classDefinition: #KPngConverter category: #'Kaeru-Tools'!
 Object subclass: #KPngConverter
 	instanceVariableNames: 'directory'
@@ -378,6 +388,16 @@ TestCase subclass: #TestKTokenStream
 	category: 'Kaeru-Text'!
 !classDefinition: 'TestKTokenStream class' category: #'Kaeru-Text'!
 TestKTokenStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #TestScanner category: #'Kaeru-Text'!
+TestCase subclass: #TestScanner
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestScanner class' category: #'Kaeru-Text'!
+TestScanner class
 	instanceVariableNames: ''!
 
 
@@ -2149,10 +2169,37 @@ shiftForward: aNumber from: anIndex
 						intervals at:ii put: (each first to: each last + aNumber) ] ] ] .	
 ! !
 
+!DisjointIntervalSequence methodsFor: 'enumerating' stamp: 'DF 10/7/2025 21:01:41'!
+at: ii
+
+	^ intervals at:ii! !
+
 !DisjointIntervalSequence methodsFor: 'enumerating' stamp: 'DF 10/7/2025 14:08:46'!
 do: aBlock
 
 	intervals do:aBlock! !
+
+!DisjointIntervalSequence methodsFor: 'object serialization' stamp: 'DF 10/7/2025 21:55:32'!
+serializeOn: aWriteStream
+
+	aWriteStream nextPut: $[.
+		
+	intervals do:[:each |
+		
+		aWriteStream nextPut: $[.
+			
+		each first serializeOn: aWriteStream.
+		
+		aWriteStream nextPut: Character space.
+		
+		each last serializeOn: aWriteStream.
+		
+		aWriteStream nextPut: $]. ]
+	
+	separatedBy:[
+		aWriteStream nextPut: Character space ].
+	
+	aWriteStream nextPut: $].! !
 
 !DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:25:53'!
 asXML: aKaeruAttributeDictionary
@@ -3457,6 +3504,74 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
+!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/7/2025 19:56:37'!
+serializeOn: aWriteStream
+
+	" Here's the format: 
+	
+	attributes [ESCAPE] 
+	
+	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
+	
+	because [ESCAPE] never appears in the text or the attributes it acts as a simple separator between the
+	different bits of information.
+	
+	note that for most paragraphs there will be no attributes and no emphasis so they will be separated by
+	three escape characters. 
+	
+	"
+	
+	defaultParagraphAttributes serializeOn: aWriteStream.
+	
+	aWriteStream nextPut: Character escape.
+	
+	paragraphs do:[:each |
+		
+		each textInto: aWriteStream.
+
+		aWriteStream nextPut: Character escape.
+		
+		each attributes ~= defaultParagraphAttributes 
+			ifTrue:[
+				
+				each attributes serializeOn: aWriteStream].
+
+		aWriteStream nextPut: Character escape.
+			
+		each emphasis ifNotNil:[
+			each emphasis serializeOn: aWriteStream. ].
+	
+		aWriteStream nextPut: Character escape ]
+	
+	! !
+
+!KLibrary class methodsFor: 'object serialization' stamp: 'DF 10/7/2025 21:05:27'!
+serializeFrom: aReadStream
+
+	" Here's the format: 
+	
+	attributes [ESCAPE] 
+	
+	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
+	
+	because [ESCAPE] never appears in the text or the attributes it acts as a simple separator between the
+	different bits of information.
+	
+	note that for most paragraphs there will be no attributes and no emphasis so they will be separated by
+	three escape characters. 
+	
+	"	
+	
+	| defaults scanner |
+		
+	defaults := Dictionary serializeFrom: aReadStream. 
+	
+	scanner := SimpleScanner on: aReadStream.
+	
+	scanner skipWhiteSpace ; eat: Character escape.
+	
+	! !
+
 !KLine methodsFor: 'inserting' stamp: 'DF 10/4/2025 21:10:38'!
 buildFrom: aTokenStream limitBy: markers
 
@@ -3985,6 +4100,46 @@ unemphasize: aSymbol from: aBegin to: anEnd
 	
 	emphasis at:aSymbol :: erase: (aBegin to: anEnd).	! !
 
+!KParagraph methodsFor: 'object serialization' stamp: 'DF 10/7/2025 22:41:53'!
+serializeFrom: aReadStream
+
+	| text |
+	
+	text := WriteStream on: ''.
+	
+	[ aReadStream atEnd not and: [ aReadStream peek ~= Character escape ] ]
+		whileTrue:[
+			text nextPut: aReadStream peek. 
+			
+			aReadStream next ].
+
+	aReadStream next.
+	
+	aReadStream peek ~= Character escape ifTrue:[
+		
+		attributes := Dictionary serializeFrom: aReadStream ].
+	
+	aReadStream next. 	
+
+	aReadStream peek ~= Character escape ifTrue:[ | arrays |
+		
+		arrays := Dictionary serializeFrom: aReadStream.
+		
+		" now convert each array into a disjoint interval sequence "
+		
+		emphasis := arrays collect:[:eachArray | | aDisjointIntervalSeq |
+			
+			aDisjointIntervalSeq := DisjointIntervalSequence new.
+			
+			eachArray do:[:eachPair | aDisjointIntervalSeq insert: (eachPair first to: eachPair last) ].
+			
+			aDisjointIntervalSeq ]
+		 ].
+	
+	self rebuildFromText: text contents. 
+	
+	! !
+
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
 	^head! !
@@ -4021,6 +4176,75 @@ on: anOrderedSequence
 
 	stream := ReadStream on: anOrderedSequence.
 ! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:45:45'!
+eat: aCharacter
+
+	self assert: stream peek = aCharacter.
+	
+	stream next.
+! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:44:53'!
+head
+	^stream peek! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:14'!
+nextInteger
+
+	| value |
+	
+	value := WriteStream on:''.
+	
+	[stream atEnd not and: [ stream peek isDigit ] ]
+		whileTrue:[
+			value nextPut: stream peek.
+			stream next ].
+		
+	^ Integer readFrom: (ReadStream on: value contents)! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:14'!
+nextWord
+
+	| word |
+	
+	word := WriteStream on:''.
+	
+	[ stream atEnd not and: [ stream peek isLetter ] ]
+		whileTrue:[
+			word nextPut: stream peek.
+			stream next. ].
+		
+	^ word contents! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:46:37'!
+notAtEnd
+
+	^ stream atEnd not! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:14'!
+skipWhiteSpace
+
+	[ stream atEnd not and:[ stream peek isSeparator ] ]
+		whileTrue:[
+			stream next ].
+! !
+
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:23'!
+stream: aReadStream
+
+	stream := aReadStream! !
+
+!SimpleScanner class methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:52'!
+on: aReadStream
+
+	| aScanner |
+	
+	aScanner := self new.
+	
+	aScanner stream: aReadStream.
+	
+	^aScanner! !
 
 !KPngConverter methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 21:24:38'!
 convert: anOrderedCollection
@@ -5896,6 +6120,102 @@ testIterators
 	
 ! !
 
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 22:43:06'!
+testParagraphSerializeFrom
+
+	| aParagraph aReadStream aString defaultParagraphAttributes |
+	
+	aString :=  { Character smalltalkLeftArrow . Character escape . Character escape . Character escape .  $T . $h . $e . Character space . $f . $i . $r . $s . $t . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $o . $n . $c . $e . Character space . $u . $p . $o . $n . Character space . $a . Character space . $t . $i . $m . $e . Character space . $i . $n . Character space . $a . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $f . $a . $r . Character space . $f . $a . $r . Character space . $a . $w . $a . $y . Character newPage . Character escape . Character escape . Character escape . $a . Character space . $s . $e . $c . $o . $n . $d . Character space . $p . $a . $g . $e . Character space . $h . $a . $p . $p . $e . $n . $e . $d . $. . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $T . $h . $e . Character space . $s . $e . $c . $o . $n . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $s . $o . $m . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $n . $e . $x . $t . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $w . $i . $t . $h . Character space . $s . $o . $m . $e . Character space . $b . $o . $l . $d . Character space . $t . $e . $x . $t . Character space . $i . $n . Character space . $i . $t . Character smalltalkLeftArrow . Character escape . Character escape . $[ . $b . $o . $l . $d . $: . $[ . $[ . $5 . Character space . $1 . $0 . $] . $] . $] . Character escape . $T . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $w . $i . $t . $h . Character space . $a . Character space . $s . $i . $n . $g . $l . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character smalltalkLeftArrow . Character escape . Character escape . Character escape}   .
+
+	defaultParagraphAttributes := Dictionary new.
+	
+	defaultParagraphAttributes 
+		at: #leftMargin put: 6; 
+		at: #rightMargin put: 72;
+		at: #indent put: 0;
+		at: #lineHeight put: 2; " in half line units "
+		at: #tabStops put: (11 to: 72 by:5 :: asArray).
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+	
+	aReadStream := ReadStream on: aString.
+	
+	aParagraph serializeFrom: aReadStream.
+	
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+	
+	self assert: aParagraph text = 'The first book'.
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = ('once upon a time in a paragraph far far away', Character newPage asString).
+
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = ('a second page happened.', Character newDocument asString).
+
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = 'The second book'.
+
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = 'some paragraph'.
+
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = 'the next paragraph'.
+
+	aReadStream next.
+
+	aParagraph := KParagraph new.
+
+	aParagraph attributes: defaultParagraphAttributes.
+
+	aParagraph serializeFrom: aReadStream.
+
+	self assert: aParagraph text = ('the third paragraph with some bold text in it', Character newDocument asString).
+
+	self assert: true
+	! !
+
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:05:34'!
 testRegex
 
@@ -6189,10 +6509,85 @@ test
 	self assert: aKTokenStream first = {} asOrderedCollection.
 	! !
 
+!TestScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 21:51:55'!
+testArray
+
+	| anArray aReadStream |
+	
+	aReadStream := ReadStream on: '  [  1 2 [ 3 4 ] 5 ]'.
+	
+	anArray := Array serializeFrom: aReadStream.
+	
+	self assert: (anArray at:1) = 1.	
+	
+	self assert: (anArray at:2) = 2.	
+	
+	self assert: (anArray at:3) = { 3 .  4}.	
+	
+	self assert: (anArray at:4) = 5.	
+! !
+
+!TestScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 21:44:13'!
+testDictionary
+
+	| aDictionary aReadStream |
+	
+	aReadStream := ReadStream on: '  [  abc : 12    x:15 y: [1 2 16 21 ] z  :17 ]'.
+	
+	aDictionary := Dictionary serializeFrom: aReadStream.
+	
+	self assert: (aDictionary at: #abc ) = 12.
+	
+	self assert: (aDictionary at: #x ) = 15.
+	
+	self assert: (aDictionary at: #y ) = { 1 . 2 . 16 . 21 } .
+	
+	self assert: (aDictionary at: #z) = 17.
+	
+! !
+
 !Array methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 17:20:14'!
 printAsNakedList: aStream
 	self do: [:each| each printAsLiteralOn: aStream] separatedBy: [aStream space].
 ! !
+
+!Array methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 19:38:55'!
+serializeOn: aStream
+
+	aStream nextPut: $[.
+		
+	self do: [:each| each serializeOn: aStream] separatedBy: [aStream space].
+	
+	aStream nextPut: $].
+! !
+
+!Array class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/7/2025 21:53:38'!
+serializeFrom: aReadStream
+
+	| anOrderedCollection aScanner |
+	
+	anOrderedCollection := OrderedCollection new.
+	
+	aScanner := SimpleScanner on: aReadStream.
+	
+	aScanner skipWhiteSpace; eat: $[ ; skipWhiteSpace.
+
+	[ aScanner notAtEnd and: [ aScanner head ~= $] ] ]
+		whileTrue:[ | value |
+			
+			value := aScanner head =$[
+				ifTrue:[
+					Array serializeFrom: aReadStream ]
+				ifFalse:[
+					aScanner nextInteger ].
+				
+			aScanner skipWhiteSpace.
+	
+			anOrderedCollection add: value ].
+	
+	aScanner eat: $] ; skipWhiteSpace.
+
+	^anOrderedCollection asArray! !
 
 !CharacterSequence methodsFor: '*Kaeru-unittest' stamp: 'DF 6/19/2025 18:35:16'!
 eraseFrom: bIndex to: eIndex
@@ -6220,19 +6615,65 @@ asRegexLiteral
 	
 	^aWriteStream contents! !
 
-!Integer methodsFor: '*Kaeru-enumerating' stamp: 'DF 7/20/2025 11:09:43'!
-copiesOf: anObject
+!Dictionary methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 22:35:38'!
+serializeOn: aWriteStream
 
-	"answer a sequence of self copies of anObject "
+	aWriteStream nextPut: $[.
+		
+	self associations do: [:assoc | | key value |
+		
+		key := assoc key. 
+		
+		value := assoc value.
+		
+		aWriteStream nextPutAll: key ; nextPut: $:.
+		
+		value serializeOn: aWriteStream  ]
 	
-	| anOrderedCollection |
+	separatedBy: [
+		
+		aWriteStream nextPut: Character space ].
 	
-	anOrderedCollection := OrderedCollection new.
+	aWriteStream nextPut: $].
 	
-	self timesRepeat:[
-		anOrderedCollection add: anObject ].
 	
-	^anOrderedCollection ! !
+	! !
+
+!Dictionary class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/7/2025 21:56:25'!
+serializeFrom: aReadStream
+
+	| aDictionary aScanner |
+	
+	aDictionary := Dictionary new.
+	
+	aScanner := SimpleScanner on: aReadStream.
+	
+	aScanner skipWhiteSpace; eat: $[ ; skipWhiteSpace.
+	
+	[ aScanner notAtEnd and: [ aScanner head ~= $] ] ]
+		whileTrue:[ | key value |
+			
+			key := aScanner nextWord.
+			
+			aScanner skipWhiteSpace; eat: $: ; skipWhiteSpace.
+			
+			value := aScanner head =$[
+				ifTrue:[
+					Array serializeFrom: aReadStream ]
+				ifFalse:[
+					aScanner nextInteger ].
+			
+			aScanner skipWhiteSpace.
+			
+			aDictionary at: key asSymbol put: value ].
+		
+	^ aDictionary
+	! !
+
+!Integer methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 19:35:13'!
+serializeOn: aWriteStream
+	
+		self printOn: aWriteStream! !
 
 !Character methodsFor: '*Kaeru-testing' stamp: 'Df 9/23/2025 13:49:58'!
 isKDocSeparator
