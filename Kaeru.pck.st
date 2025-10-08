@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 8 October 2025 at 12:55:44 pm'!
+'From Cuis7.3 [latest update: #6895] on 8 October 2025 at 11:22:49 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1047!
+!provides: 'Kaeru' 1 1055!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -202,7 +202,7 @@ KForwardStream class
 
 !classDefinition: #KLibrary category: #'Kaeru-Text'!
 Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs pageSize defaultParagraphAttributes'
+	instanceVariableNames: 'paragraphs pageSize defaultParagraphAttributes cacheBoundary'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -222,7 +222,7 @@ KLine class
 
 !classDefinition: #KParagraph category: #'Kaeru-Text'!
 Object subclass: #KParagraph
-	instanceVariableNames: 'lines attributes emphasis'
+	instanceVariableNames: 'lines attributes emphasis startingCharacterIndex'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -2625,6 +2625,10 @@ char
 	
 	^ pars at: parIndex :: lineAt: lineIndex :: charAt: charIndex! !
 
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:40:37'!
+charIndex
+	^charIndex! !
+
 !KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:15:54'!
 globalIndex
 
@@ -2670,6 +2674,14 @@ lineHeight
 	" Answer the number of half line units for the current paragraph "
 	
 	^ pars at: parIndex :: attributes at: #lineHeight! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:40:33'!
+lineIndex
+	^lineIndex ! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:40:44'!
+parIndex
+	^parIndex! !
 
 !KForwardIterator methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:30:18'!
 paragraph
@@ -2899,22 +2911,21 @@ begin
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/23/2025 13:02:30'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 23:01:52'!
 charIndexToIterator: anIndex
 
 	| pi li iterator |
 	
-	pi := self charIndexToParIndex: anIndex.
+	self assert: paragraphs notEmpty.	
 	
-	li := paragraphs isEmpty
+	pi := self charIndexToParIndex: anIndex.
+
+	self assert: paragraphs size + 1 >= pi first.
+	
+	li := paragraphs size + 1 = pi first
 			ifTrue:[ #(1 1) ]
-			ifFalse:[				
-				self assert: paragraphs size + 1 >= pi first.
-				
-				paragraphs size + 1 = pi first
-					ifTrue:[ #(1 1) ]
-					ifFalse:[						
-						paragraphs at: pi first :: charIndexToLineIndex: pi second] ].
+			ifFalse:[						
+				paragraphs at: pi first :: charIndexToLineIndex: pi second].
 	
 	iterator := KBidiIterator new.
 	
@@ -2993,26 +3004,154 @@ end
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 9/28/2025 14:34:06'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 22:59:34'!
+fastCharIndexToParIndex: anIndex
+
+	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
+
+	Use a fast binary search based on the assumption that anIndex <= cacheBoundary	
+	"
+	
+	| ii pp par |
+	
+	self assert: anIndex <= cacheBoundary.
+	
+	pp := self findParagraphHolding: anIndex.
+	
+	par := paragraphs at:pp.
+	
+	ii := anIndex - par startingCharacterIndex.
+	
+	^ { pp . ii }! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 22:55:51'!
+findParagraphHolding: anIndex
+
+	| bp ep |
+	
+	" quickly find the paragraph that holds (the global) anIndex assuming that anIndex
+	
+	is a character located before the cache boundary
+	
+	
+	[1 8) [8 11) [11 17) [17 19) [19 23)
+	
+	b = 1 e = 5 x = 10
+	b = 1 e = 3 
+	b = 1 e = 2
+	b = 2 e = 2
+	 "
+	
+	self assert: anIndex <= cacheBoundary .
+	
+	bp := 1.
+	
+	ep := paragraphs size.
+	
+	[bp < ep ] 
+		whileTrue:[
+			| mm |
+
+			" bp <= (ep + bp) // 2 < ep "
+			
+			mm := (ep + bp) // 2.
+	
+			" bp <= mm < ep "
+			
+			anIndex < (paragraphs at:mm) startingCharacterIndex + (paragraphs at:mm) length ifTrue:[
+				
+				ep := mm 
+				
+				" anIndex < (paragraphs at:ep) startingCharacterIndex + (paragraphs at:ep) length "
+			]
+			ifFalse: [
+				
+				" anIndex >= (paragraphs at:mm) startingCharacterIndex + (paragraphs at:mm) length 
+				
+				==> because 
+				
+				(paragraphs at: mm+1) startingCharacterIndex = (paragraphs at:mm) startingCharacterIndex + (paragraphs at:mm) length
+				
+				anIndex >= (paragraphs at:mm + 1) startingCharacterIndex 
+				
+				"
+				
+				bp := mm + 1 
+				
+				" anIndex >= (paragraphs at:bp) startingCharacterIndex "
+			]
+		].	
+
+	"
+	self assert:  (paragraphs at:bp) startingCharacterIndex <= anIndex.
+	
+	self assert:  anIndex < (paragraphs at:ep) startingCharacterIndex + (paragraphs at:ep) length.	
+	
+	self assert: bp = ep 
+	
+	==> 
+	"
+	
+	self assert:  (paragraphs at:bp) startingCharacterIndex <= anIndex.
+	
+	self assert:  anIndex < (paragraphs at:bp startingCharacterIndex) + (paragraphs at:bp) length.
+	
+	^ bp
+	! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 23:22:31'!
+slowCharIndexToParIndex: anIndex
+
+	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
+		
+	This version assumes that anIndex is further away from cacheBoundary. It starts from the paragraph
+	located at the cache boundary and progresses linearly until reaching the paragraph that holds anIndex. Along the way it recalculates the caches of the paragraphs thus moving cacheBounary upto the paragraph that holds anIndex.
+	
+	"
+	
+	| ii pp len |
+	
+	self assert: anIndex > cacheBoundary .
+	
+	pp := self fastCharIndexToParIndex: cacheBoundary.
+	
+	ii := anIndex - (paragraphs at:pp) :: startingCharacterIndex.
+	
+	len := paragraphs at:pp :: length.
+	
+	[ pp < paragraphs size and: [ii > len ] ]
+		whileTrue:[
+
+			paragraphs at:pp +1 :: startingCharacterIndex: (paragraphs at: pp) startingCharacterIndex + len.
+			
+			ii := ii - len.
+			pp := pp + 1.
+			len := paragraphs at:pp :: length. ].
+
+	cacheBoundary := paragraphs at: pp :: startingCharacterIndex.
+	
+	^ { pp . ii }! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:55:34'!
 insert: aCharacter after: anIndex
 
 	self assert: anIndex > 0.
 	
 	self assert: anIndex < self end globalIndex.
 	
-	paragraphs isEmpty
-		ifTrue:[
-			paragraphs add: self newItem ].
+	self assert: paragraphs notEmpty.
 		
 	aCharacter isKLineSeparator 
 		ifTrue:[
 			self insertBreakCharacter: aCharacter after: anIndex]
 		ifFalse:[
-			self insertLetter: aCharacter after: anIndex]
+			self insertLetter: aCharacter after: anIndex].
+		
+	cacheBoundary := anIndex min: cacheBoundary 
 		
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 9/30/2025 21:25:11'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:51:03'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -3062,12 +3201,14 @@ insertBreakCharacter: aCharacter after: anIndex
 			newPar attributes: (paragraphs at:pp) attributes.
 			
 			newPar rebuildFromText: right.
+			
+			newPar startingCharacterIndex: (paragraphs at:pp) startingCharacterIndex + (paragraphs at:pp) length.
 	
 			paragraphs add: newPar afterIndex: pp].
 	
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 8/18/2025 12:17:49'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:50:08'!
 insertLetter: aCharacter after: anIndex
 
 	"find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -3091,8 +3232,10 @@ insertLetter: aCharacter after: anIndex
 			ii := 0.
 	
 			pp = (paragraphs size + 1)
-				ifTrue:[
-					paragraphs add: self newItem] ].
+				ifTrue:[ | aNewPar |
+					aNewPar := self newItem.
+					aNewPar startingCharacterIndex: paragraphs last startingCharacterIndex + paragraphs last length.
+					paragraphs add: aNewPar ] ].
 		
 	(paragraphs at:pp) insert: aCharacter after: ii! !
 
@@ -3142,7 +3285,7 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 10/4/2025 17:34:09'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 10/8/2025 15:38:02'!
 initialize
 
 	paragraphs := OrderedCollection new.
@@ -3159,6 +3302,12 @@ initialize
 		at: #tabStops put: (11 to: 72 by:5 :: asArray).
 	
 	paragraphs add: self newInitialItem ; add: self newInitialItem.
+	
+	cacheBoundary := 2. " All the paragraphs whose first character is located at or below the cache boundary have a valid startingCharacterIndex "
+	
+	paragraphs at:1 :: startingCharacterIndex: 1.
+	
+	paragraphs at:2 :: startingCharacterIndex: 2.
 	! !
 
 !KLibrary methodsFor: 'factory' stamp: 'DF 9/28/2025 14:32:11'!
@@ -3183,7 +3332,7 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 10/7/2025 14:22:42'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 10/8/2025 15:55:49'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi bp ep |
@@ -3227,11 +3376,14 @@ eraseFrom: aBeginIndex to: anEndIndex
 
 	" discard all the paragraphs in between including ep but keeping bp "
 	
-	paragraphs := (paragraphs copyFrom:1 to: beginPi first) , (paragraphs copyFrom: endPi first + 1 to: paragraphs size) 
+	paragraphs := (paragraphs copyFrom:1 to: beginPi first) , (paragraphs copyFrom: endPi first + 1 to: paragraphs size).
 
+	" finally reduce the cache boundary to the paragraph at beginPi "
+	
+	cacheBoundary := bp startingCharacterIndex min: cacheBoundary 
 	! !
 
-!KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 09:35:25'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/8/2025 15:41:43'!
 invariant
 
 	self assert: paragraphs size >= 1.
@@ -3243,6 +3395,14 @@ invariant
 	paragraphs allButLastDo: [:each |
 		self assert: each isLineBreaking ].
 	
+	1 to: paragraphs size do:[:ii | | each |
+		each := paragraphs at: ii .
+		each startingCharacterIndex <= cacheBoundary 
+			ifTrue:[ | it |
+				it := self charIndexToIterator: each startingCharacterIndex.
+				self assert: it parIndex = ii.
+				self assert: it lineIndex = 1.
+				self assert: it charIndex = 1. ] ].
 	^true! !
 
 !KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 18:57:28'!
@@ -4045,6 +4205,15 @@ rightMargin: anInteger
 	
 	self rebuildFromText: text.
 	! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:36:48'!
+startingCharacterIndex
+	^startingCharacterIndex! !
+
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:36:59'!
+startingCharacterIndex: anInteger
+
+	startingCharacterIndex := anInteger ! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/16/2025 21:31:29'!
 text
@@ -5814,7 +5983,7 @@ setUp
 	text := ''. "the abstract representation of the text in the repository"
 ! !
 
-!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 17:13:16'!
+!ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/8/2025 15:32:50'!
 testEverything
 
 	| aGenerator iteration count maxErase countErase maxCount |
@@ -5831,13 +6000,13 @@ testEverything
 	
 	countErase := 1. "the number of characters that were erased and not inserted yet. This is used to ensure that after we erase k characters we insert k - 1 characters "
 	
-	maxCount := 2000. "the maximal number of characters in the repository during the test."
+	maxCount := 4000. "the maximal number of characters in the repository during the test."
 	
 	self assert: count = (1 + text size + 1).
 	
 	aGenerator := Random new.
 
-	8000 timesRepeat:[ | pp |  
+	16000 timesRepeat:[ | pp |  
 
 		" Select either to insert a character or to erase a range depending on how close we 
 		are to the maximal desired text size or if there is a debt from a previous erase 
