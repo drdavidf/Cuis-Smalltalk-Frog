@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 7 October 2025 at 10:53:02 pm'!
+'From Cuis7.3 [latest update: #6895] on 8 October 2025 at 12:55:44 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1046!
+!provides: 'Kaeru' 1 1047!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -132,7 +132,7 @@ KaeruKeyboardStateMachine class
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
-	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth lineNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister boldFont'
+	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister boldFont'
 	classVariableNames: 'IconForJustify IconForJustifySelected IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -473,78 +473,6 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
-doTransitionFor: aSymbol
-
-	| entry |
-	
-	entry := transitions at: { state . aSymbol }.
-	
-	state := entry isArray
-		ifTrue:[
-			entry second value: model.
-			entry first ]
-		ifFalse:[
-			entry ].
-		! !
-
-!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:08:11'!
-initialize
-
-	super initialize.
-	
-	state := #editingState.
-	
-	transitions := { 
-		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
-		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
-		{ #editingState . #keyStroke } -> #editingState .
-		
-		{ #startLeapLeftState . #leapLeftUp } -> { #editingState . [:editor | editor creepBack] }.
-		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
-		
-		{ #leapLeftState . #leapLeftUp } -> #editingState . 
-		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
-
-		{ #startLeapRightState . #leapRightUp } -> { #editingState . [:editor | editor creepForward ] }.
-		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #startLeapRightState . #keyStroke } -> #leapRightState.
-
-		{ #leapRightState . #leapRightUp } -> #editingState . 
-		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
-		{ #leapRightState . #keyStroke } -> #leapRightState . 
-
-		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
-		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
-		
-		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
-		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
-		
-		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
-		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
-		{ #selectingReadyState . #keyStroke } -> #editingState.
-		
-		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
-		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
-		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
-		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
-		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
-		
-		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
-		
-	} asDictionary.
-	! !
-
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:03:22'!
 keyDown: aMorphicEvent
 
@@ -719,6 +647,78 @@ translateToCharacter: aKeyboardEvent
 				ifFalse:[
 					aKeyboardEvent keyCharacter ] ].
 ! !
+
+!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
+doTransitionFor: aSymbol
+
+	| entry |
+	
+	entry := transitions at: { state . aSymbol }.
+	
+	state := entry isArray
+		ifTrue:[
+			entry second value: model.
+			entry first ]
+		ifFalse:[
+			entry ].
+		! !
+
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:08:11'!
+initialize
+
+	super initialize.
+	
+	state := #editingState.
+	
+	transitions := { 
+		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
+		{ #editingState . #keyStroke } -> #editingState .
+		
+		{ #startLeapLeftState . #leapLeftUp } -> { #editingState . [:editor | editor creepBack] }.
+		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
+		
+		{ #leapLeftState . #leapLeftUp } -> #editingState . 
+		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+
+		{ #startLeapRightState . #leapRightUp } -> { #editingState . [:editor | editor creepForward ] }.
+		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapRightState . #keyStroke } -> #leapRightState.
+
+		{ #leapRightState . #leapRightUp } -> #editingState . 
+		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
+		{ #leapRightState . #keyStroke } -> #leapRightState . 
+
+		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
+		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
+		
+		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
+		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
+		
+		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
+		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
+		{ #selectingReadyState . #keyStroke } -> #editingState.
+		
+		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
+		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
+		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
+		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
+		
+		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
+		
+	} asDictionary.
+	! !
 
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
 keyDown: aMorphicEvent
@@ -1163,77 +1163,6 @@ leapLeft
 leapRight
 	^leapRight ! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
-calculateCursorRectangles	 
-	
-	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
-
-	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
-
-	cursorRect := cursorRect encompassingIntegerRectangle.
-	
-	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
-reset
-
-	| leftMargin |
-	
-	leftMargin := attributes at: #leftMargin.
-
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
-
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
-skipToNewLine
-	
-	| hh lineSpace |
-
-	lineSpace := attributes at: #lineHeight.
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
-skipToSoftPage
-
-	| lineSpace |
-	
-	lineSpace := attributes at: #lineHeight.
-
-	^(lineSpace * dy / 2) + (0.5*dy).
-! !
-
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:16:11'!
 advanceToNewLine
 
@@ -1265,7 +1194,7 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/1/2025 21:33:35'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/8/2025 11:09:41'!
 displayStatus
 
 	| rulerY xl lineSpace | 
@@ -1279,7 +1208,7 @@ displayStatus
 	
 	" Draw the line number "
 	
-	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3.25 @ (displayHeight + 34) font: lineNumberFont color: Color white. 
+	canvas drawString: (lineNumber / 2 + 1 printStringBase: 10 length: 2 padded: false) at: dx * 3.25 @ (displayHeight + 34) font: font color: Color white. 
 
 	" Draw the justification selection icons "
 
@@ -1341,7 +1270,7 @@ drawMargin
 	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/2/2025 17:16:36'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/8/2025 11:10:04'!
 drawSoftPage
 
 	yy + (dy/2) >= displayHeight
@@ -1349,7 +1278,7 @@ drawSoftPage
 				
 	canvas fillRectangle: (displayRect origin x @ yy extent: displayWidth @ separatorH) color: (Color fromHexString:'#BBBBBB').
 	
-	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: lineNumberFont color: Color black.
+	canvas drawString: ('{1}' format:{pageNumber}) atCenterX: (displayWidth / 2.0 @ (yy - (0.25*dy))) font: pageNumberFont color: Color black.
 	
 ! !
 
@@ -1513,15 +1442,86 @@ putChar: aCharacter font: aFont
 	
 ! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
+calculateCursorRectangles	 
+	
+	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+
+	cursorRect := cursorRect encompassingIntegerRectangle.
+	
+	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
+reset
+
+	| leftMargin |
+	
+	leftMargin := attributes at: #leftMargin.
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
+skipToNewLine
+	
+	| hh lineSpace |
+
+	lineSpace := attributes at: #lineHeight.
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
+skipToSoftPage
+
+	| lineSpace |
+	
+	lineSpace := attributes at: #lineHeight.
+
+	^(lineSpace * dy / 2) + (0.5*dy).
+! !
+
 !KaeruPrinter methodsFor: 'testing' stamp: 'DF 10/3/2025 17:03:12'!
 isNotAtEnd
 
 	^ yy < (dy * (numLines - 1))! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/7/2025 16:03:15'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/8/2025 11:10:04'!
 initialize
 
-	lineNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
+	pageNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
 
 	statusFont := FontFamily familyName: 'Courier Prime' pointSize: 10.
 
@@ -2471,6 +2471,148 @@ isPastEnd
 	
 	^ parIndex = (pars size + 1)! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
+advance: anInteger
+
+	anInteger timesRepeat: [self next].
+	
+	^self! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
+next
+
+	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
+		ifTrue:[
+			^self privNextChar ].
+		
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
+nextLine
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+		
+	parIndex < pars size 
+		ifTrue:[
+			^self privNextPar].
+		
+	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
+	are located on the last line in the last paragraph "
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
+nextParagraph
+
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+
+	parIndex < pars size 
+		ifTrue:[
+			self privNextPar. 
+			charIndex := 1]
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
+pars: anOrderedCollection
+
+	pars := anOrderedCollection.
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
+setAtEnd
+	
+	" Set the iterator to the last character in the text, this character must be a Character newDocument. "
+	
+	parIndex := pars size.
+	
+	lineIndex := pars at: parIndex :: numLines .
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:54:55'!
+setAtStart
+
+	" Set self to point to the first character. If the text is empty this address will mark one place
+	after the end of text and thus be equal to self setAtEnd "
+	
+	parIndex := 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:20'!
+privCharIndex
+	^charIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:24'!
+privCharIndex: anIndex
+
+	charIndex := anIndex ! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:27'!
+privLineIndex
+	^lineIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:32'!
+privLineIndex: anIndex
+
+	lineIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:09'!
+privNextChar
+
+	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	charIndex := charIndex + 1! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:12'!
+privNextLine
+
+	self assert: lineIndex <  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	lineIndex := lineIndex + 1.
+	
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'DF 9/28/2025 18:06:13'!
+privNextPar
+
+	self assert: parIndex <= pars size. "= is here to support marking past the end of text "
+	
+	self assert: lineIndex =  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+
+	parIndex := parIndex + 1.
+
+	lineIndex := 1.
+
+	charIndex := 1
+! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:38'!
+privParIndex
+	^parIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:42'!
+privParIndex: anIndex
+
+	parIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:46'!
+privPars
+	^pars! !
+
 !KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/12/2025 16:37:11'!
 attributes
 
@@ -2622,148 +2764,6 @@ physicalPageIndexForPageSize: anIntegerPageSize
 					
 			
 					! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
-advance: anInteger
-
-	anInteger timesRepeat: [self next].
-	
-	^self! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
-next
-
-	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
-		ifTrue:[
-			^self privNextChar ].
-		
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-	
-	self privNextPar! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
-nextLine
-
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-		
-	parIndex < pars size 
-		ifTrue:[
-			^self privNextPar].
-		
-	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
-	are located on the last line in the last paragraph "
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-	
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
-nextParagraph
-
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-
-	parIndex < pars size 
-		ifTrue:[
-			self privNextPar. 
-			charIndex := 1]
-	
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
-pars: anOrderedCollection
-
-	pars := anOrderedCollection.
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
-setAtEnd
-	
-	" Set the iterator to the last character in the text, this character must be a Character newDocument. "
-	
-	parIndex := pars size.
-	
-	lineIndex := pars at: parIndex :: numLines .
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:54:55'!
-setAtStart
-
-	" Set self to point to the first character. If the text is empty this address will mark one place
-	after the end of text and thus be equal to self setAtEnd "
-	
-	parIndex := 1.
-	lineIndex := 1.
-	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:20'!
-privCharIndex
-	^charIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:24'!
-privCharIndex: anIndex
-
-	charIndex := anIndex ! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:27'!
-privLineIndex
-	^lineIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:32'!
-privLineIndex: anIndex
-
-	lineIndex := anIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:09'!
-privNextChar
-
-	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	charIndex := charIndex + 1! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:12'!
-privNextLine
-
-	self assert: lineIndex <  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	lineIndex := lineIndex + 1.
-	
-	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'DF 9/28/2025 18:06:13'!
-privNextPar
-
-	self assert: parIndex <= pars size. "= is here to support marking past the end of text "
-	
-	self assert: lineIndex =  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-
-	parIndex := parIndex + 1.
-
-	lineIndex := 1.
-
-	charIndex := 1
-! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:38'!
-privParIndex
-	^parIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:42'!
-privParIndex: anIndex
-
-	parIndex := anIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:46'!
-privPars
-	^pars! !
 
 !KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
 privPrevChar
@@ -3504,12 +3504,12 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/7/2025 19:56:37'!
+!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:57:37'!
 serializeOn: aWriteStream
 
 	" Here's the format: 
 	
-	attributes [ESCAPE] 
+	pageSize attributes [ESCAPE] 
 	
 	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
 	
@@ -3520,6 +3520,8 @@ serializeOn: aWriteStream
 	three escape characters. 
 	
 	"
+	
+	aWriteStream nextPutAll: ('{1} ' format: { pageSize }).
 	
 	defaultParagraphAttributes serializeOn: aWriteStream.
 	
@@ -3545,12 +3547,12 @@ serializeOn: aWriteStream
 	
 	! !
 
-!KLibrary class methodsFor: 'object serialization' stamp: 'DF 10/7/2025 21:05:27'!
+!KLibrary class methodsFor: 'object serialization' stamp: 'DF 10/8/2025 12:06:24'!
 serializeFrom: aReadStream
 
 	" Here's the format: 
 	
-	attributes [ESCAPE] 
+	pageSize attributes [ESCAPE] 
 	
 	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
 	
@@ -3562,13 +3564,25 @@ serializeFrom: aReadStream
 	
 	"	
 	
-	| defaults scanner |
-		
+	| pageSize defaults scanner paragraphs |
+
+	scanner := SimpleScanner on: aReadStream.
+
+	scanner skipWhiteSpace.
+	
+	pageSize := scanner nextInteger.
+	
 	defaults := Dictionary serializeFrom: aReadStream. 
 	
-	scanner := SimpleScanner on: aReadStream.
-	
 	scanner skipWhiteSpace ; eat: Character escape.
+	
+	paragraphs := OrderedCollection new.
+	
+	[aReadStream atEnd not]
+		whileTrue:[ | aParagraph |
+			
+			aParagraph := KParagraph serializeFrom: aReadStream].
+		
 	
 	! !
 
@@ -4870,6 +4884,20 @@ toggleSelectionEmphasisFor: aSymbol
 	self changed: #emphasis
 		! !
 
+!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:55:23'!
+serializeOn: aWriteStream
+
+" Here's the fomat
+	
+	cursor cursorState selection-first selection-last [ESCAPE] search-string [ESCAPE] leap-register position-register search-result
+	
+	<state of KLibrary, see KLibrary >> serializeOn: >
+	
+"
+	aWriteStream nextPutAll: ( '{1} {2} {3} {4} {5}{6}{7} {8} {9} {10} ' format: { cursor . cursorState . selection first . selection last . Character escape . searchString contents . Character escape . leapRegister . positionRegister . searchSuccessfull  } ).
+	
+	text serializeOn: aWriteStream ! !
+
 !KaeruKeyboardTester methodsFor: 'as yet unclassified' stamp: 'Df 9/6/2025 13:13:40'!
 handlesKeyboard
 	^true! !
@@ -5391,6 +5419,25 @@ stopBlinking
 	showCursor ifTrue: [
 		showCursor := false.
 		self invalidateCursorRectangles ]! !
+
+!KaeruEditorMorph methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:48:05'!
+serializeOn: aWriteStream
+
+"
+	Here's the format
+	
+	Format-Version window <state of KaeruEditor see KaeruEditor >> serializeOn: 
+"
+
+	aWriteStream nextPutAll: '1'. "increment each time the format changes"
+	
+	aWriteStream nextPut: Character space.
+	
+	aWriteStream nextPutAll: window asString.
+	
+	aWriteStream nextPut: Character space.
+	
+	editor serializeOn: aWriteStream.! !
 
 !KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 14:03:24'!
 pageNumberIcon
@@ -6151,7 +6198,8 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 	
-	self assert: aParagraph text = 'The first book'.
+	self assert: aParagraph text = 'The first book
+'.
 	aReadStream next.
 
 	aParagraph := KParagraph new.
@@ -6180,7 +6228,8 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'The second book'.
+	self assert: aParagraph text = 'The second book
+'.
 
 	aReadStream next.
 
@@ -6190,7 +6239,8 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'some paragraph'.
+	self assert: aParagraph text = 'some paragraph
+'.
 
 	aReadStream next.
 
@@ -6200,7 +6250,8 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'the next paragraph'.
+	self assert: aParagraph text = 'the next paragraph
+'.
 
 	aReadStream next.
 
