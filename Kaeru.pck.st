@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 8 October 2025 at 11:22:49 pm'!
+'From Cuis7.3 [latest update: #6895] on 9 October 2025 at 11:58:15 am'!
 'Description '!
-!provides: 'Kaeru' 1 1055!
+!provides: 'Kaeru' 1 1084!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -202,7 +202,7 @@ KForwardStream class
 
 !classDefinition: #KLibrary category: #'Kaeru-Text'!
 Object subclass: #KLibrary
-	instanceVariableNames: 'paragraphs pageSize defaultParagraphAttributes cacheBoundary'
+	instanceVariableNames: 'paragraphs pageSize defaultParagraphAttributes paragraphBoundary'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -228,6 +228,16 @@ Object subclass: #KParagraph
 	category: 'Kaeru-Text'!
 !classDefinition: 'KParagraph class' category: #'Kaeru-Text'!
 KParagraph class
+	instanceVariableNames: ''!
+
+!classDefinition: #KParagraphAttributes category: #'Kaeru-Text'!
+Object subclass: #KParagraphAttributes
+	instanceVariableNames: 'leftMargin rightMargin indent lineHeight tabStops'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'KParagraphAttributes class' category: #'Kaeru-Text'!
+KParagraphAttributes class
 	instanceVariableNames: ''!
 
 !classDefinition: #KTokenStream category: #'Kaeru-Text'!
@@ -410,6 +420,9 @@ This data structure represents a set of non overlapping semi-open intervals orde
 A KLibrary holds a collection of KDocuments
 
 !
+
+!KParagraphAttributes commentStamp: '<historical>' prior: 0!
+A simple class to hold the attributes of a paragraph. We could have used a dictionary but as some paragraph operations (notably fastInsert) make frequent use of the paragraph width, and accessing it from a dictionary is too slow. !
 
 !KPngConverter commentStamp: '<historical>' prior: 0!
 Convert PNG images to 2-bit forms and generate the text for entering them into the code base.
@@ -1163,14 +1176,14 @@ leapLeft
 leapRight
 	^leapRight ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:16:11'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:26:11'!
 advanceToNewLine
 
 	| rect hh lineSpace leftMargin |
 
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 
-	leftMargin := attributes at: #leftMargin.
+	leftMargin := attributes leftMargin.
 	
 	hh := yy + (dy * lineSpace / 2) min: displayRect corner y.
 		
@@ -1194,12 +1207,12 @@ clearCanvas
 	self reset.
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/8/2025 11:09:41'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:33:44'!
 displayStatus
 
 	| rulerY xl lineSpace | 
 
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 
 	rulerY := displayRect corner y + 1.
 
@@ -1282,12 +1295,12 @@ drawSoftPage
 	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/4/2025 21:51:17'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:35:53'!
 drawTabStops
 	
 	| tstops ii mx |
 	
-	tstops := attributes at: #tabStops.
+	tstops := attributes tabStops.
 	
 	mx := 0.
 	
@@ -1312,12 +1325,12 @@ moveRight
 
 	xx := xx + dx.! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/4/2025 21:24:21'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:35:59'!
 moveToNextTab
 
 	| markers mx ii |
 	
-	markers := attributes at:#tabStops.
+	markers := attributes tabStops.
 	
 	mx := displayRect origin x + (dx * markers first).
 	
@@ -1345,12 +1358,12 @@ newDocument
 
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 9/29/2025 18:11:22'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:34:02'!
 newLine
 
 	| lineSpace |
 	
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 
 	self advanceToNewLine.
 	
@@ -1411,12 +1424,12 @@ putChar: aCharacter
 	self putChar: aCharacter font: font
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/7/2025 15:52:02'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:34:08'!
 putChar: aCharacter font: aFont
 	
 	| cc hh lineSpace |
 	
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 
 	hh := (dy * lineSpace / 2) min: displayRect corner y - yy.
 	
@@ -1461,12 +1474,12 @@ computeDisplayArea
 	
 	! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:16:45'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:27:59'!
 reset
 
 	| leftMargin |
 	
-	leftMargin := attributes at: #leftMargin.
+	leftMargin := attributes leftMargin.
 
 	xx := displayRect origin x + (leftMargin * dx).
 	
@@ -1477,12 +1490,12 @@ reset
 	pageNumber := 1.
 ! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:40'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:13'!
 skipToNewLine
 	
 	| hh lineSpace |
 
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 	
 	hh := lineSpace * dy / 2.
 	
@@ -1503,22 +1516,22 @@ skipToNewPage
 	
 	lineNumber := 0.! !
 
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 9/29/2025 18:11:50'!
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:18'!
 skipToSoftPage
 
 	| lineSpace |
 	
-	lineSpace := attributes at: #lineHeight.
+	lineSpace := attributes lineHeight.
 
 	^(lineSpace * dy / 2) + (0.5*dy).
 ! !
 
-!KaeruPrinter methodsFor: 'testing' stamp: 'DF 10/3/2025 17:03:12'!
+!KaeruPrinter methodsFor: 'testing' stamp: 'DF 10/9/2025 11:58:01'!
 isNotAtEnd
 
-	^ yy < (dy * (numLines - 1))! !
+	^ yy < (dy * (numLines - 0))! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/8/2025 11:10:04'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/9/2025 11:42:34'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
@@ -1541,14 +1554,14 @@ initialize
 
 	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
 	
-	attributes := Dictionary new.
+	attributes := KParagraphAttributes new.
 	
-	attributes at: #lineSpace put: 2 " in half line units "
-			; at: #leftMargin put: 6
-			; at: #rightMargin put: 71
-			; at: #indent put:0.
+	attributes lineHeight: 2 " in half line units "
+			; leftMargin: 6
+			; rightMargin: 71
+			; indent:0.
 	
-	xx := displayRect origin x + ((attributes at: #leftMargin) * dx).
+	xx := displayRect origin x + ((attributes leftMargin) * dx).
 	
 	yy := displayRect origin y.	
 	
@@ -1612,26 +1625,26 @@ font: aFont
 foreground: aColor
 	foreground := aColor! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:58'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:27:43'!
 leftMargin: aNumber
 
-	attributes at: #leftMargin put: aNumber! !
+	attributes leftMargin: aNumber! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:28'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:27:49'!
 leftMarginOriginX
 
 	| leftMargin |
 	
-	leftMargin := attributes at: #leftMargin.
+	leftMargin := attributes leftMargin.
 
 	^ displayRect origin x + (leftMargin * dx)! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:16:38'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:27:55'!
 leftMarginX
 
 	| leftMargin |
 	
-	leftMargin := attributes at: #leftMargin.
+	leftMargin := attributes leftMargin.
 
 	^ displayRect origin x + (leftMargin * dx)! !
 
@@ -1639,9 +1652,9 @@ leftMarginX
 lineNumber: anInteger
 	lineNumber := anInteger! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:14:01'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:33:57'!
 lineSpace: anInteger
-	attributes at: #lineHeight put: anInteger.! !
+	attributes lineHeight: anInteger.! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/5/2025 15:26:44'!
 numHalfLines
@@ -1676,27 +1689,27 @@ pageSize: anInteger
 	
 	pageSize := anInteger! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:14:57'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:31:36'!
 rightMargin: anInteger
 
-	attributes at: #rightMargin put: anInteger.
+	attributes rightMargin: anInteger.
 ! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:17:46'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:31:42'!
 rightMarginOriginX
 
 	| rightMargin |
 	
-	rightMargin := attributes at: #rightMargin.
+	rightMargin := attributes rightMargin.
 
 	^ displayRect origin x + (rightMargin * dx)! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:17:54'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:31:51'!
 rightMarginX
 
 	| rightMargin |
 	
-	rightMargin := attributes at: #rightMargin.
+	rightMargin := attributes rightMargin.
 
 	^ displayRect origin x + (rightMargin * dx)! !
 
@@ -1704,15 +1717,15 @@ rightMarginX
 rulerCursorRectangle
 	^ rulerCursorRect ! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 20:56:29'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:28:06'!
 setLeftMarginRegister
 
-	marginRegister := attributes at:#leftMargin! !
+	marginRegister := attributes leftMargin! !
 
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 9/29/2025 20:56:37'!
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:31:59'!
 setRightMarginRegister
 
-	marginRegister := attributes at:#rightMargin! !
+	marginRegister := attributes rightMargin! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:42'!
 textCursorRectangle
@@ -2201,22 +2214,6 @@ serializeOn: aWriteStream
 	
 	aWriteStream nextPut: $].! !
 
-!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:25:53'!
-asXML: aKaeruAttributeDictionary
-
-	| attrs |
-
-	attrs := aKaeruAttributeDictionary.
-	
-	^{
-	
-	'leftMargin' -> (attrs at: #leftMargin) asString .
-	'rightMargin' -> (attrs at: #rightMargin) asString .
-	'indent' -> (attrs at:#indent) asString  .
-	'lineHeight' -> (attrs at:#lineHeight) asString . 
-	'tabStops' -> 
-		( String streamContents:[:s | (attrs at:#tabStops) printAsNakedList: s] ) } asDictionary! !
-
 !DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 16:52:18'!
 library: aKLibrary
 	klib := aKLibrary ! !
@@ -2649,7 +2646,7 @@ globalIndex
 			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
-!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/3/2025 16:45:30'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:22'!
 height 
 
 	" Answer the number of half lines up to the line referenced by self "
@@ -2661,19 +2658,19 @@ height
 	1 to: parIndex - 1 do:[: ii | 
 		hh := hh + (pars at: ii) height ].
 	
-	^hh + ((lineIndex -1) * (pars at: parIndex :: attributes at: #lineHeight) )! !
+	^hh + ((lineIndex -1) * (pars at: parIndex :: attributes lineHeight) )! !
 
 !KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:35:13'!
 line
 
 	^ pars at: parIndex :: lineAt: lineIndex :: chars! !
 
-!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/3/2025 12:57:04'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:27'!
 lineHeight 
 
 	" Answer the number of half line units for the current paragraph "
 	
-	^ pars at: parIndex :: attributes at: #lineHeight! !
+	^ pars at: parIndex :: attributes lineHeight! !
 
 !KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/8/2025 15:40:33'!
 lineIndex
@@ -2968,10 +2965,11 @@ charIndexToLineIndex: aCharIndex
 			{ lineIndex + pp first . pp second } ]
 	! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/21/2025 12:03:40'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:24:13'!
 charIndexToParIndex: anIndex
 
 	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
+	
 	If anIndex exceeds the number of characters in the library, answer the remainder. For example,
 	
 	if there are 3 paragraphs each with 10 characters then
@@ -2981,17 +2979,22 @@ charIndexToParIndex: anIndex
 	This behavior gives the correct result when we pass anIndex that is one position past the end of the text in the library. 
 	
 	"
+	|result oracle cb |
 	
-	| ii pp |
+	cb := paragraphs at: paragraphBoundary :: startingCharacterIndex.
 	
-	ii := anIndex. pp := 1.
+	result := anIndex <= cb 
+		ifTrue:[
+			self fastCharIndexToParIndex: anIndex]
+		ifFalse:[
+			self slowCharIndexToParIndex: anIndex].
+		
+	"oracle := self oracleCharIndexToParIndex: anIndex.
 	
-	[ pp <= paragraphs size and: [ii > ((paragraphs at:pp) length) ] ]
-		whileTrue:[
-			ii := ii - ((paragraphs at:pp) length).
-			pp := pp + 1].
-
-	^ { pp . ii }! !
+	self assert: oracle = result."
+	
+	^result
+		! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'Df 9/12/2025 16:35:55'!
 end
@@ -3004,7 +3007,7 @@ end
 	
 	^anIterator ! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 22:59:34'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 09:59:29'!
 fastCharIndexToParIndex: anIndex
 
 	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
@@ -3012,22 +3015,24 @@ fastCharIndexToParIndex: anIndex
 	Use a fast binary search based on the assumption that anIndex <= cacheBoundary	
 	"
 	
-	| ii pp par |
+	| ii pp par cb |
 	
-	self assert: anIndex <= cacheBoundary.
+	cb := paragraphs at: paragraphBoundary :: startingCharacterIndex.
+	
+	self assert: anIndex <= cb.
 	
 	pp := self findParagraphHolding: anIndex.
 	
 	par := paragraphs at:pp.
 	
-	ii := anIndex - par startingCharacterIndex.
+	ii := anIndex - par startingCharacterIndex + 1.
 	
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 22:55:51'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 09:59:46'!
 findParagraphHolding: anIndex
 
-	| bp ep |
+	| cb bp ep |
 	
 	" quickly find the paragraph that holds (the global) anIndex assuming that anIndex
 	
@@ -3041,8 +3046,10 @@ findParagraphHolding: anIndex
 	b = 1 e = 2
 	b = 2 e = 2
 	 "
+
+	cb := paragraphs at: paragraphBoundary :: startingCharacterIndex.
 	
-	self assert: anIndex <= cacheBoundary .
+	self assert: anIndex <= cb .
 	
 	bp := 1.
 	
@@ -3058,7 +3065,7 @@ findParagraphHolding: anIndex
 	
 			" bp <= mm < ep "
 			
-			anIndex < (paragraphs at:mm) startingCharacterIndex + (paragraphs at:mm) length ifTrue:[
+			anIndex < ((paragraphs at:mm) startingCharacterIndex + (paragraphs at:mm) length) ifTrue:[
 				
 				ep := mm 
 				
@@ -3094,12 +3101,59 @@ findParagraphHolding: anIndex
 	
 	self assert:  (paragraphs at:bp) startingCharacterIndex <= anIndex.
 	
-	self assert:  anIndex < (paragraphs at:bp startingCharacterIndex) + (paragraphs at:bp) length.
+	self assert:  anIndex < (((paragraphs at:bp) startingCharacterIndex) + (paragraphs at:bp) length).
 	
 	^ bp
 	! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 10/8/2025 23:22:31'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:14:42'!
+oracleCharIndexToIterator: anIndex
+
+	| pi li iterator |
+	
+	self assert: paragraphs notEmpty.	
+	
+	pi := self oracleCharIndexToParIndex: anIndex.
+
+	self assert: paragraphs size + 1 >= pi first.
+	
+	li := paragraphs size + 1 = pi first
+			ifTrue:[ #(1 1) ]
+			ifFalse:[						
+				paragraphs at: pi first :: charIndexToLineIndex: pi second].
+	
+	iterator := KBidiIterator new.
+	
+	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
+	
+	^iterator! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 09:07:36'!
+oracleCharIndexToParIndex: anIndex
+
+	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
+	If anIndex exceeds the number of characters in the library, answer the remainder. For example,
+	
+	if there are 3 paragraphs each with 10 characters then
+	
+	self charIndexToParIndex: 31 = { 4 . 1 }.
+	
+	This behavior gives the correct result when we pass anIndex that is one position past the end of the text in the library. 
+	
+	"
+	
+	| ii pp |
+	
+	ii := anIndex. pp := 1.
+	
+	[ pp <= paragraphs size and: [ii > ((paragraphs at:pp) length) ] ]
+		whileTrue:[
+			ii := ii - ((paragraphs at:pp) length).
+			pp := pp + 1].
+
+	^ { pp . ii }! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:00:34'!
 slowCharIndexToParIndex: anIndex
 
 	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
@@ -3107,15 +3161,21 @@ slowCharIndexToParIndex: anIndex
 	This version assumes that anIndex is further away from cacheBoundary. It starts from the paragraph
 	located at the cache boundary and progresses linearly until reaching the paragraph that holds anIndex. Along the way it recalculates the caches of the paragraphs thus moving cacheBounary upto the paragraph that holds anIndex.
 	
+	  1 2  3  4 5    6 7 8
+	
+	[1 2 3] [1 2] [1 2 3] 
+	
 	"
 	
-	| ii pp len |
+	|  ii pp len cb |
 	
-	self assert: anIndex > cacheBoundary .
+	cb := paragraphs at: paragraphBoundary :: startingCharacterIndex.
+
+	self assert: anIndex > cb .
 	
-	pp := self fastCharIndexToParIndex: cacheBoundary.
+	pp := (self fastCharIndexToParIndex: cb :: first).
 	
-	ii := anIndex - (paragraphs at:pp) :: startingCharacterIndex.
+	ii := anIndex + 1 - (paragraphs at:pp) startingCharacterIndex.
 	
 	len := paragraphs at:pp :: length.
 	
@@ -3128,30 +3188,37 @@ slowCharIndexToParIndex: anIndex
 			pp := pp + 1.
 			len := paragraphs at:pp :: length. ].
 
-	cacheBoundary := paragraphs at: pp :: startingCharacterIndex.
+	paragraphBoundary := pp.
 	
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:55:34'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/9/2025 10:24:40'!
 insert: aCharacter after: anIndex
 
+	| pp |
+	
 	self assert: anIndex > 0.
 	
 	self assert: anIndex < self end globalIndex.
 	
 	self assert: paragraphs notEmpty.
-		
-	aCharacter isKLineSeparator 
+	
+	"self assert: self invariant."
+	
+	pp := aCharacter isKLineSeparator 
 		ifTrue:[
 			self insertBreakCharacter: aCharacter after: anIndex]
 		ifFalse:[
 			self insertLetter: aCharacter after: anIndex].
-		
-	cacheBoundary := anIndex min: cacheBoundary 
-		
-	! !
+				
+	" at this point all the paragraphs upto and including at pp have a valid start address, but the next paragraph and beyond must be invalidated "
+	
+	paragraphBoundary := pp.
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:51:03'!
+	"self assert: self invariant."
+! !
+
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/9/2025 09:41:01'!
 insertBreakCharacter: aCharacter after: anIndex
 
 	"Find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -3206,9 +3273,10 @@ insertBreakCharacter: aCharacter after: anIndex
 	
 			paragraphs add: newPar afterIndex: pp].
 	
+	^pp
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 10/8/2025 15:50:08'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/9/2025 10:07:34'!
 insertLetter: aCharacter after: anIndex
 
 	"find the paragraph that corresponds to the index and the offset in the paragraph's text. we assume that
@@ -3237,7 +3305,10 @@ insertLetter: aCharacter after: anIndex
 					aNewPar startingCharacterIndex: paragraphs last startingCharacterIndex + paragraphs last length.
 					paragraphs add: aNewPar ] ].
 		
-	(paragraphs at:pp) insert: aCharacter after: ii! !
+	(paragraphs at:pp) insert: aCharacter after: ii.
+	
+	^pi first " this is the last paragraph that we are certain has a valid start address "
+	! !
 
 !KLibrary methodsFor: 'inserting' stamp: 'DF 10/5/2025 21:24:35'!
 setAttribute: aTextAttribute from: aBeginIndex to: anEndIndex
@@ -3285,25 +3356,25 @@ textInto: aWriteStream
 	paragraphs do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KLibrary methodsFor: 'initialization' stamp: 'DF 10/8/2025 15:38:02'!
+!KLibrary methodsFor: 'initialization' stamp: 'DF 10/9/2025 11:24:44'!
 initialize
 
 	paragraphs := OrderedCollection new.
 			
 	pageSize := 106. " in half line units. 110 half lines, equals 55 lines "
 	
-	defaultParagraphAttributes := Dictionary new.
+	defaultParagraphAttributes := KParagraphAttributes new.
 	
 	defaultParagraphAttributes 
-		at: #leftMargin put: 6; 
-		at: #rightMargin put: 72;
-		at: #indent put: 0;
-		at: #lineHeight put: 2; " in half line units "
-		at: #tabStops put: (11 to: 72 by:5 :: asArray).
+		leftMargin: 6; 
+		rightMargin: 72;
+		indent: 0;
+		lineHeight: 2; " in half line units "
+		tabStops: (11 to: 72 by:5 :: asArray).
 	
 	paragraphs add: self newInitialItem ; add: self newInitialItem.
 	
-	cacheBoundary := 2. " All the paragraphs whose first character is located at or below the cache boundary have a valid startingCharacterIndex "
+	paragraphBoundary := 2.  " This is the index of the paragraph that represents the last paragraph with a valid cached starting address "
 	
 	paragraphs at:1 :: startingCharacterIndex: 1.
 	
@@ -3332,7 +3403,7 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 10/8/2025 15:55:49'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 10/9/2025 10:24:53'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi bp ep |
@@ -3340,6 +3411,8 @@ eraseFrom: aBeginIndex to: anEndIndex
 	self assert: aBeginIndex > 1.
 	
 	self assert: anEndIndex <= self end globalIndex.
+
+	"self assert: self invariant."
 	
 	aBeginIndex = anEndIndex
 		ifTrue:[
@@ -3348,15 +3421,20 @@ eraseFrom: aBeginIndex to: anEndIndex
 	beginPi := self charIndexToParIndex: aBeginIndex .
 	
 	endPi := self charIndexToParIndex: anEndIndex .
+
+	bp := paragraphs at: beginPi first.
+	
+	" first we must reduce the cache boundary to the paragraph at beginPi "
+	
+	paragraphBoundary := beginPi first.
 	
 	" we erase in a single paragraph so there's no need to rebuild the paragraphs sequence "
 	
 	beginPi first = endPi first ifTrue:[
-		^ paragraphs at: beginPi first :: eraseFrom: beginPi second to: endPi second ].
+				
+		^ bp eraseFrom: beginPi second to: endPi second ].
 	
 	" erase the tail of the first paragraph "
-	
-	bp := paragraphs at: beginPi first.
 	
 	bp eraseFrom: beginPi second to: bp length + 1.
 
@@ -3378,14 +3456,15 @@ eraseFrom: aBeginIndex to: anEndIndex
 	
 	paragraphs := (paragraphs copyFrom:1 to: beginPi first) , (paragraphs copyFrom: endPi first + 1 to: paragraphs size).
 
-	" finally reduce the cache boundary to the paragraph at beginPi "
-	
-	cacheBoundary := bp startingCharacterIndex min: cacheBoundary 
+	"self assert: self invariant."
+
 	! !
 
-!KLibrary methodsFor: 'testing' stamp: 'DF 10/8/2025 15:41:43'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/9/2025 10:14:57'!
 invariant
 
+	| cb |
+	
 	self assert: paragraphs size >= 1.
 	
 	self assert: (paragraphs first lineAt:1 :: charAt:1 :: = Character newDocument).
@@ -3395,14 +3474,16 @@ invariant
 	paragraphs allButLastDo: [:each |
 		self assert: each isLineBreaking ].
 	
-	1 to: paragraphs size do:[:ii | | each |
+	cb := paragraphs at: paragraphBoundary :: startingCharacterIndex.
+
+	1 to: paragraphBoundary do:[:ii | | each it |
 		each := paragraphs at: ii .
-		each startingCharacterIndex <= cacheBoundary 
-			ifTrue:[ | it |
-				it := self charIndexToIterator: each startingCharacterIndex.
-				self assert: it parIndex = ii.
-				self assert: it lineIndex = 1.
-				self assert: it charIndex = 1. ] ].
+		self assert: each startingCharacterIndex <= cb.
+		it := self oracleCharIndexToIterator: each startingCharacterIndex.
+		self assert: it parIndex = ii.
+		self assert: it lineIndex = 1.
+		self assert: it charIndex = 1. ] .
+	
 	^true! !
 
 !KLibrary methodsFor: 'testing' stamp: 'DF 9/28/2025 18:57:28'!
@@ -3891,7 +3972,7 @@ initialize
 	
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 10/4/2025 18:06:51'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/9/2025 11:29:16'!
 buildFrom: aTokenStream
 
 	| markers |
@@ -3899,9 +3980,9 @@ buildFrom: aTokenStream
 	" The first line is indented by attributes at:#indent "
 
 	markers := OrderedCollection new.
-	markers add: (attributes at:#leftMargin) - (attributes at:#indent).
-	markers addAll: (attributes at: #tabStops).
-	markers add: (attributes at:#rightMargin).
+	markers add: (attributes leftMargin) - (attributes indent).
+	markers addAll: (attributes tabStops).
+	markers add: (attributes rightMargin).
 				
 	aTokenStream first notEmpty 
 		ifTrue:[ 
@@ -3910,7 +3991,7 @@ buildFrom: aTokenStream
 	
 	" Now do the rest of the lines "
 
-	markers at: 1 put: (attributes at:#leftMargin).
+	markers at: 1 put: (attributes leftMargin).
 	
 	[aTokenStream first notEmpty ]
 		whileTrue:[
@@ -4066,10 +4147,10 @@ attributes
 
 	^ attributes! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:27:36'!
-attributes: aDictionary
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:35:19'!
+attributes: aKParagraphAttributes
 
-	attributes := aDictionary 
+	attributes := aKParagraphAttributes 
 ! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 12:14:35'!
@@ -4104,13 +4185,13 @@ charIndexToLineIndex: anIndex
 
 	^ { pp . ii }! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 10/2/2025 21:58:54'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:42'!
 height
 
 	| hh |
 	
 	
-	hh := lines size * (attributes at: #lineHeight).
+	hh := lines size * (attributes lineHeight).
 	
 	^self isPageBreaking 
 		ifTrue:[
@@ -4118,14 +4199,14 @@ height
 		ifFalse:[
 			hh]! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 18:08:54'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:33:05'!
 indent: anInteger
 
 	| text |
 	
 	attributes := attributes copy.
 	
-	attributes at: #indent put: anInteger.
+	attributes indent: anInteger.
 	
 	text := self text.
 	
@@ -4137,14 +4218,14 @@ indent: anInteger
 lastLine
 	^lines last! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:29:06'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:29:37'!
 leftMargin: anInteger
 
 	| text |
 	
 	attributes := attributes copy.
 	
-	attributes at: #leftMargin put: anInteger.
+	attributes leftMargin: anInteger.
 	
 	text := self text.
 	
@@ -4163,17 +4244,17 @@ length
 lineAt: anIndex
 	^ lines at: anIndex! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 10/2/2025 23:41:38'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:47'!
 lineHeight
 
-	^attributes at: #lineHeight ! !
+	^attributes lineHeight ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:30:03'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:56'!
 lineHeight: anInteger
 
 	attributes := attributes copy.
 	
-	attributes at: #lineHeight put: anInteger! !
+	attributes lineHeight: anInteger! !
 
 !KParagraph methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:16:24'!
 lineIndexToCharIndex: anIntegerLineNumber
@@ -4192,14 +4273,14 @@ lineIndexToCharIndex: anIntegerLineNumber
 numLines
 	^lines size! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:29:40'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:32:21'!
 rightMargin: anInteger
 
 	| text |
 	
 	attributes := attributes copy.
 	
-	attributes at: #rightMargin put: anInteger.
+	attributes rightMargin: anInteger.
 		
 	text := self text.
 	
@@ -4246,9 +4327,9 @@ textInto: aWriteStream
 	lines do:[:each | each textInto: aWriteStream ].
 ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 9/29/2025 17:28:05'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:29:48'!
 width
-	^ (attributes at:#rightMargin) - (attributes at:#leftMargin)! !
+	^ (attributes rightMargin) - (attributes leftMargin)! !
 
 !KParagraph methodsFor: 'emphasis' stamp: 'DF 10/6/2025 18:12:35'!
 emphasis
@@ -4322,6 +4403,72 @@ serializeFrom: aReadStream
 	self rebuildFromText: text contents. 
 	
 	! !
+
+!KParagraphAttributes methodsFor: 'object serialization' stamp: 'DF 10/9/2025 11:23:10'!
+serializeOn: aWriteStream
+
+	aWriteStream nextPut: $[.
+	
+	{ #leftMargin . #rightMargin . #indent . #lineHeight.  #tabStops } do:[ :key | | value |
+		
+		value := self perform: key.
+		
+		aWriteStream nextPutAll: key ; nextPut: $:.
+		
+		value serializeOn: aWriteStream  ]
+	
+	separatedBy: [
+		
+		aWriteStream nextPut: Character space ].
+	
+	aWriteStream nextPut: $].
+	
+	
+	! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:19:43'!
+indent
+	^indent! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:17:43'!
+indent: anInteger
+	indent := anInteger! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:19:32'!
+leftMargin
+	^leftMargin ! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:17:18'!
+leftMargin: anInteger
+	leftMargin := anInteger! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:19:21'!
+lineHeight
+	^lineHeight! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:18:26'!
+lineHeight: anInteger
+	lineHeight := anInteger! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:19:09'!
+rightMargin
+	^rightMargin! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:17:30'!
+rightMargin: anInteger
+	rightMargin := anInteger! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:18:58'!
+tabStops
+	^tabStops! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:18:46'!
+tabStops: anArray
+	tabStops := anArray! !
+
+!KParagraphAttributes methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:19:51'!
+width
+	^ rightMargin - leftMargin! !
 
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
@@ -4918,7 +5065,7 @@ searchFrom: it forwardFor: aString
 	^ text searchFrom: it forwardFor: aString
 ! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 19:56:05'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:29:57'!
 leftMargin
 
 	"Anser the left margin of the paragraph in which the cursor is located  "
@@ -4929,10 +5076,10 @@ leftMargin
 	
 	par := it paragraph.
 	
-	^ par attributes at:#leftMargin.
+	^ par attributes leftMargin.
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 19:55:55'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:32:32'!
 rightMargin
 
 	"Anser the right margin of the paragraph in which the cursor is located  "
@@ -4943,10 +5090,10 @@ rightMargin
 	
 	par := it paragraph.
 	
-	^ par attributes at:#rightMargin.
+	^ par attributes rightMargin.
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 18:37:44'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:32:38'!
 setLeftMargin: anInteger
 
 	"Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
@@ -4967,7 +5114,7 @@ setLeftMargin: anInteger
 
 	par := it paragraph.
 	
-	rightm := par attributes at: #rightMargin.
+	rightm := par attributes rightMargin.
 	
 	anInteger >= (rightm - 6)
 		ifTrue:[^self].
@@ -4977,7 +5124,7 @@ setLeftMargin: anInteger
 	self changed: #margins
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 18:38:02'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:30:10'!
 setRightMargin: anInteger
 
 	"Set the right margin of the paragraph in which the cursor is located to anInteger, provided that anInteger is between leftMargin + 6 and 79 "
@@ -4997,7 +5144,7 @@ setRightMargin: anInteger
 
 	par := it paragraph.
 	
-	leftm := par attributes at:#leftMargin.
+	leftm := par attributes leftMargin.
 	
 	anInteger <= (leftm + 6)
 		ifTrue:[^self].
@@ -5300,7 +5447,7 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/6/2025 18:25:02'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/9/2025 11:33:20'!
 drawTextOn: aCanvas
 
 	" draw the text, highlight the selection, and show the cursor 
@@ -5343,7 +5490,7 @@ drawTextOn: aCanvas
 
 			bb isAtFirstLineInParagraph 
 				ifTrue:[
-					printer indentBy: (bb attributes at:#indent) ].
+					printer indentBy: (bb attributes indent) ].
 				
 			cc := bb char. 
 
@@ -5418,7 +5565,7 @@ renderText
 		
 	self drawRulerOn: aCanvas ; drawTextOn: aCanvas.! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/5/2025 15:28:20'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/9/2025 11:53:41'!
 scrollToCursor
 
 	"Ensure that the window includes the cursor "
@@ -5434,19 +5581,19 @@ scrollToCursor
 			window := ch.
 			^self redrawNeeded ].
 
-	ch <= (window + printer numHalfLines)
+	ch < (window + printer numHalfLines)
 		ifTrue:[
 			" cursor is within the window, no need to do anything"
 			^self].
 	
 	" If the window is further than numLines from cline move it such that window + numLines = ch.
 	
-	window := ch - printer numHalfLines.
+	window := ch - printer numHalfLines + 1.
 	
-	{ window + printer numHalfLines = ch }
+	{ window + printer numHalfLines - 1 = ch }
 	
 	"
-	window := ch - printer numHalfLines.
+	window := ch - printer numHalfLines + 1.
 	
 	self redrawNeeded 		
 		! !
@@ -6335,21 +6482,21 @@ testIterators
 	
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 22:43:06'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:41:00'!
 testParagraphSerializeFrom
 
 	| aParagraph aReadStream aString defaultParagraphAttributes |
 	
 	aString :=  { Character smalltalkLeftArrow . Character escape . Character escape . Character escape .  $T . $h . $e . Character space . $f . $i . $r . $s . $t . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $o . $n . $c . $e . Character space . $u . $p . $o . $n . Character space . $a . Character space . $t . $i . $m . $e . Character space . $i . $n . Character space . $a . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $f . $a . $r . Character space . $f . $a . $r . Character space . $a . $w . $a . $y . Character newPage . Character escape . Character escape . Character escape . $a . Character space . $s . $e . $c . $o . $n . $d . Character space . $p . $a . $g . $e . Character space . $h . $a . $p . $p . $e . $n . $e . $d . $. . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $T . $h . $e . Character space . $s . $e . $c . $o . $n . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $s . $o . $m . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $n . $e . $x . $t . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $w . $i . $t . $h . Character space . $s . $o . $m . $e . Character space . $b . $o . $l . $d . Character space . $t . $e . $x . $t . Character space . $i . $n . Character space . $i . $t . Character smalltalkLeftArrow . Character escape . Character escape . $[ . $b . $o . $l . $d . $: . $[ . $[ . $5 . Character space . $1 . $0 . $] . $] . $] . Character escape . $T . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $w . $i . $t . $h . Character space . $a . Character space . $s . $i . $n . $g . $l . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character smalltalkLeftArrow . Character escape . Character escape . Character escape}   .
 
-	defaultParagraphAttributes := Dictionary new.
+	defaultParagraphAttributes := KParagraphAttributes new.
 	
 	defaultParagraphAttributes 
-		at: #leftMargin put: 6; 
-		at: #rightMargin put: 72;
-		at: #indent put: 0;
-		at: #lineHeight put: 2; " in half line units "
-		at: #tabStops put: (11 to: 72 by:5 :: asArray).
+		leftMargin: 6; 
+		rightMargin: 72;
+		indent: 0;
+		lineHeight: 2; " in half line units "
+		tabStops: (11 to: 72 by:5 :: asArray).
 
 	aParagraph := KParagraph new.
 
@@ -6367,8 +6514,7 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 	
-	self assert: aParagraph text = 'The first book
-'.
+	self assert: aParagraph text = ('The first book', Character cr asString).
 	aReadStream next.
 
 	aParagraph := KParagraph new.
@@ -6397,8 +6543,7 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'The second book
-'.
+	self assert: aParagraph text = ('The second book', Character cr asString).
 
 	aReadStream next.
 
@@ -6408,8 +6553,7 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'some paragraph
-'.
+	self assert: aParagraph text = ('some paragraph', Character cr asString).
 
 	aReadStream next.
 
@@ -6419,8 +6563,7 @@ testParagraphSerializeFrom
 
 	aParagraph serializeFrom: aReadStream.
 
-	self assert: aParagraph text = 'the next paragraph
-'.
+	self assert: aParagraph text = ('the next paragraph', Character cr asString).
 
 	aReadStream next.
 
@@ -6561,7 +6704,7 @@ testSearch
 	self assert: pos next char = Character space.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:52'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 09:02:13'!
 testStream
 
 	| t1 t2 text index lib aKStream aStream |
@@ -6607,7 +6750,7 @@ testStream
 			self assert: cc = kc.
 			cc := aStream peek.
 			kc := aKStream peek.
-			self assert: cc = kc.
+			self assert: (cc isNil or:[cc = kc]).
 			 ].
 		
 	self assert: aStream atEnd.
