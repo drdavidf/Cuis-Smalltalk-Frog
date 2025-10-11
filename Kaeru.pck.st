@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 9 October 2025 at 11:58:15 am'!
+'From Cuis7.3 [latest update: #6895] on 11 October 2025 at 1:49:36 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1084!
+!provides: 'Kaeru' 1 1086!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -3029,7 +3029,7 @@ fastCharIndexToParIndex: anIndex
 	
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 09:59:46'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/11/2025 13:46:48'!
 findParagraphHolding: anIndex
 
 	| cb bp ep |
@@ -3053,7 +3053,7 @@ findParagraphHolding: anIndex
 	
 	bp := 1.
 	
-	ep := paragraphs size.
+	ep := paragraphBoundary.
 	
 	[bp < ep ] 
 		whileTrue:[
@@ -3153,7 +3153,7 @@ oracleCharIndexToParIndex: anIndex
 
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:00:34'!
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/11/2025 13:48:31'!
 slowCharIndexToParIndex: anIndex
 
 	" answer a pair whose first member is the paragraph index and whose second member is the character index in the paragraph text that corresponds to anIndex.
@@ -3173,7 +3173,7 @@ slowCharIndexToParIndex: anIndex
 
 	self assert: anIndex > cb .
 	
-	pp := (self fastCharIndexToParIndex: cb :: first).
+	pp := paragraphBoundary.
 	
 	ii := anIndex + 1 - (paragraphs at:pp) startingCharacterIndex.
 	
@@ -3192,14 +3192,14 @@ slowCharIndexToParIndex: anIndex
 	
 	^ { pp . ii }! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 10/9/2025 10:24:40'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/11/2025 11:54:40'!
 insert: aCharacter after: anIndex
 
 	| pp |
 	
 	self assert: anIndex > 0.
 	
-	self assert: anIndex < self end globalIndex.
+	self assert: (self isIndexLeqEnd: anIndex).
 	
 	self assert: paragraphs notEmpty.
 	
@@ -3310,7 +3310,7 @@ insertLetter: aCharacter after: anIndex
 	^pi first " this is the last paragraph that we are certain has a valid start address "
 	! !
 
-!KLibrary methodsFor: 'inserting' stamp: 'DF 10/5/2025 21:24:35'!
+!KLibrary methodsFor: 'inserting' stamp: 'DF 10/11/2025 11:54:40'!
 setAttribute: aTextAttribute from: aBeginIndex to: anEndIndex
 
 	| beginPi endPi |
@@ -3319,7 +3319,7 @@ setAttribute: aTextAttribute from: aBeginIndex to: anEndIndex
 	
 	self assert: aBeginIndex > 1.
 	
-	self assert: anEndIndex <= self end globalIndex.
+	self assert: (self isIndexLeqEnd:anEndIndex).
 	
 	aBeginIndex = anEndIndex
 		ifTrue:[
@@ -3403,14 +3403,14 @@ newItem
 	
 	^aParagraph! !
 
-!KLibrary methodsFor: 'erasing' stamp: 'DF 10/9/2025 10:24:53'!
+!KLibrary methodsFor: 'erasing' stamp: 'DF 10/11/2025 11:54:40'!
 eraseFrom: aBeginIndex to: anEndIndex
 
 	| beginPi endPi bp ep |
 		
 	self assert: aBeginIndex > 1.
 	
-	self assert: anEndIndex <= self end globalIndex.
+	self assert: (self isIndexLeqEnd: anEndIndex).
 
 	"self assert: self invariant."
 	
@@ -3496,6 +3496,61 @@ isEmpty
 		ifTrue:[^false].
 		
 	^paragraphs last lastLine length = 1! !
+
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/11/2025 13:26:58'!
+isIndexDefinitelyLessThanEnd: anIndex
+
+  " Quickly determine if the character index anIndex is less than the index of the last character in the library.
+
+Use the paragraphBoundary to check, if anIndex is less than the index of the paragraphBoundary then it is
+not at the end. 
+
+Note that this does not mean that when the answer is false anIndex is at the end. If this method answers false
+we need to perform a slower check to determin if it is actually at the end or not.
+
+ "
+
+	| cs pp |
+	
+	pp := paragraphs at: paragraphBoundary.
+	
+	cs := pp startingCharacterIndex.
+	
+	^ anIndex < cs ifTrue:[
+			true]
+		ifFalse:[			
+			anIndex < (cs + pp length)
+				ifTrue:[ "anIndex is inside the paragraph pp so it can't be the end"
+					true]
+				ifFalse:[
+					false ] ]
+! !
+
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/11/2025 13:29:17'!
+isIndexLeqEnd: anIndex
+
+  " Quickly determine if the character index anIndex is less than or equal to the index of the last character in the library.
+
+ "
+
+	^ self isIndexDefinitelyLessThanEnd: anIndex :: ifTrue:[
+			true]
+		ifFalse:[
+			(self charIndexToIterator: anIndex) <= self end ]
+! !
+
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/11/2025 13:28:46'!
+isIndexLessThanEnd: anIndex
+
+  " Determine if the character index anIndex is less than the index of the last character in the library.
+
+ "
+
+	^ self isIndexDefinitelyLessThanEnd: anIndex ::  ifTrue:[
+			true]
+		ifFalse:[			
+			(self charIndexToIterator: anIndex) < self end ] 
+! !
 
 !KLibrary methodsFor: 'searching' stamp: 'DF 9/26/2025 20:08:46'!
 match: aString at: anIterator
@@ -3641,7 +3696,7 @@ searchFrom: anAddress forwardFor: aString
 		ifTrue:[aKStream position retreat: aString size]
 		ifFalse:[nil]! !
 
-!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 15:31:40'!
+!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/11/2025 11:54:40'!
 emphasize: aSymbol from: aBeginIndex to: anEndIndex
 
 	" Mark all the characters from aBeginIndex to anEndIndex (exclusive) with the emphasis given by aSymbol.
@@ -3656,7 +3711,7 @@ emphasize: aSymbol from: aBeginIndex to: anEndIndex
 		
 	self assert: aBeginIndex > 1.
 	
-	self assert: anEndIndex <= self end globalIndex.
+	self assert: (self isIndexLeqEnd: anEndIndex).
 	
 	aBeginIndex = anEndIndex
 		ifTrue:[
@@ -3696,7 +3751,7 @@ emphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/7/2025 13:21:41'!
+!KLibrary methodsFor: 'emphasizing' stamp: 'DF 10/11/2025 11:54:40'!
 unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 
 	" Remove the emphasis aSymbol from all the characters from aBeginIndex to anEndIndex (exclusive).
@@ -3709,7 +3764,7 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 	self assert: aBeginIndex > 1.
 	
-	self assert: anEndIndex <= self end globalIndex.
+	self assert: (self isIndexLeqEnd:anEndIndex).
 	
 	aBeginIndex = anEndIndex
 		ifTrue:[
@@ -4644,15 +4699,16 @@ creepBack
 		ifFalse:[
 			cursor := self end globalIndex ]! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/5/2025 15:48:38'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 11:57:39'!
 creepForward
 
-	cursor = self end globalIndex
+	cursor := self isIndexLessThanEnd: cursor ::
 		ifTrue:[
-			cursor := 1
-		]
+			cursor + 1]
 		ifFalse:[
-			cursor := cursor + 1].! !
+			1 ].
+		
+! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:30:05'!
 erase
@@ -4669,7 +4725,7 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/30/2025 22:01:08'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:30:19'!
 eraseNarrow
 
 	self assert: cursor >= 1.
@@ -4687,22 +4743,23 @@ eraseNarrow
 			" Because the text is not empty then if the cursor is at the end 
 			it is at least 3, decreasing it by 1 makes it at least 2, safe for passing to erase "
 			
-			cursor = text end globalIndex
+			self isIndexLessThanEnd: cursor ::
 				ifTrue:[
-					cursor := cursor - 1. 
-					cursorState := #wide ]
+					text eraseFrom: cursor to: cursor + 1 ]
 				ifFalse:[
-					text eraseFrom: cursor to: cursor + 1 ] ].
+					cursor := cursor - 1. 
+					cursorState := #wide ] ].
+			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 13:00:32'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:10'!
 eraseSelection
 
 	self assert: selection first > 1.
 	
 	self assert: selection first <= selection last.
 	
-	self assert: selection last <= self end globalIndex.
+	self assert: (self isIndexLeqEnd: selection last).
 	
 	text eraseFrom: selection first to: selection last.
 	
@@ -4715,11 +4772,11 @@ eraseSelection
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:40:11'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:26'!
 eraseWide
 
 	self assert: cursor > 0.
-	self assert: cursor < self end globalIndex.
+	self assert: (self isIndexLessThanEnd: cursor).
 	
 	cursor > 1 
 		ifTrue:[
@@ -4754,11 +4811,11 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:41:35'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:51'!
 insert: aCharacter
 
 	self assert: cursor > 0.
-	self assert: cursor <= text end globalIndex.
+	self assert: (self isIndexLeqEnd: cursor).
 	
 	cursorState = #wide 
 		ifTrue:[
@@ -4936,16 +4993,16 @@ collapseRight
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:40:07'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/11/2025 13:34:44'!
 select
 
-	cursor = self end globalIndex
-		ifTrue:[
+	self isIndexLessThanEnd: cursor ::
+		ifFalse:[
 			cursor := cursor - 1].	
 		
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
 	
-	self assert: selection last <= self end globalIndex.
+	self assert: (self isIndexLeqEnd: selection last).
 	
 	cursor := selection last.
 		
