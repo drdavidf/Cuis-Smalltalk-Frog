@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 11 October 2025 at 1:49:36 pm'!
+'From Cuis7.3 [latest update: #6895] on 11 October 2025 at 2:50:15 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1086!
+!provides: 'Kaeru' 1 1091!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -2626,7 +2626,34 @@ char
 charIndex
 	^charIndex! !
 
-!KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/22/2025 16:15:54'!
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/11/2025 14:47:33'!
+fastGlobalIndex: lastValidParagraphIndex
+
+	" Quickly answers the global character index represented by this iterator, given the index of 
+	the last paragraph that has a valid startingCharacterIndex. "
+	
+	|  index |
+	
+	self assert: parIndex <= pars size.
+	
+	parIndex <= lastValidParagraphIndex ifTrue:[
+
+		| pp |
+		
+		pp := pars at: parIndex.
+	
+		 ^pp startingCharacterIndex - 1 + (pp lineIndexToCharIndex: lineIndex) + charIndex].
+
+	index := (pars at: lastValidParagraphIndex) startingCharacterIndex - 1.
+	
+	lastValidParagraphIndex to: parIndex - 1 do:[:ii | | par |
+		par := pars at: ii.
+		index := index + par length ].
+	
+	^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex .
+! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/11/2025 13:59:04'!
 globalIndex
 
 	"Answers the global character index represented by this iterator "
@@ -2773,6 +2800,26 @@ physicalPageIndexForPageSize: anIntegerPageSize
 					
 			
 					! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/11/2025 13:58:32'!
+slowGlobalIndex
+
+	"Answers the global character index represented by this iterator "
+	
+	| index |
+	
+	index := 0.
+	
+	1 to: parIndex - 1 do:[:ii | | par |
+		par := pars at: ii.
+		index := index + par length ].
+	
+	^ parIndex = (pars size + 1)
+		ifTrue:[ " the iterator points one place past the end of text "
+			 index +1 ]
+		ifFalse:[
+			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
+! !
 
 !KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
 privPrevChar
@@ -3105,6 +3152,12 @@ findParagraphHolding: anIndex
 	
 	^ bp
 	! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'DF 10/11/2025 14:50:13'!
+iteratorToCharIndex: anIterator
+
+	^ anIterator fastGlobalIndex: paragraphBoundary.
+! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:14:42'!
 oracleCharIndexToIterator: anIndex
@@ -4690,14 +4743,14 @@ example
 
 	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 18:33:18'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 14:20:33'!
 creepBack
 
 	cursor > 1
 		ifTrue:[
 			cursor := cursor - 1 ]
 		ifFalse:[
-			cursor := self end globalIndex ]! !
+			cursor := text iteratorToCharIndex: text end ]! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 11:57:39'!
 creepForward
@@ -4811,7 +4864,7 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:51'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:57:00'!
 insert: aCharacter
 
 	self assert: cursor > 0.
@@ -4819,7 +4872,7 @@ insert: aCharacter
 	
 	cursorState = #wide 
 		ifTrue:[
-			cursor < text end globalIndex
+			(self isIndexLessThanEnd: cursor)
 				ifTrue:[
 					text insert: aCharacter after: cursor]
 				ifFalse:[
@@ -5064,7 +5117,7 @@ restartSearch.
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:54:38'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:20:52'!
 searchBack
 
 	| cit it |
@@ -5084,12 +5137,12 @@ searchBack
 			cursor := positionRegister] 
 		ifFalse:[
 			leapRegister := positionRegister.
-			cursor := it globalIndex ].
+			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
 ! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/5/2025 15:47:40'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:21:05'!
 searchForward
 
 	| bb it cit |
@@ -5112,7 +5165,7 @@ searchForward
 			cursor := positionRegister] 
 		ifFalse:[
 			leapRegister := positionRegister.
-			cursor := it globalIndex ].
+			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
 		! !
@@ -6471,7 +6524,7 @@ testInsertBreaks
 	self assert: lib invariant.
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:07:00'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/11/2025 14:21:38'!
 testIterators
 
 	| t1 t2 text index lib bb ee |
@@ -6508,7 +6561,7 @@ testIterators
 	
 	ee := lib end.
 	
-	self assert: ee globalIndex = (text size + 2). "because we count the first and last document breaks"
+	self assert: (lib iteratorToCharIndex:ee) = (text size + 2). "because we count the first and last document breaks"
 	
 	index := 1.
 	
@@ -6517,7 +6570,7 @@ testIterators
 	[bb ~= ee]
 		whileTrue:[
 			self assert: (bb char = (text at: index)).
-			self assert: bb globalIndex = (index + 1).
+			self assert: (lib iteratorToCharIndex:bb) = (index + 1).
 			bb next.
 			index := index + 1 ].
 	
@@ -6695,7 +6748,7 @@ testRegex
 	self assert: aKStream position next next char = $i.
 	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 15:08:05'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/11/2025 14:22:14'!
 testSearch
 
 	| t1 t2 text index lib pos |
@@ -6730,11 +6783,11 @@ testSearch
 	
 	pos := lib searchFrom: lib begin forwardFor: 'e'.
 	
-	self assert: pos globalIndex = 8.
+	self assert: (lib iteratorToCharIndex:pos) = 8.
 
 	pos := lib searchFrom: pos backwardFor: 's'.
 	
-	self assert: pos globalIndex = 625.
+	self assert: (lib iteratorToCharIndex:pos) = 625.
 
 	pos := lib searchFrom: lib begin forwardFor: 'himself'.
 	
