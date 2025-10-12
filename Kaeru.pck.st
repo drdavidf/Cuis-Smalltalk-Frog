@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 12 October 2025 at 6:16:03 pm'!
+'From Cuis7.3 [latest update: #6895] on 12 October 2025 at 7:01:17 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1095!
+!provides: 'Kaeru' 1 1096!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -1295,7 +1295,7 @@ drawSoftPage
 	
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:35:53'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/12/2025 18:43:47'!
 drawTabStops
 	
 	| tstops ii mx |
@@ -1308,9 +1308,14 @@ drawTabStops
 	
 	[ii <= tstops size]
 		whileTrue:[
+			
+			mx := 1+ displayRect origin x + (dx * (tstops at:ii)).
+			
+			canvas image: self class tabStopIcon at: mx @ (displayRect corner y + 2).
+			"
 			mx := dx / 2 +  displayRect origin x + (dx * (tstops at:ii)).
 			canvas line: mx @ (displayRect corner y + 6) to: mx + 3 @ (displayRect corner y + 10) width:1 color: Color white.
-			canvas line: mx @ (displayRect corner y + 6) to: mx - 3 @ (displayRect corner y + 10) width:1 color: Color white.
+			canvas line: mx @ (displayRect corner y + 6) to: mx - 3 @ (displayRect corner y + 10) width:1 color: Color white."
 			ii := ii + 1.
 		]! !
 
@@ -1934,6 +1939,17 @@ selectLineIcon: anIntegerSelected for: anIntegerIndex
 			IconForLineSpaceSelected  at: anIntegerIndex ]
 		ifFalse:[
 			IconForLineSpace  at: anIntegerIndex ]! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'DF 10/12/2025 18:47:02'!
+tabStopIcon
+ 
+  ^(Form
+ 	extent: 12@15
+ 	depth: 2
+ 	fromArray: #( 0 0 0 0 2621440 11141120 44728320 178954240 0 0 0 0 0 0 0)
+ 	offset: 0@0)
+
+ ! !
 
 !KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:12:42'!
 twoLineSpaceIcon
