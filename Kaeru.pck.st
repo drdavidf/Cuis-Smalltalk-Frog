@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 11 October 2025 at 2:50:15 pm'!
+'From Cuis7.3 [latest update: #6895] on 12 October 2025 at 6:16:03 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1091!
+!provides: 'Kaeru' 1 1095!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -1424,7 +1424,7 @@ putChar: aCharacter
 	self putChar: aCharacter font: font
 ! !
 
-!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:34:08'!
+!KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/12/2025 17:44:34'!
 putChar: aCharacter font: aFont
 	
 	| cc hh lineSpace |
@@ -1451,7 +1451,15 @@ putChar: aCharacter font: aFont
 			
 	canvas fillRectangle: (xx@yy extent: dx@hh) color: background.
 	
-	canvas drawString: cc asString at: xx@yy font: aFont color: foreground.
+	cc = Character cr ifTrue:[
+		foreground = Color white
+			ifTrue:[	
+				canvas image: self class newlineWhiteIcon at: xx@yy]
+			ifFalse:[
+				canvas image: self class newLineBlackIcon at: xx @yy]
+	]
+	ifFalse:[	
+		canvas drawString: cc asString at: xx@yy font: aFont color: foreground].
 	
 ! !
 
@@ -1846,6 +1854,27 @@ justifyRightIconSelected
   	fromArray: #( 178956970 2862612480 715827882 2863136768 715827882 2863136768 715827882 2863136768 710235477 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715822421 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715740501 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827861 1437073408 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 715827882 2863136768 178956970 2862612480 0 0)
  	offset: 0@0)`
 ! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'DF 10/12/2025 18:03:18'!
+newLineBlackIcon
+
+ ^(Form
+ 	extent: 12@15
+ 	depth: 2
+ 	fromArray: #( 0 0 1024 5120 5120 1315840 5510144 22025216 88085504 357913600 357912576 88080384 22020096 5505024 1310720)
+ 	offset: 0@0)
+  ! !
+
+!KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'DF 10/12/2025 18:03:28'!
+newlineWhiteIcon
+
+ ^(Form
+ 	extent: 12@15
+ 	depth: 2
+ 	fromArray: #( 0 0 2048 10240 10240 2631680 11020288 44050432 176171008 715827200 715825152 176160768 44040192 11010048 2621440)
+ 	offset: 0@0)
+ 
+ ! !
 
 !KaeruPrinter class methodsFor: 'as yet unclassified' stamp: 'Df 9/20/2025 17:17:03'!
 oneAndHalfLineSpaceIcon
@@ -4778,7 +4807,7 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:30:19'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 18:13:46'!
 eraseNarrow
 
 	self assert: cursor >= 1.
@@ -4803,6 +4832,10 @@ eraseNarrow
 					cursor := cursor - 1. 
 					cursorState := #wide ] ].
 			
+	" ensure the selection resets and points to a valid index "
+	
+	selection := cursor to: cursor.
+			
 	self changed: #erase.! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:10'!
@@ -4825,11 +4858,11 @@ eraseSelection
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:26'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 18:14:07'!
 eraseWide
 
 	self assert: cursor > 0.
-	self assert: (self isIndexLessThanEnd: cursor).
+	self assert: (text isIndexLessThanEnd: cursor).
 	
 	cursor > 1 
 		ifTrue:[
@@ -4838,6 +4871,10 @@ eraseWide
 			
 			cursor = 1 ifTrue:[
 				cursorState := #narrow ] ].
+
+	" ensure the selection resets and points to a valid index "
+	
+	selection := cursor to: cursor.
 		
 	self changed: #erase.! !
 
@@ -4864,15 +4901,15 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:57:00'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 17:42:28'!
 insert: aCharacter
 
 	self assert: cursor > 0.
-	self assert: (self isIndexLeqEnd: cursor).
+	self assert: (text isIndexLeqEnd: cursor).
 	
 	cursorState = #wide 
 		ifTrue:[
-			(self isIndexLessThanEnd: cursor)
+			(text isIndexLessThanEnd: cursor)
 				ifTrue:[
 					text insert: aCharacter after: cursor]
 				ifFalse:[
@@ -5557,10 +5594,10 @@ drawRulerOn: aCanvas
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/9/2025 11:33:20'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/12/2025 17:27:23'!
 drawTextOn: aCanvas
 
-	" draw the text, highlight the selection, and show the cursor 
+	" draw the text on an off display form.
 	
 	We assume that whenever we call drawTextOn: aCanvas the cursor is visible inside the window. 
 	
