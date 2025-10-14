@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 6:04:59 pm'!
+'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 10:20:22 pm'!
 'Description '!
-!provides: 'I2C' 1 19!
+!provides: 'I2C' 1 22!
 !requires: 'FFI' 1 56 nil!
 SystemOrganization addCategory: #I2C!
 
@@ -164,7 +164,7 @@ readBusRegister
 	^ (res >> 3)  * 4
 	! !
 
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 12:07:50'!
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 22:13:25'!
 readShuntRegister
 
 	"sample the shunt register and answer the result in mV units "
@@ -179,7 +179,7 @@ readShuntRegister
 	^ res / 100.0 "result is originally in 10uV units"
 	! !
 
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 12:33:22'!
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 22:20:15'!
 state
 
 	" Answer if the battery is charging or discharging 
@@ -188,19 +188,19 @@ state
 
 	"
 	
-	| current sres |
+	| current sres sreg |
 	
-	sres := 100.0 . "shunt resistor is 100 ohm "
+	sres := 100.0 . "shunt resistor is 100 milli ohm "
 	
-	sres := self readShuntRegister.
+	sreg := self readShuntRegister.
 	
-	current := sres / sres. "in mA"
+	current := sreg / sres. "in A"
 	
-	^ current > 10
+	^ current > 0.01
 				ifTrue:[
 					#charging]
 				ifFalse:[
-					current < -10
+					current < -0.01
 						ifTrue:[#discharging]
 						ifFalse:[#idle] ] 
 					! !
