@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 6:07:30 pm'!
+'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 9:39:09 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1115!
+!provides: 'Kaeru' 1 1120!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -351,6 +351,16 @@ ImageMorph subclass: #FrogAnimation
 FrogAnimation class
 	instanceVariableNames: ''!
 
+!classDefinition: #Kaeru category: #'Kaeru-Keyboard'!
+CodePackage subclass: #Kaeru
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'Kaeru class' category: #'Kaeru-Keyboard'!
+Kaeru class
+	instanceVariableNames: 'mutex'!
+
 !classDefinition: #ExhaustiveTestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #ExhaustiveTestKLibrary
 	instanceVariableNames: 'lib text'
@@ -577,7 +587,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 16:08:35'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:20:48'!
 keyStroke: aKeyboardEvent
 
 	self doTransitionFor: #keyStroke.
@@ -593,6 +603,7 @@ keyStroke: aKeyboardEvent
 	{ #startLeapRightState . #leapRightState . #searchRightSelectState } includes: state ::
 		ifTrue:[ 
 			self processLeapRight: aKeyboardEvent ].
+
 
 	
 ! !
@@ -5568,10 +5579,15 @@ keyDown: aMorphicEvent
 	controller keyDown: aMorphicEvent.
 ! !
 
-!KaeruMasterMorph methodsFor: 'event handling' stamp: 'Df 9/21/2025 12:56:43'!
+!KaeruMasterMorph methodsFor: 'event handling' stamp: 'DF 10/14/2025 21:21:11'!
 keyStroke: aKeyboardEvent
 
-	controller keyStroke: aKeyboardEvent ! !
+	controller keyStroke: aKeyboardEvent .
+	
+	self removeAlarm: #autoSave.
+	
+	self addAlarm: #autoSave after: 3*60*1000. "3 min. in millisec"
+	! !
 
 !KaeruMasterMorph methodsFor: 'event handling' stamp: 'Df 9/21/2025 12:56:54'!
 keyUp: aMorphicEvent
@@ -5649,6 +5665,13 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:21:36'!
+autoSave
+
+	Kaeru mutex critical:[
+		Smalltalk saveImage.
+	]! !
+
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
@@ -5657,6 +5680,11 @@ model
 start
 
 	view at: #edit :: renderText; startBlinking.! !
+
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:15:07'!
+takeFocus
+
+	self activeHand hideHardwareCursor ; newKeyboardFocus: (view at: active)! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:19'!
 captureCursorRectangle
@@ -5948,7 +5976,7 @@ locateFirstLineInWindow
 
 	^bb! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/14/2025 18:00:04'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/14/2025 21:26:27'!
 initialize
 	
 	super initialize .
@@ -5967,7 +5995,9 @@ initialize
 	
 	snapshot := Form extent: self morphExtent depth: Display depth.
 	
-	ina219 := INA219Dummy new.! !
+	ina219 := INA219Dummy new.
+	
+	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/3/2025 11:27:31'!
 model: aKaeruEditor
@@ -5984,6 +6014,15 @@ model: aKaeruEditor
 	printer pageSize: editor pageSize.
 	
 ! !
+
+!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/14/2025 21:30:11'!
+refreshBatteryState
+
+	self renderText.
+	
+	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"
+	
+	self redrawNeeded ! !
 
 !KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/5/2025 16:43:04'!
 update: aSymbol
@@ -6428,6 +6467,49 @@ initialize
 new
 	^super new
 		image: (Frames at:1).! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:38:52'!
+initialize
+
+	"self initialize"
+	
+	mutex := Semaphore forMutualExclusion.
+	
+	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:57'!
+installSigTermHandler
+
+	[
+		 | sema |
+	
+		sema := OSProcess accessor forwardSigTerm. 
+
+		sema wait.
+ 
+		mutex critical:[
+			Smalltalk saveAndQuit
+		].
+
+	] forkNamed: 'SIGTERM handler'
+
+! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:53'!
+mutex
+	^mutex! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:34:26'!
+startUp: args
+
+	self installSigTermHandler.
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+		
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+		
+		app ifNotNil:[ app takeFocus  ] ].	
+! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 17:10:14'!
 doErase: aGenerator
@@ -7496,3 +7578,4 @@ newDocument
 KaeruPrinter initialize!
 KaeruEditorMorph initialize!
 FrogAnimation initialize!
+Kaeru initialize!
