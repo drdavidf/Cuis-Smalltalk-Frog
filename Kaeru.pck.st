@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 17 October 2025 at 10:28:53 am'!
+'From Cuis7.5 [latest update: #7615] on 17 October 2025 at 10:54:33 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1129!
+!provides: 'Kaeru' 1 1146!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -59,6 +59,16 @@ KaeruController subclass: #KaeruMasterController
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruMasterController class' category: #'Kaeru-Keyboard'!
 KaeruMasterController class
+	instanceVariableNames: ''!
+
+!classDefinition: #KaeruPluggableMarginController category: #'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruPluggableMarginController
+	instanceVariableNames: 'model left margin right marginGetter marginSetter showMarginMessage'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruPluggableMarginController class' category: #'Kaeru-Keyboard'!
+KaeruPluggableMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruRightMarginController category: #'Kaeru-Keyboard'!
@@ -273,7 +283,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Text'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull showLeftMargin showRightMargin'
+	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull showLeftMargin showRightMargin dirty showIndent'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -654,7 +664,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 13:31:47'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:43:13'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -681,6 +691,13 @@ processEditing: aKeyboardEvent
 			useFront := #up.
 			model showRightMargin: true.
 			controllerMaster activate: #rightMargin . ^self ].
+
+	aKeyboardEvent keyCharacter = $- and:[ useFront = #down] :: 
+		ifTrue:[
+			
+			useFront := #up.
+			model showIndent: true.
+			controllerMaster activate: #indent . ^self ].
 
 	aKeyboardEvent keyCharacter = $s and:[ useFront = #down] :: 
 		ifTrue:[
@@ -900,6 +917,88 @@ keyUp: aMorphicEvent
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:46:03'!
 model
 	^active model! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:52'!
+acceptControl
+
+	margin := model perform: marginGetter! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+initialize
+
+	super initialize.
+	
+	left := #up.
+	
+	right := #up.
+	
+	margin := 6.! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+keyDown: aMorphicEvent
+
+	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			left := #down ].
+		
+	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			right := #down ].
+! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+keyStroke: aMorphicEvent
+
+	! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:59:31'!
+keyUp: aMorphicEvent
+
+	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin - 1 max: 0.
+			
+			model perform: marginSetter with: margin].
+		
+	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			left := #up ].
+
+	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin + 1 min: 79.
+			
+			model perform: marginSetter with: margin ].
+		
+	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			right := #up ].
+
+	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			model perform: showMarginMessage with: false.
+			controllerMaster activate: #edit.  ].
+! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:34'!
+marginGetter: aSymbol
+	marginGetter := aSymbol.! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:42'!
+marginSetter: aSymbol
+	marginSetter := aSymbol.! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+model: aKaeruEditor
+	model := aKaeruEditor ! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:59:43'!
+showMarginMessage: aSymbol
+	showMarginMessage := aSymbol.! !
+
+!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:00:15'!
+state
+	^marginGetter! !
 
 !KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:01:02'!
 acceptControl
@@ -1750,6 +1849,11 @@ rightMarginX
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:50'!
 rulerCursorRectangle
 	^ rulerCursorRect ! !
+
+!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/17/2025 22:50:03'!
+setIndentRegister
+
+	marginRegister := attributes indent + attributes leftMargin! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:28:06'!
 setLeftMarginRegister
@@ -2801,6 +2905,11 @@ pars: anOrderedCollection
 	pars := anOrderedCollection.
 ! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:38:25'!
+setAtBeginningOfLine
+
+	charIndex := 1.! !
+
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
 	
@@ -3042,41 +3151,6 @@ charIndexToIterator: anIndex
 	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
 	
 	^iterator! !
-
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/24/2025 20:33:37'!
-charIndexToLineIndex: aCharIndex
-
-	" Answer the line index and line offset of the line that holds the character at aCharIndex.
-	
-	If aCharIndex is past the end of the text we answer a line index one past the last line in the text. 
-	
-	"
-	
-	| charIndex lineIndex parIndex pp |
-	
-	charIndex := aCharIndex.
-	
-	lineIndex := 0.
-	
-	parIndex := 1.
-	
-	[ parIndex<= paragraphs size and: [ paragraphs at: parIndex :: length < charIndex] ]
-		whileTrue:[ 
-			lineIndex := lineIndex + (paragraphs at: parIndex :: numLines).			
-			charIndex := charIndex - (paragraphs at: parIndex :: length ).			
-			parIndex := parIndex  + 1. ].
-		
-	^parIndex > paragraphs size 
-		ifTrue:[ { lineIndex . 1 } ]
-		ifFalse:[
-			" As we assume that aCharIndex refers to a character in the text, we may assume that
-			parIndex <= paragraphs size and therefore paragraphs at: parIndex :: length > charIndex.
-			Therefore we only need to find the line index that corresponds to charIndex in this paragraph"
-	
-			pp := paragraphs at: parIndex :: charIndexToLineIndex: charIndex.
-	
-			{ lineIndex + pp first . pp second } ]
-	! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:24:13'!
 charIndexToParIndex: anIndex
@@ -3616,7 +3690,7 @@ isEmpty
 		
 	^paragraphs last lastLine length = 1! !
 
-!KLibrary methodsFor: 'testing' stamp: 'DF 10/11/2025 13:26:58'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/17/2025 13:41:25'!
 isIndexDefinitelyLessThanEnd: anIndex
 
   " Quickly determine if the character index anIndex is less than the index of the last character in the library.
@@ -3638,7 +3712,7 @@ we need to perform a slower check to determin if it is actually at the end or no
 	^ anIndex < cs ifTrue:[
 			true]
 		ifFalse:[			
-			anIndex < (cs + pp length)
+			anIndex < (cs + pp length - 1)
 				ifTrue:[ "anIndex is inside the paragraph pp so it can't be the end"
 					true]
 				ifFalse:[
@@ -4361,14 +4435,14 @@ charAt: anIndex
 	
 ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:57:45'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/17/2025 13:20:29'!
 charIndexToLineIndex: anIndex
 
 	| ii pp |
 	
 	ii := anIndex. pp := 1.
 	
-	[ii > ((lines at:pp) length) ]
+	[ pp <= lines size and: [ii > ((lines at:pp) length) ] ]
 		whileTrue:[
 			ii := ii - ((lines at:pp) length).
 			pp := pp + 1].
@@ -4871,10 +4945,10 @@ creepBack
 		ifFalse:[
 			cursor := text iteratorToCharIndex: text end ]! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 11:57:39'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:16:23'!
 creepForward
 
-	cursor := self isIndexLessThanEnd: cursor ::
+	cursor := text isIndexLessThanEnd: cursor ::
 		ifTrue:[
 			cursor + 1]
 		ifFalse:[
@@ -4882,9 +4956,11 @@ creepForward
 		
 ! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:30:05'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 20:45:03'!
 erase
 
+	dirty := true.
+	
 	cursorState = #narrow
 		ifTrue:[ 
 			^self eraseNarrow].
@@ -4897,7 +4973,7 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 18:13:46'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:16:11'!
 eraseNarrow
 
 	self assert: cursor >= 1.
@@ -4915,7 +4991,7 @@ eraseNarrow
 			" Because the text is not empty then if the cursor is at the end 
 			it is at least 3, decreasing it by 1 makes it at least 2, safe for passing to erase "
 			
-			self isIndexLessThanEnd: cursor ::
+			text isIndexLessThanEnd: cursor ::
 				ifTrue:[
 					text eraseFrom: cursor to: cursor + 1 ]
 				ifFalse:[
@@ -4928,14 +5004,14 @@ eraseNarrow
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:10'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:54:15'!
 eraseSelection
 
 	self assert: selection first > 1.
 	
 	self assert: selection first <= selection last.
 	
-	self assert: (self isIndexLeqEnd: selection last).
+	self assert: (text isIndexLeqEnd: selection last).
 	
 	text eraseFrom: selection first to: selection last.
 	
@@ -4991,7 +5067,7 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 17:42:28'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 20:45:31'!
 insert: aCharacter
 
 	self assert: cursor > 0.
@@ -5014,6 +5090,8 @@ insert: aCharacter
 					cursor := cursor + 1 ] ].
 	
 	cursorState := #wide.
+	
+	dirty := true.
 	
 	self changed: #insert.! !
 
@@ -5087,6 +5165,10 @@ moveSelectionAfterCursor
 		
 	self changed: #cursor! !
 
+!KaeruEditor methodsFor: 'testing' stamp: 'DF 10/17/2025 20:46:03'!
+isDirty
+	^dirty! !
+
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/23/2025 20:22:55'!
 isExtended
 	^cursorState = #extended! !
@@ -5102,6 +5184,10 @@ isWide
 !KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:26:39'!
 begin
 	^text begin! !
+
+!KaeruEditor methodsFor: 'accessing' stamp: 'DF 10/17/2025 20:46:22'!
+clearDirtyFlag
+	dirty := false! !
 
 !KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:12:34'!
 cursor
@@ -5128,7 +5214,7 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/14/2025 16:45:13'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:16:18'!
 initialize
 
 	super initialize.
@@ -5142,6 +5228,8 @@ initialize
 	selection := 2 to: 2.
 	
 	cursorState := #wide..
+
+	showIndent := false.
 	
 	showLeftMargin := false.
 	
@@ -5173,16 +5261,16 @@ collapseRight
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/11/2025 13:34:44'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/17/2025 13:13:04'!
 select
 
-	self isIndexLessThanEnd: cursor ::
+	text isIndexLessThanEnd: cursor ::
 		ifFalse:[
 			cursor := cursor - 1].	
 		
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
 	
-	self assert: (self isIndexLeqEnd: selection last).
+	self assert: (text isIndexLeqEnd: selection last).
 	
 	cursor := selection last.
 		
@@ -5193,10 +5281,6 @@ select
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
 charIndexToIterator: anInteger
 	^text charIndexToIterator: anInteger ! !
-
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
-charIndexToLineIndex: anInteger
-	^text charIndexToLineIndex: anInteger ! !
 
 !KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 12:35:52'!
 appendAndSearchBack: aCharacter
@@ -5302,7 +5386,21 @@ searchFrom: it forwardFor: aString
 	^ text searchFrom: it forwardFor: aString
 ! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:29:57'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:14:55'!
+indent
+
+	"Anser the left margin of the paragraph in which the cursor is located  "
+	
+	| it par |
+	
+	it := text charIndexToIterator: cursor.
+	
+	par := it paragraph.
+	
+	^ par attributes indent.
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:03'!
 leftMargin
 
 	"Anser the left margin of the paragraph in which the cursor is located  "
@@ -5361,6 +5459,38 @@ setLeftMargin: anInteger
 	self changed: #margins
 	! !
 
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:52:10'!
+setParagraphIndent: anInteger
+
+	"Set the indent of the first line in the paragraph in which the cursor is located to anInteger, provided that anInteger is between  1 - leftMargin and rightMargin "
+	
+	| it par leftm rightm |
+	
+	it := text charIndexToIterator: cursor.
+	
+	it = text begin
+		ifTrue:[^self].
+		
+	it = text end
+		ifTrue:[^self].
+	
+	par := it paragraph.
+
+	leftm := par attributes leftMargin.
+
+	anInteger + leftm < 1
+		ifTrue:[^self].
+	
+	rightm := par attributes rightMargin.
+	
+	anInteger >= rightm 
+		ifTrue:[^self].
+		
+	it paragraph indent: anInteger.
+	
+	self changed: #margins
+	! !
+
 !KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:30:10'!
 setRightMargin: anInteger
 
@@ -5391,6 +5521,18 @@ setRightMargin: anInteger
 	self changed: #margins
 	! !
 
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:24'!
+showIndent
+
+	^showIndent! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:43'!
+showIndent: aBoolean
+
+	showIndent := aBoolean.
+	
+	self changed: #margins! !
+
 !KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:10:39'!
 showLeftMargin
 
@@ -5415,7 +5557,7 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/7/2025 14:55:09'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/17/2025 14:01:11'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
@@ -5430,7 +5572,10 @@ toggleSelectionEmphasisFor: aSymbol
 		
 		text emphasize: aSymbol from: selection first to: selection last ].
 	
-	cursorState := #wide.
+	cursorState := text isIndexLessThanEnd: selection last :: ifTrue:[
+		 #wide.
+	] ifFalse:[ "the selection ends at the text end, making the cursor wide will move it past the end"
+		#narrow].
 	
 	cursor := selection last.
 	
@@ -5613,7 +5758,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/6/2025 18:10:12'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:41:19'!
 initialize
 
 	| editor |
@@ -5656,8 +5801,10 @@ initialize
 
 	controller at: #titles putController: (KaeruTitlesController new viewMaster: self; yourself). 
 
-	controller at: #leftMargin putController: (KaeruLeftMarginController new viewMaster: self; model:editor; yourself). 
-	controller at: #rightMargin putController: (KaeruRightMarginController new viewMaster: self; model:editor; yourself). 
+	controller at: #leftMargin putController: (KaeruPluggableMarginController new marginGetter: #leftMargin; marginSetter: #setLeftMargin: ; showMarginMessage: #showLeftMargin: ; viewMaster: self; model:editor; yourself). 
+	controller at: #rightMargin putController: (KaeruPluggableMarginController new marginGetter: #rightMargin; marginSetter: #setRightMargin: ; showMarginMessage: #showRightMargin: ; viewMaster: self; model:editor; yourself). 
+
+	controller at: #indent putController: (KaeruPluggableMarginController new marginGetter: #indent; marginSetter: #setParagraphIndent: ; showMarginMessage: #showIndent: ; viewMaster: self; model:editor; yourself). 
 
 	controller activate: #edit.	
 	
@@ -5674,12 +5821,18 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:21:36'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:09:14'!
 autoSave
 
+	view at:#edit :: model isDirty ifFalse:[^self].
+	
 	Kaeru mutex critical:[
 		Smalltalk saveImage.
-	]! !
+	].
+
+	view at:#edit :: model clearDirtyFlag.
+	
+	Transcript show: 'saved, now clean' ; cr.! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
 drawOn: aCanvas
@@ -5735,7 +5888,7 @@ drawMarginOn: aCanvas
 	printer drawMargin.
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/7/2025 22:50:37'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/17/2025 22:46:58'!
 drawOn: aCanvas
 	
 	[
@@ -5745,7 +5898,7 @@ drawOn: aCanvas
 			ifTrue:[
 				self drawCursorOn: aCanvas].
 			
-		editor showLeftMargin or: [editor showRightMargin] ::
+		editor showLeftMargin or: [editor showRightMargin] or:[editor showIndent] ::
 			ifTrue:[  
 				self drawMarginOn: aCanvas].
 	
@@ -5791,7 +5944,7 @@ drawRulerOn: aCanvas
 						ifFalse:[self class socketChargingIcon ]) at: textx + (33*dx) @ (yy+32). 
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/12/2025 17:27:23'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/17/2025 22:46:35'!
 drawTextOn: aCanvas
 
 	" draw the text on an off display form.
@@ -5861,6 +6014,10 @@ drawTextOn: aCanvas
 					editor showLeftMargin
 						ifTrue:[
 							printer setLeftMarginRegister].
+
+					editor showIndent
+						ifTrue:[
+							printer setIndentRegister].
 
 					editor showRightMargin
 						ifTrue:[
@@ -5942,7 +6099,7 @@ scrollToCursor
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/5/2025 15:27:01'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/17/2025 20:38:50'!
 locateFirstLineInWindow
 
 	" Answers an iterator to the first line that should be displayed in the window, also adjusts the window
@@ -5952,6 +6109,8 @@ locateFirstLineInWindow
 
 	cit := editor charIndexToIterator: editor cursor.
 
+	cit setAtBeginningOfLine.
+	
 	ch := cit height.
 	
 	self assert: window <= ch.
@@ -6026,6 +6185,10 @@ initialize
 	ina219 open.
 	
 	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"! !
+
+!KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/17/2025 21:01:43'!
+model
+	^editor! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/3/2025 11:27:31'!
 model: aKaeruEditor
@@ -6320,12 +6483,14 @@ socketDischargingIcon
  
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:16'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:04:01'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
-	printer canvas: aCanvas.
+	self drawTextOn: aCanvas.
+	
+	"printer canvas: aCanvas.
 	
 	printer clearCanvas.
 	
@@ -6336,9 +6501,73 @@ drawOn: aCanvas
 				printer newLine]
 			ifFalse:[
 				printer putChar: each;  moveRight ] ].
-	! !
+	"! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:24'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:16:42'!
+drawTextOn: aCanvas
+
+	" draw the help text on aCanvas
+	"
+	
+	| bb ee |
+
+	bb := text begin next. "skip the start-of-text sentinel "
+		
+	printer canvas: aCanvas ; clearCanvas.
+	
+	ee := text end.
+	
+	[ printer isNotAtEnd and: [bb ~= ee] ] 
+		whileTrue:[ | cc  |
+
+			printer attributes: bb attributes.
+			
+			bb isAtFirstLineInParagraph 
+				ifTrue:[
+					printer indentBy: (bb attributes indent) ].
+				
+			cc := bb char. 
+
+			bb isBold
+				ifTrue:[ 
+					printer putBoldChar: cc]
+				ifFalse:[
+					printer putChar: cc].
+			
+			cc = Character tab
+				ifFalse:[
+					printer moveRight]
+				ifTrue:[
+					printer moveToNextTab].
+			
+			bb isAtEndOfLine 
+				ifTrue:[ "If the iterator is not past the end, set the margins and line height according
+					to the next paragraph before starting a new line. This ensures that the new line
+					starts at the correct position. "
+					bb ~= ee
+						ifTrue:[ 	| bn |
+							bn := bb copy next.
+							bn isPastEnd
+								ifFalse:[
+									printer attributes: bn attributes ] ].
+					
+					cc = Character newPage 
+						ifTrue:[
+							printer newSoftPage]
+						ifFalse:[						
+							cc = Character newDocument
+								ifTrue:[
+									printer newDocument]
+								ifFalse:[ 									
+									printer newLine.
+									 ] ] ].
+				
+			bb next ].
+	
+	
+! !
+
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:57:41'!
 initialize 
 
 	super initialize.
@@ -6349,30 +6578,19 @@ initialize
 	
 	printer := KaeruPrinter new.
 	
-	printer leftMargin: 1; lineSpace: 2; displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
+	printer displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
 	
-	text := 
-'Kaeru Copyright (c) David Faitelson 2025 Version 1.0
-
-To type, just type. All typed text is inserted. Line endings and page endings 
-     are automatic. Use [RETURN] to end paragraphs. [PAGE] forces a page to 
-     end. [SHIFT]-[DOCUMENT] begins a new document. If you make a mistake, 
-     press [ERASE] to backspace over it. The blinking cursor shows where text 
-     will be inserted; the solid highlight accompanying the cursor shows what 
-     [ERASE] will erase.
-To move the cursor, hold down a LEAP key, type whatever you want to find -- 
-     a character, a word or phrase -- let go of LEAP after cursor leaps. 
-     After cursor movement, [ERASE] erases text to the right of the cursor. 
-     [UNDO] can undo leaping, erasing and most commands.
-To highlight some text you want to do something with (such as print or erase),
-     leap from one end of it to the other, then press both LEAP keys. To
-     unhighlight, press and release either LEAP key. To adjust the highlight, 
-     tap either LEAP key repeatedly as needed, and press both LEAP keys again.
-Commands do things to highlighted text. Labels on key fronts show other 
-     commands. To use these, hold down [USE FRONT], and, while you hold it, 
-     press command.
-For more information: Hold [USE FRONT], press [EXPLAIN], and then the key you
-     want to know about.'
+	text := KLibrary new.
+	
+	'/home/davidf/Projects/Kaeru/parts/Software/parts/help/help.ktf' asFileEntry readStreamDo: [:stream |
+		
+		" skip the header until you get to the part that starts the library text "
+		[stream peek ~= Character newDocument] 
+			whileTrue:[stream next].
+		
+		stream next.
+				
+		text serializeFrom: stream ].
 ! !
 
 !KaeruScreenSaverMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:52:28'!
@@ -6813,6 +7031,32 @@ testShiftBack
 	dis shiftBack: 5 from: 6.
 
 	self assert: dis invariant.	! !
+
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
+testBoundaryChecks
+
+	| text lib |
+	
+	text := 'In olden times'.
+
+	lib := KLibrary new.
+
+	self assert: lib invariant.
+	
+	1 to: text size do:[:ii | lib insert: (text at:ii) after: ii.  ].
+	
+	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
+	
+	self assert: lib invariant.
+
+	self assert: (lib isIndexLessThanEnd: 15) = true.
+	
+	self assert: (lib isIndexLessThanEnd: 16) = false.
+	
+	self assert:(lib charIndexToIterator: 16) = lib end.
+	
+	
+! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:44:10'!
 testEmpty
@@ -7579,7 +7823,7 @@ serializeOn: aWriteStream
 	
 	! !
 
-!Dictionary class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/7/2025 21:56:25'!
+!Dictionary class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/17/2025 20:09:37'!
 serializeFrom: aReadStream
 
 	| aDictionary aScanner |
@@ -7606,6 +7850,8 @@ serializeFrom: aReadStream
 			aScanner skipWhiteSpace.
 			
 			aDictionary at: key asSymbol put: value ].
+		
+	aScanner eat: $].
 		
 	^ aDictionary
 	! !
