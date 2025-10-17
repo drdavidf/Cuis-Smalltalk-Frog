@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 9:39:09 pm'!
+'From Cuis7.5 [latest update: #7615] on 17 October 2025 at 10:28:53 am'!
 'Description '!
-!provides: 'Kaeru' 1 1120!
+!provides: 'Kaeru' 1 1129!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -469,11 +469,20 @@ controllerMaster: aKaeruMasterController
 	
 	controllerMaster := aKaeruMasterController ! !
 
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:38'!
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'DF 10/16/2025 21:18:19'!
 initialize
 
-	keyboardMapper := LinuxKeyboardMapper new.
+	| aMapperClass |
+
+	self assert: Smalltalk platformName = 'unix'.
 	
+	aMapperClass := Smalltalk platformSubtype = 'aarch64' 
+						and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
+							ifTrue:[LinuxRaspiKeyboardMapper ] 
+							ifFalse:[LinuxKeyboardMapper].
+						
+	keyboardMapper := aMapperClass new
+
 ! !
 
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:08'!
@@ -1113,25 +1122,25 @@ isPageKey: aMorphicEvent
 isLeapAgainKeyDown: aMorphicEvent
 	^aMorphicEvent controlKeyPressed ! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:52:09'!
 isLeapAgainKeyUp: aMorphicEvent
-	^aMorphicEvent controlKeyPressed not! !
+	^ (aMorphicEvent keyValue = 0xFFE3 or:[aMorphicEvent keyValue = 0xFFE4]) and: [aMorphicEvent controlKeyPressed not]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:28:15'!
 isLeapLeftKeyDown: aMorphicEvent
-	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
+	^ aMorphicEvent keyValue = 0xFFE9 and: [(aMorphicEvent buttons bitAnd: 32) = 32]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:46:54'!
 isLeapLeftKeyUp: aMorphicEvent
-	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
+	^ aMorphicEvent keyValue = 0xFFE9 and: [(aMorphicEvent buttons bitAnd: 32) = 0]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:28:49'!
 isLeapRightKeyDown: aMorphicEvent
-	^(aMorphicEvent buttons bitAnd: 128) = 128! !
+	^ aMorphicEvent keyValue = 0xFFEA and: [(aMorphicEvent buttons bitAnd: 128) = 128]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:47:37'!
 isLeapRightKeyUp: aMorphicEvent
-	^(aMorphicEvent buttons bitAnd: 128) = 0! !
+	^ aMorphicEvent keyValue = 0xFFEA and: [(aMorphicEvent buttons bitAnd: 128) = 0]! !
 
 !KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
 initialize
@@ -5672,6 +5681,15 @@ autoSave
 		Smalltalk saveImage.
 	]! !
 
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
+drawOn: aCanvas
+
+	" required because the fbdev version sometimes uses this background when displaying strings "
+	
+	aCanvas
+		fillRectangle: self localBounds
+		color: `Color black`.! !
+
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
@@ -5681,9 +5699,11 @@ start
 
 	view at: #edit :: renderText; startBlinking.! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:15:07'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/16/2025 21:04:53'!
 takeFocus
 
+	view at:#edit :: wakeUp.
+	
 	self activeHand hideHardwareCursor ; newKeyboardFocus: (view at: active)! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:19'!
@@ -5735,10 +5755,10 @@ drawOn: aCanvas
 	
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/14/2025 18:02:17'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/15/2025 21:13:09'!
 drawRulerOn: aCanvas
 	
-	| xx yy textx dx |
+	| xx yy textx dx chargeIndex |
 	
 	textx := printer displayRect origin x.
 	
@@ -5758,7 +5778,13 @@ drawRulerOn: aCanvas
 			
 	aCanvas image: self class pageNumberIcon at: textx @ (yy + 30 ).
 	
-	aCanvas image: (BatteryIcons at: (ina219 percentCharge / 10) floor ) at: textx + (30*dx) @ (yy+32).
+	ina219 isAvailable ifFalse:[^self].
+	
+	" only draw the battery and socket icons if the ina219 exists "
+	
+	chargeIndex := (ina219 percentCharge / 10) floor max:1.
+	
+	aCanvas image: (BatteryIcons at: chargeIndex) at: textx + (30*dx) @ (yy+32).
 	
 	aCanvas image: (ina219 state = #discharging 
 						ifTrue:[self class socketDischargingIcon]
@@ -5976,7 +6002,7 @@ locateFirstLineInWindow
 
 	^bb! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/14/2025 21:26:27'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/15/2025 20:14:54'!
 initialize
 	
 	super initialize .
@@ -5995,7 +6021,9 @@ initialize
 	
 	snapshot := Form extent: self morphExtent depth: Display depth.
 	
-	ina219 := INA219Dummy new.
+	ina219 := INA219 new.
+	
+	ina219 open.
 	
 	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"! !
 
@@ -6028,6 +6056,13 @@ refreshBatteryState
 update: aSymbol
 	
 	self scrollToCursor ; renderText ; redrawNeeded ! !
+
+!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/16/2025 21:03:15'!
+wakeUp
+
+	" reopen the connection to the INA219 battery chrager after restarting the system "
+	
+	ina219 open.! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:17'!
 invalidateCursorRectangles
@@ -6109,7 +6144,7 @@ serializeOn: aWriteStream
 	
 	editor serializeOn: aWriteStream.! !
 
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 13:46:36'!
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:38:16'!
 initialize
 
 	"self initialize"
@@ -6117,57 +6152,86 @@ initialize
 	BatteryIcons := Array new:10.
 	
 	BatteryIcons 
-		at:1 put: (Form
+at:1 put:
+ 
+ (Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536870912 524288 2684354560 524288 2684354560 524288 2684354560 524288 2684354560 524288 2684354560 524288 2684354560 524288 2684354560 524288 536870912 524288 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 134217728 131072 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	;	at:2 put:(Form
+ 
+; at:2 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536870912 42467328 2684354560 42467328 2684354560 42467328 2684354560 42467328 2684354560 42467328 2684354560 42467328 2684354560 42467328 2684354560 42467328 536870912 42467328 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 134217728 10616832 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; 	at:3 put:(Form
+ 
+; at:3 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536870912 713555968 2684354560 713555968 2684354560 713555968 2684354560 713555968 2684354560 713555968 2684354560 713555968 2684354560 713555968 2684354560 713555968 536870912 713555968 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 134217728 178388992 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; at:4 put: (Form
+ 
+; at:4 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536870914 2861039616 2684354562 2861039616 2684354562 2861039616 2684354562 2861039616 2684354562 2861039616 2684354562 2861039616 2684354562 2861039616 2684354562 2861039616 536870914 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 134217728 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; at:5 put: (Form
+ 
+; at:5 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536870954 2861039616 2684354602 2861039616 2684354602 2861039616 2684354602 2861039616 2684354602 2861039616 2684354602 2861039616 2684354602 2861039616 2684354602 2861039616 536870954 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217738 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 134217738 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; at: 6 put:(Form
+ 
+; at:6 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536871594 2861039616 2684355242 2861039616 2684355242 2861039616 2684355242 2861039616 2684355242 2861039616 2684355242 2861039616 2684355242 2861039616 2684355242 2861039616 536871594 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217898 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 134217898 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; at:7 put:(Form
+ 
+; at:7 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 536881834 2861039616 2684365482 2861039616 2684365482 2861039616 2684365482 2861039616 2684365482 2861039616 2684365482 2861039616 2684365482 2861039616 2684365482 2861039616 536881834 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134220458 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 134220458 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	;at: 8 put:(Form
+ 
+; at:8 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 537045674 2861039616 2684529322 2861039616 2684529322 2861039616 2684529322 2861039616 2684529322 2861039616 2684529322 2861039616 2684529322 2861039616 2684529322 2861039616 537045674 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134261418 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 134261418 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	;at: 9 put: (Form
+ 
+; at:9 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 539667114 2861039616 2687150762 2861039616 2687150762 2861039616 2687150762 2861039616 2687150762 2861039616 2687150762 2861039616 2687150762 2861039616 2687150762 2861039616 539667114 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134916778 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 134916778 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	; at:10 put:(Form
+ 
+; at:10 put:
+
+(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 715827882 2863136768 536870912 524288 581610154 2861039616 2729093802 2861039616 2729093802 2861039616 2729093802 2861039616 2729093802 2861039616 2729093802 2861039616 2729093802 2861039616 2729093802 2861039616 581610154 2861039616 536870912 524288 715827882 2863136768 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 145402538 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 145402538 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
-	! !
+! !
 
 !KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 14:03:24'!
 pageNumberIcon
@@ -6235,23 +6299,23 @@ pageNumberIcon
  	offset: 0@0`
 	! !
 
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 14:03:29'!
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:40:25'!
 socketChargingIcon
 
  ^(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 43680 0 44739242 2147483648 44739242 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 44739242 2818572288 44739242 2147483648 43680 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 43680 0 178956970 2147483648 178956970 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 178956970 2818572288 178956970 2147483648 43680 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
 ! !
 
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 14:03:41'!
+!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:40:38'!
 socketDischargingIcon
 
  ^(Form
  	extent: 24@28
  	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 32800 0 44728330 2147483648 44728320 671088640 32768 134217728 32768 134217728 32768 134217728 32768 134217728 32768 134217728 44728320 671088640 44728330 2147483648 32800 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
+ 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 32800 0 178946058 2147483648 178946048 671088640 32768 134217728 32768 134217728 32768 134217728 32768 134217728 32768 134217728 178946048 671088640 178946058 2147483648 32800 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
  	offset: 0@0)
  
 ! !
