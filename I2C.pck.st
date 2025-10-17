@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 14 October 2025 at 10:20:22 pm'!
+'From Cuis7.5 [latest update: #7615] on 15 October 2025 at 8:15:23 pm'!
 'Description '!
-!provides: 'I2C' 1 22!
+!provides: 'I2C' 1 24!
 !requires: 'FFI' 1 56 nil!
 SystemOrganization addCategory: #I2C!
 
@@ -35,23 +35,10 @@ Object subclass: #INA219
 INA219 class
 	instanceVariableNames: ''!
 
-!classDefinition: #INA219Dummy category: #I2C!
-INA219 subclass: #INA219Dummy
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'I2C'!
-!classDefinition: 'INA219Dummy class' category: #I2C!
-INA219Dummy class
-	instanceVariableNames: ''!
-
 
 !INA219 commentStamp: '<historical>' prior: 0!
 An interface for the INA219 battery charge controller
 !
-
-!INA219Dummy commentStamp: '<historical>' prior: 0!
-A fake INA219 interface that is used for testing while not running on the raspberry pi.!
 
 !I2CLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 11:02:18'!
 closeI2Cdevice: anIntegerAddress
@@ -99,6 +86,10 @@ close
 		I2CLibrary default closeI2Cdevice: fd ]
 	! !
 
+!I2CDevice methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:12:04'!
+isOpen
+	^fd notNil! !
+
 !I2CDevice methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 09:59:57'!
 open: aString 
 
@@ -121,36 +112,7 @@ readRegister: anIntegerAddress
 	
 	^ I2CLibrary default read:fd register: anIntegerAddress 	! !
 
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 11:56:32'!
-open
-
-	i2c := I2CDevice new.
-	
-	i2c address: 0x41.
-	
-	i2c open: '/dev/i2c-1'.! !
-
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 12:42:53'!
-percentCharge
-
-	" Answer the charge level of the battery as a percent of the voltage it currently has in
-	the range of mininum voltage to maximal voltage.
-
-	"
-
-	| bv minV maxV |
-	
-	minV := 3000 * 3. "mV"
-	maxV := 4130 * 3. "mv"
-	
-	bv := self readBusRegister.
-	
-	bv := (bv min: maxV) max: minV.
-	
-	^ (((bv - minV) / (maxV - minV)) * 100) floor
-	! !
-
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 12:02:17'!
+!INA219 methodsFor: 'private' stamp: 'DF 10/14/2025 12:02:17'!
 readBusRegister
 
 	"sample the bus register and answer the result in mV units "
@@ -164,7 +126,7 @@ readBusRegister
 	^ (res >> 3)  * 4
 	! !
 
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 22:13:25'!
+!INA219 methodsFor: 'private' stamp: 'DF 10/14/2025 22:13:25'!
 readShuntRegister
 
 	"sample the shunt register and answer the result in mV units "
@@ -179,7 +141,42 @@ readShuntRegister
 	^ res / 100.0 "result is originally in 10uV units"
 	! !
 
-!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 22:20:15'!
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:13:51'!
+isAvailable
+	^i2c isOpen! !
+
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 11:56:32'!
+open
+
+	i2c := I2CDevice new.
+	
+	i2c address: 0x41.
+	
+	i2c open: '/dev/i2c-1'.! !
+
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:14:05'!
+percentCharge
+
+	" Answer the charge level of the battery as a percent of the voltage it currently has in
+	the range of mininum voltage to maximal voltage.
+
+	"
+
+	| bv minV maxV |
+	
+	self assert: self isAvailable.
+	
+	minV := 3000 * 3. "mV"
+	maxV := 4130 * 3. "mv"
+	
+	bv := self readBusRegister.
+	
+	bv := (bv min: maxV) max: minV.
+	
+	^ (((bv - minV) / (maxV - minV)) * 100) floor
+	! !
+
+!INA219 methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:14:17'!
 state
 
 	" Answer if the battery is charging or discharging 
@@ -189,6 +186,8 @@ state
 	"
 	
 	| current sres sreg |
+	
+	self assert: self isAvailable.
 	
 	sres := 100.0 . "shunt resistor is 100 milli ohm "
 	
@@ -204,12 +203,3 @@ state
 						ifTrue:[#discharging]
 						ifFalse:[#idle] ] 
 					! !
-
-!INA219Dummy methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 17:57:13'!
-percentCharge
-	^ { 10 . 20 . 30 . 40 . 50 . 60 . 70 . 80 . 90 } atRandom! !
-
-!INA219Dummy methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 17:56:49'!
-state
-
-	^ { #charging . #discharing . #idle } atRandom! !
