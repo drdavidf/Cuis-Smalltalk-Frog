@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 4:51:21 pm'!
+'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 4:54:52 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1158!
+!provides: 'Kaeru' 1 1159!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -5065,7 +5065,7 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/18/2025 16:54:17'!
 initialize
 
 	super initialize.
@@ -5087,6 +5087,8 @@ initialize
 	showRightMargin := false.
 	
 	searchString := WriteStream on:''.
+	
+	dirty := false.
 	
 ! !
 
