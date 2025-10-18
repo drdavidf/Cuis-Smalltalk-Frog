@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 3:13:36 pm'!
+'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 4:51:21 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1156!
+!provides: 'Kaeru' 1 1158!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -4662,6 +4662,11 @@ eat: aCharacter
 head
 	^stream peek! !
 
+!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 16:48:00'!
+nextChar
+
+	stream next! !
+
 !SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:14'!
 nextInteger
 
@@ -5439,7 +5444,7 @@ toggleSelectionEmphasisFor: aSymbol
 	self changed: #emphasis
 		! !
 
-!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 16:51:16'!
 serializeFrom: aReadStream
 
 " Here's the fomat
@@ -5480,11 +5485,11 @@ serializeFrom: aReadStream
 	[aScanner head ~= Character escape]
 		whileTrue:[
 			aWriteStream nextPut: aScanner head.
-			aScanner next ].
+			aScanner nextChar ].
 	
 	aScanner eat: Character escape.
 	
-	searchString := aWriteStream contents.		
+	searchString := WriteStream on: aWriteStream contents.		
 
 	aScanner skipWhiteSpace.
 
@@ -5678,7 +5683,7 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:09:14'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:47'!
 autoSave
 
 	view at:#edit :: model isDirty ifFalse:[^self].
@@ -5687,9 +5692,14 @@ autoSave
 		Smalltalk saveImage.
 	].
 
+! !
+
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:57'!
+clearDirtyFlag
+
 	view at:#edit :: model clearDirtyFlag.
 	
-	Transcript show: 'saved, now clean' ; cr.! !
+! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
 drawOn: aCanvas
@@ -6638,8 +6648,20 @@ installSigTermHandler
 mutex
 	^mutex! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:34:26'!
-startUp: args
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:56:41'!
+startUp: aBoolean
+
+	aBoolean ifFalse:[ 
+				
+		" This is not a real startup, we have just saved the image"
+	
+		UISupervisor ui ifNotNil:[ :world | | app |
+		
+			app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+		
+			app ifNotNil:[ app clearDirtyFlag ] ].
+		
+		^self ].
 
 	self installSigTermHandler.
 
