@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 17 October 2025 at 10:54:33 pm'!
+'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 3:13:36 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1146!
+!provides: 'Kaeru' 1 1156!
 !requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -41,16 +41,6 @@ KaeruController subclass: #KaeruHelpController
 KaeruHelpController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruLeftMarginController category: #'Kaeru-Keyboard'!
-KaeruController subclass: #KaeruLeftMarginController
-	instanceVariableNames: 'model left margin right'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruLeftMarginController class' category: #'Kaeru-Keyboard'!
-KaeruLeftMarginController class
-	instanceVariableNames: ''!
-
 !classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruMasterController
 	instanceVariableNames: 'active controllers'
@@ -69,16 +59,6 @@ KaeruController subclass: #KaeruPluggableMarginController
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruPluggableMarginController class' category: #'Kaeru-Keyboard'!
 KaeruPluggableMarginController class
-	instanceVariableNames: ''!
-
-!classDefinition: #KaeruRightMarginController category: #'Kaeru-Keyboard'!
-KaeruController subclass: #KaeruRightMarginController
-	instanceVariableNames: 'model left margin right'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruRightMarginController class' category: #'Kaeru-Keyboard'!
-KaeruRightMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruScreenSaverController category: #'Kaeru-Keyboard'!
@@ -283,7 +263,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Text'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull showLeftMargin showRightMargin dirty showIndent'
+	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister backupRegister searchSuccessfull showLeftMargin showRightMargin dirty showIndent'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -531,7 +511,7 @@ doTransitionFor: aSymbol
 			entry ].
 		! !
 
-!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:08:11'!
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/18/2025 15:06:55'!
 initialize
 
 	super initialize.
@@ -542,20 +522,24 @@ initialize
 		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
 		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
 		{ #editingState . #keyStroke } -> #editingState .
+
+		{ #freshEditingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
+		{ #freshEditingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
+		{ #freshEditingState . #keyStroke } -> { #editingState . [:editor | editor resetSelection ] } .
 		
-		{ #startLeapLeftState . #leapLeftUp } -> { #editingState . [:editor | editor creepBack] }.
+		{ #startLeapLeftState . #leapLeftUp } -> { #freshEditingState . [:editor | editor creepBack] }.
 		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
 		
-		{ #leapLeftState . #leapLeftUp } -> #editingState . 
+		{ #leapLeftState . #leapLeftUp } -> #freshEditingState .
 		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
 
-		{ #startLeapRightState . #leapRightUp } -> { #editingState . [:editor | editor creepForward ] }.
+		{ #startLeapRightState . #leapRightUp } -> { #freshEditingState . [:editor | editor creepForward ] }.
 		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapRightState . #keyStroke } -> #leapRightState.
 
-		{ #leapRightState . #leapRightUp } -> #editingState . 
+		{ #leapRightState . #leapRightUp } -> #freshEditingState  .
 		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
 		{ #leapRightState . #keyStroke } -> #leapRightState . 
 
@@ -569,11 +553,11 @@ initialize
 		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
 		{ #selectingReadyState . #keyStroke } -> #editingState.
 		
-		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
+		{ #leapLeftSelectState . #leapLeftUp } -> { #freshEditingState . [:editor | editor collapseLeft ] } .
 		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
 		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
 		
-		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapRightUp } -> { #freshEditingState . [:editor | editor collapseRight ] } .
 		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
 		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
 		
@@ -792,76 +776,6 @@ keyUp: aMorphicEvent
 state
 	^#help! !
 
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:00:50'!
-acceptControl
-
-	margin := model leftMargin! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:48'!
-initialize
-
-	super initialize.
-	
-	left := #up.
-	
-	right := #up.
-	
-	margin := 6.! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:21'!
-keyDown: aMorphicEvent
-
-	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			left := #down ].
-		
-	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			right := #down ].
-! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:27'!
-keyStroke: aMorphicEvent
-
-	! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:09:20'!
-keyUp: aMorphicEvent
-
-	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin - 1 max: 0.
-			
-			model setLeftMargin: margin].
-		
-	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			left := #up ].
-
-	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin + 1 min: 79.
-			
-			model setLeftMargin: margin].
-		
-	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			right := #up ].
-
-	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			model showLeftMargin: false.
-			controllerMaster activate: #edit.  ].
-! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:27:51'!
-model: aKaeruEditor
-	model := aKaeruEditor ! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:57'!
-state
-	^#leftMargin! !
-
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
 
@@ -999,78 +913,6 @@ showMarginMessage: aSymbol
 !KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:00:15'!
 state
 	^marginGetter! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:01:02'!
-acceptControl
-
-	margin := model rightMargin! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-initialize
-
-	super initialize.
-	
-	left := #up.
-	
-	right := #up.
-	
-	margin := 6.! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-keyDown: aMorphicEvent
-
-	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			left := #down ].
-		
-	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			right := #down ].
-! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-keyStroke: aMorphicEvent
-
-	! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:23:53'!
-keyUp: aMorphicEvent
-
-	self assert: model showRightMargin.
-		
-	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin - 1 max: 0.
-			
-			model setRightMargin: margin].
-		
-	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			left := #up ].
-
-	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin + 1 min: 79.
-			
-			model setRightMargin: margin].
-		
-	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			right := #up ].
-
-	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[ 
-			model showRightMargin: false.
-			controllerMaster activate: #edit.  ].
-! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-model: aKaeruEditor
-	model := aKaeruEditor ! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:37'!
-state
-	^#rightMargin! !
 
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
@@ -4236,7 +4078,7 @@ initialize
 	
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 10/9/2025 11:29:16'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/18/2025 09:59:21'!
 buildFrom: aTokenStream
 
 	| markers |
@@ -4244,7 +4086,7 @@ buildFrom: aTokenStream
 	" The first line is indented by attributes at:#indent "
 
 	markers := OrderedCollection new.
-	markers add: (attributes leftMargin) - (attributes indent).
+	markers add: (attributes leftMargin) + (attributes indent).
 	markers addAll: (attributes tabStops).
 	markers add: (attributes rightMargin).
 				
@@ -4936,16 +4778,19 @@ example
 
 	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 14:20:33'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 13:57:19'!
 creepBack
 
 	cursor > 1
 		ifTrue:[
 			cursor := cursor - 1 ]
 		ifFalse:[
-			cursor := text iteratorToCharIndex: text end ]! !
+			cursor := text iteratorToCharIndex: text end ].
+				
+	self changed: #cursor		
+! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:16:23'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 13:57:04'!
 creepForward
 
 	cursor := text isIndexLessThanEnd: cursor ::
@@ -4953,10 +4798,11 @@ creepForward
 			cursor + 1]
 		ifFalse:[
 			1 ].
-		
+
+	self changed: #cursor		
 ! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 20:45:03'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:20:09'!
 erase
 
 	dirty := true.
@@ -4973,9 +4819,9 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:16:11'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:18:16'!
 eraseNarrow
-
+	
 	self assert: cursor >= 1.
 	
 	text isEmpty
@@ -5067,7 +4913,7 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 20:45:31'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:16:39'!
 insert: aCharacter
 
 	self assert: cursor > 0.
@@ -5092,7 +4938,7 @@ insert: aCharacter
 	cursorState := #wide.
 	
 	dirty := true.
-	
+		
 	self changed: #insert.! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:33:21'!
@@ -5214,20 +5060,20 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:16:18'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/18/2025 13:29:25'!
 initialize
 
 	super initialize.
 	
 	cursor := 1.
 	
-	positionRegister := 1.
+	backupRegister := 1.
 		
 	leapRegister := 1.
 	
 	selection := 2 to: 2.
 	
-	cursorState := #wide..
+	cursorState := #wide.
 
 	showIndent := false.
 	
@@ -5239,27 +5085,36 @@ initialize
 	
 ! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:01'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 14:08:42'!
 collapseLeft
 
-	cursor := selection first.
+	leapRegister := selection last - 1.
 
-	selection := selection last to: selection last. " ensures that selection first > 1 "
-	
+	cursor := selection first.
+		
 	cursorState := #narrow.
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:17'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 14:09:18'!
 collapseRight
 
+	leapRegister := selection first.
+	
 	cursor := selection last - 1.
-	
-	selection := selection last to: selection last.
-	
+		
 	cursorState := #wide.
 	
 	self changed: #cursor! !
+
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 15:09:58'!
+resetSelection
+
+	" set the leap register to the cursor, reseting the selection.
+	
+	This is used when exiting a leap state back to editing state (see KaeruEditController >> initialize). The effect is that any new text inserted after a leap will be included in the selection "
+	
+	leapRegister := cursor ! !
 
 !KaeruEditor methodsFor: 'selection' stamp: 'DF 10/17/2025 13:13:04'!
 select
@@ -5317,18 +5172,18 @@ eraseAndSearchForward
 	
 	self searchForward.! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/25/2025 13:50:25'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
 restartSearch.
 
 	searchString reset.
 	
-	positionRegister := cursor.
+	backupRegister := cursor.
 	
 	cursorState = #wide "we want to keep an extended cursor while searching, so only make a wide cursor narrow"
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:20:52'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
 searchBack
 
 	| cit it |
@@ -5345,15 +5200,15 @@ searchBack
 	
 	it isNil
 		ifTrue:[
-			cursor := positionRegister] 
+			cursor := backupRegister] 
 		ifFalse:[
-			leapRegister := positionRegister.
+			leapRegister := backupRegister.
 			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
 ! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:21:05'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
 searchForward
 
 	| bb it cit |
@@ -5373,9 +5228,9 @@ searchForward
 	
 	it isNil
 		ifTrue:[
-			cursor := positionRegister] 
+			cursor := backupRegister] 
 		ifFalse:[
-			leapRegister := positionRegister.
+			leapRegister := backupRegister.
 			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
@@ -5557,10 +5412,12 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/17/2025 14:01:11'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/18/2025 15:13:03'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
+	
+	self select.
 	
 	it := self charIndexToIterator: selection first.
 	
@@ -5582,7 +5439,7 @@ toggleSelectionEmphasisFor: aSymbol
 	self changed: #emphasis
 		! !
 
-!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/14/2025 17:54:14'!
+!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 13:29:25'!
 serializeFrom: aReadStream
 
 " Here's the fomat
@@ -5635,7 +5492,7 @@ serializeFrom: aReadStream
 
 	aScanner skipWhiteSpace.
 	
-	positionRegister := aScanner nextInteger.
+	backupRegister := aScanner nextInteger.
 
 	aScanner skipWhiteSpace.
 
@@ -5648,7 +5505,7 @@ serializeFrom: aReadStream
 	self changed: #cursor.
 	! !
 
-!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:52:40'!
+!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 13:29:25'!
 serializeOn: aWriteStream
 
 " Here's the fomat
@@ -5660,7 +5517,7 @@ serializeOn: aWriteStream
 	<state of KLibrary, see KLibrary >> serializeOn: >
 	
 "
-	aWriteStream nextPutAll: ( '{1} {2} {3} {4} {5}{6}{7} {8} {9} {10} ' format: { cursor . cursorState . selection first . selection last . Character escape . searchString contents . Character escape . leapRegister . positionRegister . Character newDocument } ).
+	aWriteStream nextPutAll: ( '{1} {2} {3} {4} {5}{6}{7} {8} {9} {10} ' format: { cursor . cursorState . selection first . selection last . Character escape . searchString contents . Character escape . leapRegister . backupRegister . Character newDocument } ).
 	
 	text serializeOn: aWriteStream ! !
 
