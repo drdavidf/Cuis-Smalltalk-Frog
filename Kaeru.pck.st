@@ -1,7 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 18 October 2025 at 4:54:52 pm'!
+'From Cuis7.3 [latest update: #6895] on 19 October 2025 at 12:23:16 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1159!
-!requires: 'I2C' 1 19 nil!
+!provides: 'Kaeru' 1 1101!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -41,6 +40,16 @@ KaeruController subclass: #KaeruHelpController
 KaeruHelpController class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruLeftMarginController category: #'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruLeftMarginController
+	instanceVariableNames: 'model left margin right'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruLeftMarginController class' category: #'Kaeru-Keyboard'!
+KaeruLeftMarginController class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruMasterController
 	instanceVariableNames: 'active controllers'
@@ -51,14 +60,14 @@ KaeruController subclass: #KaeruMasterController
 KaeruMasterController class
 	instanceVariableNames: ''!
 
-!classDefinition: #KaeruPluggableMarginController category: #'Kaeru-Keyboard'!
-KaeruController subclass: #KaeruPluggableMarginController
-	instanceVariableNames: 'model left margin right marginGetter marginSetter showMarginMessage'
+!classDefinition: #KaeruRightMarginController category: #'Kaeru-Keyboard'!
+KaeruController subclass: #KaeruRightMarginController
+	instanceVariableNames: 'model left margin right'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruPluggableMarginController class' category: #'Kaeru-Keyboard'!
-KaeruPluggableMarginController class
+!classDefinition: 'KaeruRightMarginController class' category: #'Kaeru-Keyboard'!
+KaeruRightMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruScreenSaverController category: #'Kaeru-Keyboard'!
@@ -109,16 +118,6 @@ LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'LinuxRaspiKeyboardMapper class' category: #'Kaeru-Keyboard'!
 LinuxRaspiKeyboardMapper class
-	instanceVariableNames: ''!
-
-!classDefinition: #KaeruKeyboardStateMachine category: #'Kaeru-Keyboard'!
-Object subclass: #KaeruKeyboardStateMachine
-	instanceVariableNames: 'leapLeft leapRight leapAgain mapper'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruKeyboardStateMachine class' category: #'Kaeru-Keyboard'!
-KaeruKeyboardStateMachine class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
@@ -263,7 +262,7 @@ KPngConverter class
 
 !classDefinition: #KaeruEditor category: #'Kaeru-Text'!
 ActiveModel subclass: #KaeruEditor
-	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister backupRegister searchSuccessfull showLeftMargin showRightMargin dirty showIndent'
+	instanceVariableNames: 'cursorState cursor selection text searchString leapRegister positionRegister searchSuccessfull showLeftMargin showRightMargin'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
@@ -293,8 +292,8 @@ KaeruMasterMorph class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont window printer wc editor showCursor snapshot ina219'
-	classVariableNames: 'BatteryIcons IconForLineSpace IconForLineSpaceSelected'
+	instanceVariableNames: 'rulerFont window printer wc editor showCursor snapshot'
+	classVariableNames: 'IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
 !classDefinition: 'KaeruEditorMorph class' category: #'Kaeru-Morphic'!
@@ -340,16 +339,6 @@ ImageMorph subclass: #FrogAnimation
 !classDefinition: 'FrogAnimation class' category: #'Kaeru-Morphic'!
 FrogAnimation class
 	instanceVariableNames: ''!
-
-!classDefinition: #Kaeru category: #'Kaeru-Keyboard'!
-CodePackage subclass: #Kaeru
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'Kaeru class' category: #'Kaeru-Keyboard'!
-Kaeru class
-	instanceVariableNames: 'mutex'!
 
 !classDefinition: #ExhaustiveTestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #ExhaustiveTestKLibrary
@@ -459,20 +448,11 @@ controllerMaster: aKaeruMasterController
 	
 	controllerMaster := aKaeruMasterController ! !
 
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'DF 10/16/2025 21:18:19'!
+!KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:02:38'!
 initialize
 
-	| aMapperClass |
-
-	self assert: Smalltalk platformName = 'unix'.
+	keyboardMapper := LinuxKeyboardMapper new.
 	
-	aMapperClass := Smalltalk platformSubtype = 'aarch64' 
-						and: [(Smalltalk osVersion findString: '-rpi-') ~= 0] :: 
-							ifTrue:[LinuxRaspiKeyboardMapper ] 
-							ifFalse:[LinuxKeyboardMapper].
-						
-	keyboardMapper := aMapperClass new
-
 ! !
 
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 18:33:08'!
@@ -496,82 +476,6 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
-doTransitionFor: aSymbol
-
-	| entry |
-	
-	entry := transitions at: { state . aSymbol }.
-	
-	state := entry isArray
-		ifTrue:[
-			entry second value: model.
-			entry first ]
-		ifFalse:[
-			entry ].
-		! !
-
-!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/18/2025 15:06:55'!
-initialize
-
-	super initialize.
-	
-	state := #editingState.
-	
-	transitions := { 
-		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
-		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
-		{ #editingState . #keyStroke } -> #editingState .
-
-		{ #freshEditingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
-		{ #freshEditingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
-		{ #freshEditingState . #keyStroke } -> { #editingState . [:editor | editor resetSelection ] } .
-		
-		{ #startLeapLeftState . #leapLeftUp } -> { #freshEditingState . [:editor | editor creepBack] }.
-		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
-		
-		{ #leapLeftState . #leapLeftUp } -> #freshEditingState .
-		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
-
-		{ #startLeapRightState . #leapRightUp } -> { #freshEditingState . [:editor | editor creepForward ] }.
-		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
-		{ #startLeapRightState . #keyStroke } -> #leapRightState.
-
-		{ #leapRightState . #leapRightUp } -> #freshEditingState  .
-		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
-		{ #leapRightState . #keyStroke } -> #leapRightState . 
-
-		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
-		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
-		
-		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
-		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
-		
-		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
-		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
-		{ #selectingReadyState . #keyStroke } -> #editingState.
-		
-		{ #leapLeftSelectState . #leapLeftUp } -> { #freshEditingState . [:editor | editor collapseLeft ] } .
-		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
-		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #leapRightSelectState . #leapRightUp } -> { #freshEditingState . [:editor | editor collapseRight ] } .
-		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
-		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
-		
-		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
-		
-		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
-		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
-		
-	} asDictionary.
-	! !
-
 !KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 9/27/2025 16:03:22'!
 keyDown: aMorphicEvent
 
@@ -590,7 +494,7 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:20:48'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 16:08:35'!
 keyStroke: aKeyboardEvent
 
 	self doTransitionFor: #keyStroke.
@@ -606,7 +510,6 @@ keyStroke: aKeyboardEvent
 	{ #startLeapRightState . #leapRightState . #searchRightSelectState } includes: state ::
 		ifTrue:[ 
 			self processLeapRight: aKeyboardEvent ].
-
 
 	
 ! !
@@ -648,7 +551,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:43:13'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 13:31:47'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -675,13 +578,6 @@ processEditing: aKeyboardEvent
 			useFront := #up.
 			model showRightMargin: true.
 			controllerMaster activate: #rightMargin . ^self ].
-
-	aKeyboardEvent keyCharacter = $- and:[ useFront = #down] :: 
-		ifTrue:[
-			
-			useFront := #up.
-			model showIndent: true.
-			controllerMaster activate: #indent . ^self ].
 
 	aKeyboardEvent keyCharacter = $s and:[ useFront = #down] :: 
 		ifTrue:[
@@ -755,6 +651,78 @@ translateToCharacter: aKeyboardEvent
 					aKeyboardEvent keyCharacter ] ].
 ! !
 
+!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
+doTransitionFor: aSymbol
+
+	| entry |
+	
+	entry := transitions at: { state . aSymbol }.
+	
+	state := entry isArray
+		ifTrue:[
+			entry second value: model.
+			entry first ]
+		ifFalse:[
+			entry ].
+		! !
+
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:08:11'!
+initialize
+
+	super initialize.
+	
+	state := #editingState.
+	
+	transitions := { 
+		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
+		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
+		{ #editingState . #keyStroke } -> #editingState .
+		
+		{ #startLeapLeftState . #leapLeftUp } -> { #editingState . [:editor | editor creepBack] }.
+		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
+		
+		{ #leapLeftState . #leapLeftUp } -> #editingState . 
+		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+
+		{ #startLeapRightState . #leapRightUp } -> { #editingState . [:editor | editor creepForward ] }.
+		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
+		{ #startLeapRightState . #keyStroke } -> #leapRightState.
+
+		{ #leapRightState . #leapRightUp } -> #editingState . 
+		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
+		{ #leapRightState . #keyStroke } -> #leapRightState . 
+
+		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
+		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
+		
+		{ #selectingInProgressState . #leapLeftUp } -> #selectingReadyState.
+		{ #selectingInProgressState . #leapRightUp } -> #selectingReadyState.
+		
+		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
+		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
+		{ #selectingReadyState . #keyStroke } -> #editingState.
+		
+		{ #leapLeftSelectState . #leapLeftUp } -> { #editingState . [:editor | editor collapseLeft ] } .
+		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
+		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #leapRightSelectState . #leapRightUp } -> { #editingState . [:editor | editor collapseRight ] } .
+		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
+		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
+		
+		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
+		
+		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
+		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
+		
+	} asDictionary.
+	! !
+
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
 keyDown: aMorphicEvent
 ! !
@@ -775,6 +743,76 @@ keyUp: aMorphicEvent
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
 state
 	^#help! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:00:50'!
+acceptControl
+
+	margin := model leftMargin! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:48'!
+initialize
+
+	super initialize.
+	
+	left := #up.
+	
+	right := #up.
+	
+	margin := 6.! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:21'!
+keyDown: aMorphicEvent
+
+	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			left := #down ].
+		
+	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			right := #down ].
+! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:27'!
+keyStroke: aMorphicEvent
+
+	! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:09:20'!
+keyUp: aMorphicEvent
+
+	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin - 1 max: 0.
+			
+			model setLeftMargin: margin].
+		
+	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			left := #up ].
+
+	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
+		ifTrue:[
+			margin := margin + 1 min: 79.
+			
+			model setLeftMargin: margin].
+		
+	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			right := #up ].
+
+	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			model showLeftMargin: false.
+			controllerMaster activate: #edit.  ].
+! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:27:51'!
+model: aKaeruEditor
+	model := aKaeruEditor ! !
+
+!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:57'!
+state
+	^#leftMargin! !
 
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
@@ -832,12 +870,12 @@ keyUp: aMorphicEvent
 model
 	^active model! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:52'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:01:02'!
 acceptControl
 
-	margin := model perform: marginGetter! !
+	margin := model rightMargin! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
 initialize
 
 	super initialize.
@@ -848,7 +886,7 @@ initialize
 	
 	margin := 6.! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
 keyDown: aMorphicEvent
 
 	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
@@ -860,19 +898,21 @@ keyDown: aMorphicEvent
 			right := #down ].
 ! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
 keyStroke: aMorphicEvent
 
 	! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:59:31'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:23:53'!
 keyUp: aMorphicEvent
 
+	self assert: model showRightMargin.
+		
 	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
 		ifTrue:[
 			margin := margin - 1 max: 0.
 			
-			model perform: marginSetter with: margin].
+			model setRightMargin: margin].
 		
 	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
 		ifTrue:[
@@ -882,37 +922,25 @@ keyUp: aMorphicEvent
 		ifTrue:[
 			margin := margin + 1 min: 79.
 			
-			model perform: marginSetter with: margin ].
+			model setRightMargin: margin].
 		
 	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
 		ifTrue:[
 			right := #up ].
 
 	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			model perform: showMarginMessage with: false.
+		ifTrue:[ 
+			model showRightMargin: false.
 			controllerMaster activate: #edit.  ].
 ! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:34'!
-marginGetter: aSymbol
-	marginGetter := aSymbol.! !
-
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:42'!
-marginSetter: aSymbol
-	marginSetter := aSymbol.! !
-
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:51:04'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
 model: aKaeruEditor
 	model := aKaeruEditor ! !
 
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 21:59:43'!
-showMarginMessage: aSymbol
-	showMarginMessage := aSymbol.! !
-
-!KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:00:15'!
+!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:37'!
 state
-	^marginGetter! !
+	^#rightMargin! !
 
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
@@ -1063,151 +1091,25 @@ isPageKey: aMorphicEvent
 isLeapAgainKeyDown: aMorphicEvent
 	^aMorphicEvent controlKeyPressed ! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:52:09'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:31'!
 isLeapAgainKeyUp: aMorphicEvent
-	^ (aMorphicEvent keyValue = 0xFFE3 or:[aMorphicEvent keyValue = 0xFFE4]) and: [aMorphicEvent controlKeyPressed not]! !
+	^aMorphicEvent controlKeyPressed not! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:28:15'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:12'!
 isLeapLeftKeyDown: aMorphicEvent
-	^ aMorphicEvent keyValue = 0xFFE9 and: [(aMorphicEvent buttons bitAnd: 32) = 32]! !
+	^ (aMorphicEvent buttons bitAnd: 32) = 32! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:46:54'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:10'!
 isLeapLeftKeyUp: aMorphicEvent
-	^ aMorphicEvent keyValue = 0xFFE9 and: [(aMorphicEvent buttons bitAnd: 32) = 0]! !
+	^ (aMorphicEvent buttons bitAnd: 32) = 0! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:28:49'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:35:28'!
 isLeapRightKeyDown: aMorphicEvent
-	^ aMorphicEvent keyValue = 0xFFEA and: [(aMorphicEvent buttons bitAnd: 128) = 128]! !
+	^(aMorphicEvent buttons bitAnd: 128) = 128! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 09:47:37'!
+!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:33:18'!
 isLeapRightKeyUp: aMorphicEvent
-	^ aMorphicEvent keyValue = 0xFFEA and: [(aMorphicEvent buttons bitAnd: 128) = 0]! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
-initialize
-
-	mapper := LinuxKeyboardMapper new.
-
-	leapLeft := #up.
-	
-	leapRight := #up.
-	
-	leapAgain := #up.! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:27'!
-keyDown: aMorphicEvent
-
-	mapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #down ].
-
-	mapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #down ].
-
-	mapper isLeapAgainKeyDown: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #down ]
-! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:59'!
-keyUp: aMorphicEvent
-
-	mapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapLeft := #up ].
-
-	mapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapRight := #up ].
-
-	mapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			leapAgain := #up ]
-! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:02:03'!
-leapAgain
-	^leapAgain! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:33'!
-leapLeft
-	^leapLeft! !
-
-!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:50'!
-leapRight
-	^leapRight ! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
-calculateCursorRectangles	 
-	
-	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
-
-	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
-
-	cursorRect := cursorRect encompassingIntegerRectangle.
-	
-	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
-computeDisplayArea
-
-	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
-		
-	
-	! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:27:59'!
-reset
-
-	| leftMargin |
-	
-	leftMargin := attributes leftMargin.
-
-	xx := displayRect origin x + (leftMargin * dx).
-	
-	yy := displayRect origin y.	
-
-	lineNumber := 0. 
-	
-	pageNumber := 1.
-! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:13'!
-skipToNewLine
-	
-	| hh lineSpace |
-
-	lineSpace := attributes lineHeight.
-	
-	hh := lineSpace * dy / 2.
-	
-	lineNumber + lineSpace  < pageSize
-		ifTrue:[
-			lineNumber := lineNumber + lineSpace.
-			]
-		ifFalse:[
-			self skipToNewPage.
-			hh := hh + (0.5*dy). ].
-		
-	^ hh! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
-skipToNewPage
-		
-	pageNumber := pageNumber + 1.
-	
-	lineNumber := 0.! !
-
-!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:18'!
-skipToSoftPage
-
-	| lineSpace |
-	
-	lineSpace := attributes lineHeight.
-
-	^(lineSpace * dy / 2) + (0.5*dy).
-! !
+	^(aMorphicEvent buttons bitAnd: 128) = 0! !
 
 !KaeruPrinter methodsFor: 'printing commands' stamp: 'DF 10/9/2025 11:26:11'!
 advanceToNewLine
@@ -1501,6 +1403,77 @@ putChar: aCharacter font: aFont
 	
 ! !
 
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
+calculateCursorRectangles	 
+	
+	cursorRect := (xx+cursorOffset)@yy extent: (dx @ dy).
+
+	rulerCursorRect := (xx + cursorOffset + (dx / 2)) @ (displayHeight + 1) extent: 4@12.
+
+	cursorRect := cursorRect encompassingIntegerRectangle.
+	
+	rulerCursorRect := rulerCursorRect encompassingIntegerRectangle! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/21/2025 10:37:58'!
+computeDisplayArea
+
+	displayRect := (0@(displayHeight - (dy * numLines)) corner: 1024 @ (displayHeight-1)) insetBy: ((1024 - displayWidth) / 2)@0.	
+		
+	
+	! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:27:59'!
+reset
+
+	| leftMargin |
+	
+	leftMargin := attributes leftMargin.
+
+	xx := displayRect origin x + (leftMargin * dx).
+	
+	yy := displayRect origin y.	
+
+	lineNumber := 0. 
+	
+	pageNumber := 1.
+! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:13'!
+skipToNewLine
+	
+	| hh lineSpace |
+
+	lineSpace := attributes lineHeight.
+	
+	hh := lineSpace * dy / 2.
+	
+	lineNumber + lineSpace  < pageSize
+		ifTrue:[
+			lineNumber := lineNumber + lineSpace.
+			]
+		ifFalse:[
+			self skipToNewPage.
+			hh := hh + (0.5*dy). ].
+		
+	^ hh! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'Df 9/17/2025 19:16:57'!
+skipToNewPage
+		
+	pageNumber := pageNumber + 1.
+	
+	lineNumber := 0.! !
+
+!KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/9/2025 11:34:18'!
+skipToSoftPage
+
+	| lineSpace |
+	
+	lineSpace := attributes lineHeight.
+
+	^(lineSpace * dy / 2) + (0.5*dy).
+! !
+
 !KaeruPrinter methodsFor: 'testing' stamp: 'DF 10/9/2025 11:58:01'!
 isNotAtEnd
 
@@ -1691,11 +1664,6 @@ rightMarginX
 !KaeruPrinter methodsFor: 'accessing' stamp: 'Df 9/21/2025 20:03:50'!
 rulerCursorRectangle
 	^ rulerCursorRect ! !
-
-!KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/17/2025 22:50:03'!
-setIndentRegister
-
-	marginRegister := attributes indent + attributes leftMargin! !
 
 !KaeruPrinter methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:28:06'!
 setLeftMarginRegister
@@ -2480,6 +2448,150 @@ isPastEnd
 	
 	^ parIndex = (pars size + 1)! !
 
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
+advance: anInteger
+
+	anInteger timesRepeat: [self next].
+	
+	^self! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
+next
+
+	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
+		ifTrue:[
+			^self privNextChar ].
+		
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+	
+	self privNextPar! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 12:22:50'!
+nextLine
+
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+
+	lineIndex <  (pars at: parIndex :: numLines )
+		ifTrue:[
+			^self privNextLine ].
+		
+	parIndex < pars size 
+		ifTrue:[
+			^self privNextPar].
+		
+	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
+	are located on the last line in the last paragraph "
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
+nextParagraph
+
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+
+	parIndex < pars size 
+		ifTrue:[
+			self privNextPar. 
+			charIndex := 1]
+	
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
+pars: anOrderedCollection
+
+	pars := anOrderedCollection.
+! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
+setAtEnd
+	
+	" Set the iterator to the last character in the text, this character must be a Character newDocument. "
+	
+	parIndex := pars size.
+	
+	lineIndex := pars at: parIndex :: numLines .
+	
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:54:55'!
+setAtStart
+
+	" Set self to point to the first character. If the text is empty this address will mark one place
+	after the end of text and thus be equal to self setAtEnd "
+	
+	parIndex := 1.
+	lineIndex := 1.
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:20'!
+privCharIndex
+	^charIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:24'!
+privCharIndex: anIndex
+
+	charIndex := anIndex ! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:27'!
+privLineIndex
+	^lineIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:32'!
+privLineIndex: anIndex
+
+	lineIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:09'!
+privNextChar
+
+	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	charIndex := charIndex + 1! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:12'!
+privNextLine
+
+	self assert: lineIndex <  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+	
+	lineIndex := lineIndex + 1.
+	
+	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'DF 9/28/2025 18:06:13'!
+privNextPar
+
+	self assert: parIndex <= pars size. "= is here to support marking past the end of text "
+	
+	self assert: lineIndex =  (pars at: parIndex :: numLines ).
+
+	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
+
+	parIndex := parIndex + 1.
+
+	lineIndex := 1.
+
+	charIndex := 1
+! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:38'!
+privParIndex
+	^parIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:42'!
+privParIndex: anIndex
+
+	parIndex := anIndex! !
+
+!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:46'!
+privPars
+	^pars! !
+
 !KForwardIterator methodsFor: 'accessing' stamp: 'Df 9/12/2025 16:37:11'!
 attributes
 
@@ -2691,153 +2803,6 @@ slowGlobalIndex
 			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:07'!
-advance: anInteger
-
-	anInteger timesRepeat: [self next].
-	
-	^self! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:53'!
-next
-
-	charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length )
-		ifTrue:[
-			^self privNextChar ].
-		
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-	
-	self privNextPar! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
-nextLine
-
-	lineIndex <  (pars at: parIndex :: numLines )
-		ifTrue:[
-			^self privNextLine ].
-		
-	parIndex < pars size 
-		ifTrue:[
-			^self privNextPar].
-		
-	" we set charIndex to the end of the last line in the paragraph, this is effective only when we 
-	are located on the last line in the last paragraph "
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-	
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
-nextParagraph
-
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-
-	parIndex < pars size 
-		ifTrue:[
-			self privNextPar. 
-			charIndex := 1]
-	
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/12/2025 16:37:58'!
-pars: anOrderedCollection
-
-	pars := anOrderedCollection.
-! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:38:25'!
-setAtBeginningOfLine
-
-	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
-setAtEnd
-	
-	" Set the iterator to the last character in the text, this character must be a Character newDocument. "
-	
-	parIndex := pars size.
-	
-	lineIndex := pars at: parIndex :: numLines .
-	
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 11:54:55'!
-setAtStart
-
-	" Set self to point to the first character. If the text is empty this address will mark one place
-	after the end of text and thus be equal to self setAtEnd "
-	
-	parIndex := 1.
-	lineIndex := 1.
-	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:20'!
-privCharIndex
-	^charIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:24'!
-privCharIndex: anIndex
-
-	charIndex := anIndex ! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:27'!
-privLineIndex
-	^lineIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:32'!
-privLineIndex: anIndex
-
-	lineIndex := anIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:09'!
-privNextChar
-
-	self assert: charIndex <  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	charIndex := charIndex + 1! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:12'!
-privNextLine
-
-	self assert: lineIndex <  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-	
-	lineIndex := lineIndex + 1.
-	
-	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'DF 9/28/2025 18:06:13'!
-privNextPar
-
-	self assert: parIndex <= pars size. "= is here to support marking past the end of text "
-	
-	self assert: lineIndex =  (pars at: parIndex :: numLines ).
-
-	self assert: charIndex =  (pars at: parIndex :: lineAt: lineIndex :: length ).
-
-	parIndex := parIndex + 1.
-
-	lineIndex := 1.
-
-	charIndex := 1
-! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:38'!
-privParIndex
-	^parIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:42'!
-privParIndex: anIndex
-
-	parIndex := anIndex! !
-
-!KForwardIterator methodsFor: 'private' stamp: 'Df 9/12/2025 16:38:46'!
-privPars
-	^pars! !
-
 !KBidiIterator methodsFor: 'private' stamp: 'DF 8/18/2025 16:22:56'!
 privPrevChar
 
@@ -2993,6 +2958,41 @@ charIndexToIterator: anIndex
 	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
 	
 	^iterator! !
+
+!KLibrary methodsFor: 'addressing' stamp: 'Df 9/24/2025 20:33:37'!
+charIndexToLineIndex: aCharIndex
+
+	" Answer the line index and line offset of the line that holds the character at aCharIndex.
+	
+	If aCharIndex is past the end of the text we answer a line index one past the last line in the text. 
+	
+	"
+	
+	| charIndex lineIndex parIndex pp |
+	
+	charIndex := aCharIndex.
+	
+	lineIndex := 0.
+	
+	parIndex := 1.
+	
+	[ parIndex<= paragraphs size and: [ paragraphs at: parIndex :: length < charIndex] ]
+		whileTrue:[ 
+			lineIndex := lineIndex + (paragraphs at: parIndex :: numLines).			
+			charIndex := charIndex - (paragraphs at: parIndex :: length ).			
+			parIndex := parIndex  + 1. ].
+		
+	^parIndex > paragraphs size 
+		ifTrue:[ { lineIndex . 1 } ]
+		ifFalse:[
+			" As we assume that aCharIndex refers to a character in the text, we may assume that
+			parIndex <= paragraphs size and therefore paragraphs at: parIndex :: length > charIndex.
+			Therefore we only need to find the line index that corresponds to charIndex in this paragraph"
+	
+			pp := paragraphs at: parIndex :: charIndexToLineIndex: charIndex.
+	
+			{ lineIndex + pp first . pp second } ]
+	! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:24:13'!
 charIndexToParIndex: anIndex
@@ -3532,7 +3532,7 @@ isEmpty
 		
 	^paragraphs last lastLine length = 1! !
 
-!KLibrary methodsFor: 'testing' stamp: 'DF 10/17/2025 13:41:25'!
+!KLibrary methodsFor: 'testing' stamp: 'DF 10/11/2025 13:26:58'!
 isIndexDefinitelyLessThanEnd: anIndex
 
   " Quickly determine if the character index anIndex is less than the index of the last character in the library.
@@ -3554,7 +3554,7 @@ we need to perform a slower check to determin if it is actually at the end or no
 	^ anIndex < cs ifTrue:[
 			true]
 		ifFalse:[			
-			anIndex < (cs + pp length - 1)
+			anIndex < (cs + pp length)
 				ifTrue:[ "anIndex is inside the paragraph pp so it can't be the end"
 					true]
 				ifFalse:[
@@ -3835,12 +3835,12 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:31:32'!
-serializeFrom: aReadStream
+!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:57:37'!
+serializeOn: aWriteStream
 
 	" Here's the format: 
 	
-	pageSize paragraphBoundary attributes [ESCAPE] 
+	pageSize attributes [ESCAPE] 
 	
 	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
 	
@@ -3850,70 +3850,15 @@ serializeFrom: aReadStream
 	note that for most paragraphs there will be no attributes and no emphasis so they will be separated by
 	three escape characters. 
 	
-	"	
-	
-	|   scanner  |
-
-	scanner := SimpleScanner on: aReadStream.
-
-	scanner skipWhiteSpace.
-	
-	pageSize := scanner nextInteger.
-	
-	scanner skipWhiteSpace.
-	
-	paragraphBoundary := scanner nextInteger.
-	
-	scanner skipWhiteSpace.
-	
-	defaultParagraphAttributes := KParagraphAttributes serializeFrom: aReadStream. 
-	
-	scanner skipWhiteSpace ; eat: Character escape.
-	
-	paragraphs := OrderedCollection new.
-	
-	[aReadStream atEnd not]
-		whileTrue:[ | aParagraph |
-			
-			aParagraph := KParagraph new.
-			
-			aParagraph attributes: defaultParagraphAttributes.
-			
-			aParagraph serializeFrom: aReadStream. 
-			
-			scanner eat: Character escape.
-			
-			paragraphs add: aParagraph ].
-		
-	
-	! !
-
-!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:13:49'!
-serializeOn: aWriteStream
-
-	" Here's the format: 
-	
-	pageSize paragraphBoundary attributes [ESCAPE] 
-	
-	( startIndex text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
-	
-	because [ESCAPE] never appears in the text or the attributes it acts as a simple separator between the
-	different bits of information.
-	
-	note that for most paragraphs there will be no attributes and no emphasis so they will be separated by
-	three escape characters. 
-	
 	"
 	
-	aWriteStream nextPutAll: ('{1} {2} ' format: { pageSize . paragraphBoundary }).
+	aWriteStream nextPutAll: ('{1} ' format: { pageSize }).
 	
 	defaultParagraphAttributes serializeOn: aWriteStream.
 	
 	aWriteStream nextPut: Character escape.
 	
 	paragraphs do:[:each |
-
-		aWriteStream nextPutAll: ('{1} ' format:{ each startingCharacterIndex })	.	
 		
 		each textInto: aWriteStream.
 
@@ -3930,6 +3875,45 @@ serializeOn: aWriteStream
 			each emphasis serializeOn: aWriteStream. ].
 	
 		aWriteStream nextPut: Character escape ]
+	
+	! !
+
+!KLibrary class methodsFor: 'object serialization' stamp: 'DF 10/8/2025 12:06:24'!
+serializeFrom: aReadStream
+
+	" Here's the format: 
+	
+	pageSize attributes [ESCAPE] 
+	
+	( text [ESCAPE] attributes? [ESCAPE] emphasis? [ESCAPE] ) *
+	
+	because [ESCAPE] never appears in the text or the attributes it acts as a simple separator between the
+	different bits of information.
+	
+	note that for most paragraphs there will be no attributes and no emphasis so they will be separated by
+	three escape characters. 
+	
+	"	
+	
+	| pageSize defaults scanner paragraphs |
+
+	scanner := SimpleScanner on: aReadStream.
+
+	scanner skipWhiteSpace.
+	
+	pageSize := scanner nextInteger.
+	
+	defaults := Dictionary serializeFrom: aReadStream. 
+	
+	scanner skipWhiteSpace ; eat: Character escape.
+	
+	paragraphs := OrderedCollection new.
+	
+	[aReadStream atEnd not]
+		whileTrue:[ | aParagraph |
+			
+			aParagraph := KParagraph serializeFrom: aReadStream].
+		
 	
 	! !
 
@@ -4078,7 +4062,7 @@ initialize
 	
 ! !
 
-!KParagraph methodsFor: 'inserting' stamp: 'DF 10/18/2025 09:59:21'!
+!KParagraph methodsFor: 'inserting' stamp: 'DF 10/9/2025 11:29:16'!
 buildFrom: aTokenStream
 
 	| markers |
@@ -4086,7 +4070,7 @@ buildFrom: aTokenStream
 	" The first line is indented by attributes at:#indent "
 
 	markers := OrderedCollection new.
-	markers add: (attributes leftMargin) + (attributes indent).
+	markers add: (attributes leftMargin) - (attributes indent).
 	markers addAll: (attributes tabStops).
 	markers add: (attributes rightMargin).
 				
@@ -4277,14 +4261,14 @@ charAt: anIndex
 	
 ! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 10/17/2025 13:20:29'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 8/18/2025 16:57:45'!
 charIndexToLineIndex: anIndex
 
 	| ii pp |
 	
 	ii := anIndex. pp := 1.
 	
-	[ pp <= lines size and: [ii > ((lines at:pp) length) ] ]
+	[ii > ((lines at:pp) length) ]
 		whileTrue:[
 			ii := ii - ((lines at:pp) length).
 			pp := pp + 1].
@@ -4470,16 +4454,10 @@ unemphasize: aSymbol from: aBegin to: anEnd
 	
 	emphasis at:aSymbol :: erase: (aBegin to: anEnd).	! !
 
-!KParagraph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:16:35'!
+!KParagraph methodsFor: 'object serialization' stamp: 'DF 10/7/2025 22:41:53'!
 serializeFrom: aReadStream
 
-	| aScanner text |
-
-	aScanner := SimpleScanner on: aReadStream.
-	
-	startingCharacterIndex := aScanner nextInteger. 
-	
-	aScanner skipWhiteSpace.
+	| text |
 	
 	text := WriteStream on: ''.
 	
@@ -4493,7 +4471,7 @@ serializeFrom: aReadStream
 	
 	aReadStream peek ~= Character escape ifTrue:[
 		
-		attributes := KParagraphAttributes serializeFrom: aReadStream ].
+		attributes := Dictionary serializeFrom: aReadStream ].
 	
 	aReadStream next. 	
 
@@ -4582,37 +4560,6 @@ tabStops: anArray
 width
 	^ rightMargin - leftMargin! !
 
-!KParagraphAttributes class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 15:39:29'!
-serializeFrom: aReadStream
-
-	| attrs aScanner |
-	
-	attrs := KParagraphAttributes new.
-	
-	aScanner := SimpleScanner on: aReadStream.
-	
-	aScanner skipWhiteSpace; eat: $[ ; skipWhiteSpace.
-
-	[ aScanner notAtEnd and: [ aScanner head ~= $] ] ] whileTrue:[ | key value |
-		
-		key := aScanner nextWord.
-		
-		aScanner eat: $:.
-		
-		value := aScanner head =$[
-			ifTrue:[
-				Array serializeFrom: aReadStream ]
-			ifFalse:[
-				aScanner nextInteger ].
-		
-		aScanner skipWhiteSpace.
-			
-		attrs perform: (key, ':') asSymbol with: value. ].
-	
-	aScanner eat: $].
-
-	^attrs! !
-
 !KTokenStream methodsFor: 'as yet unclassified' stamp: 'DF 8/8/2025 10:02:06'!
 first
 	^head! !
@@ -4661,11 +4608,6 @@ eat: aCharacter
 !SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:44:53'!
 head
 	^stream peek! !
-
-!SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 16:48:00'!
-nextChar
-
-	stream next! !
 
 !SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:43:14'!
 nextInteger
@@ -4783,35 +4725,29 @@ example
 
 	aConverter convert: { 'number1' . 'number1sel' . 'number2' . 'number2sel' . 'oneAndHalf' . 'oneAndHalfSel' . 'justleft' . 'justleftsel' . 'justright' . 'justrightsel' . 'justcentre' . 'justcentresel' . 'just' . 'justsel' }! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 13:57:19'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 14:20:33'!
 creepBack
 
 	cursor > 1
 		ifTrue:[
 			cursor := cursor - 1 ]
 		ifFalse:[
-			cursor := text iteratorToCharIndex: text end ].
-				
-	self changed: #cursor		
-! !
+			cursor := text iteratorToCharIndex: text end ]! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 13:57:04'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 11:57:39'!
 creepForward
 
-	cursor := text isIndexLessThanEnd: cursor ::
+	cursor := self isIndexLessThanEnd: cursor ::
 		ifTrue:[
 			cursor + 1]
 		ifFalse:[
 			1 ].
-
-	self changed: #cursor		
+		
 ! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:20:09'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/7/2025 15:30:05'!
 erase
 
-	dirty := true.
-	
 	cursorState = #narrow
 		ifTrue:[ 
 			^self eraseNarrow].
@@ -4824,9 +4760,9 @@ erase
 		ifTrue:[
 			^self eraseSelection].! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:18:16'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 18:13:46'!
 eraseNarrow
-	
+
 	self assert: cursor >= 1.
 	
 	text isEmpty
@@ -4842,7 +4778,7 @@ eraseNarrow
 			" Because the text is not empty then if the cursor is at the end 
 			it is at least 3, decreasing it by 1 makes it at least 2, safe for passing to erase "
 			
-			text isIndexLessThanEnd: cursor ::
+			self isIndexLessThanEnd: cursor ::
 				ifTrue:[
 					text eraseFrom: cursor to: cursor + 1 ]
 				ifFalse:[
@@ -4855,14 +4791,14 @@ eraseNarrow
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:54:15'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/11/2025 13:31:10'!
 eraseSelection
 
 	self assert: selection first > 1.
 	
 	self assert: selection first <= selection last.
 	
-	self assert: (text isIndexLeqEnd: selection last).
+	self assert: (self isIndexLeqEnd: selection last).
 	
 	text eraseFrom: selection first to: selection last.
 	
@@ -4918,7 +4854,7 @@ import: aString
 	self changed: #import
 	! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:16:39'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/12/2025 17:42:28'!
 insert: aCharacter
 
 	self assert: cursor > 0.
@@ -4942,8 +4878,6 @@ insert: aCharacter
 	
 	cursorState := #wide.
 	
-	dirty := true.
-		
 	self changed: #insert.! !
 
 !KaeruEditor methodsFor: 'editing' stamp: 'DF 9/28/2025 19:33:21'!
@@ -5016,10 +4950,6 @@ moveSelectionAfterCursor
 		
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'testing' stamp: 'DF 10/17/2025 20:46:03'!
-isDirty
-	^dirty! !
-
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/23/2025 20:22:55'!
 isExtended
 	^cursorState = #extended! !
@@ -5028,6 +4958,10 @@ isExtended
 isNarrow
 	^ cursorState = #narrow! !
 
+!KaeruEditor methodsFor: 'testing' stamp: 'Df 9/24/2025 21:53:10'!
+isSearchSuccessfull
+	^ positionRegister ~= cursor ! !
+
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/21/2025 21:13:12'!
 isWide
 	^cursorState = #wide! !
@@ -5035,10 +4969,6 @@ isWide
 !KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/23/2025 17:26:39'!
 begin
 	^text begin! !
-
-!KaeruEditor methodsFor: 'accessing' stamp: 'DF 10/17/2025 20:46:22'!
-clearDirtyFlag
-	dirty := false! !
 
 !KaeruEditor methodsFor: 'accessing' stamp: 'Df 9/21/2025 15:12:34'!
 cursor
@@ -5065,74 +4995,57 @@ text
 text: aKaeruLibrary
 	text := aKaeruLibrary ! !
 
-!KaeruEditor methodsFor: 'initialization' stamp: 'DF 10/18/2025 16:54:17'!
+!KaeruEditor methodsFor: 'initialization' stamp: 'DF 9/30/2025 22:03:46'!
 initialize
 
 	super initialize.
 	
 	cursor := 1.
 	
-	backupRegister := 1.
-		
 	leapRegister := 1.
 	
 	selection := 2 to: 2.
 	
-	cursorState := #wide.
-
-	showIndent := false.
+	cursorState := #wide..
 	
 	showLeftMargin := false.
 	
 	showRightMargin := false.
 	
-	searchString := WriteStream on:''.
-	
-	dirty := false.
-	
-! !
+	searchString := WriteStream on:''.! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 14:08:42'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:01'!
 collapseLeft
 
-	leapRegister := selection last - 1.
-
 	cursor := selection first.
-		
+
+	selection := selection last to: selection last. " ensures that selection first > 1 "
+	
 	cursorState := #narrow.
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 14:09:18'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 9/28/2025 19:06:17'!
 collapseRight
 
-	leapRegister := selection first.
-	
 	cursor := selection last - 1.
-		
+	
+	selection := selection last to: selection last.
+	
 	cursorState := #wide.
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 15:09:58'!
-resetSelection
-
-	" set the leap register to the cursor, reseting the selection.
-	
-	This is used when exiting a leap state back to editing state (see KaeruEditController >> initialize). The effect is that any new text inserted after a leap will be included in the selection "
-	
-	leapRegister := cursor ! !
-
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/17/2025 13:13:04'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/11/2025 13:34:44'!
 select
 
-	text isIndexLessThanEnd: cursor ::
+	self isIndexLessThanEnd: cursor ::
 		ifFalse:[
 			cursor := cursor - 1].	
 		
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
 	
-	self assert: (text isIndexLeqEnd: selection last).
+	self assert: (self isIndexLeqEnd: selection last).
 	
 	cursor := selection last.
 		
@@ -5143,6 +5056,10 @@ select
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
 charIndexToIterator: anInteger
 	^text charIndexToIterator: anInteger ! !
+
+!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
+charIndexToLineIndex: anInteger
+	^text charIndexToLineIndex: anInteger ! !
 
 !KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 12:35:52'!
 appendAndSearchBack: aCharacter
@@ -5179,18 +5096,18 @@ eraseAndSearchForward
 	
 	self searchForward.! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'searching' stamp: 'Df 9/25/2025 13:50:25'!
 restartSearch.
 
 	searchString reset.
 	
-	backupRegister := cursor.
+	positionRegister := cursor.
 	
 	cursorState = #wide "we want to keep an extended cursor while searching, so only make a wide cursor narrow"
 		ifTrue:[
 			cursorState := #narrow].! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:20:52'!
 searchBack
 
 	| cit it |
@@ -5207,15 +5124,15 @@ searchBack
 	
 	it isNil
 		ifTrue:[
-			cursor := backupRegister] 
+			cursor := positionRegister] 
 		ifFalse:[
-			leapRegister := backupRegister.
+			leapRegister := positionRegister.
 			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
 ! !
 
-!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'searching' stamp: 'DF 10/11/2025 14:21:05'!
 searchForward
 
 	| bb it cit |
@@ -5235,9 +5152,9 @@ searchForward
 	
 	it isNil
 		ifTrue:[
-			cursor := backupRegister] 
+			cursor := positionRegister] 
 		ifFalse:[
-			leapRegister := backupRegister.
+			leapRegister := positionRegister.
 			cursor := text iteratorToCharIndex: it  ].
 					
 		self changed: #search
@@ -5248,21 +5165,7 @@ searchFrom: it forwardFor: aString
 	^ text searchFrom: it forwardFor: aString
 ! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:14:55'!
-indent
-
-	"Anser the left margin of the paragraph in which the cursor is located  "
-	
-	| it par |
-	
-	it := text charIndexToIterator: cursor.
-	
-	par := it paragraph.
-	
-	^ par attributes indent.
-	! !
-
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:03'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:29:57'!
 leftMargin
 
 	"Anser the left margin of the paragraph in which the cursor is located  "
@@ -5321,38 +5224,6 @@ setLeftMargin: anInteger
 	self changed: #margins
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:52:10'!
-setParagraphIndent: anInteger
-
-	"Set the indent of the first line in the paragraph in which the cursor is located to anInteger, provided that anInteger is between  1 - leftMargin and rightMargin "
-	
-	| it par leftm rightm |
-	
-	it := text charIndexToIterator: cursor.
-	
-	it = text begin
-		ifTrue:[^self].
-		
-	it = text end
-		ifTrue:[^self].
-	
-	par := it paragraph.
-
-	leftm := par attributes leftMargin.
-
-	anInteger + leftm < 1
-		ifTrue:[^self].
-	
-	rightm := par attributes rightMargin.
-	
-	anInteger >= rightm 
-		ifTrue:[^self].
-		
-	it paragraph indent: anInteger.
-	
-	self changed: #margins
-	! !
-
 !KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/9/2025 11:30:10'!
 setRightMargin: anInteger
 
@@ -5383,18 +5254,6 @@ setRightMargin: anInteger
 	self changed: #margins
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:24'!
-showIndent
-
-	^showIndent! !
-
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/17/2025 22:15:43'!
-showIndent: aBoolean
-
-	showIndent := aBoolean.
-	
-	self changed: #margins! !
-
 !KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 9/29/2025 21:10:39'!
 showLeftMargin
 
@@ -5419,12 +5278,10 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/18/2025 15:13:03'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/7/2025 14:55:09'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
-	
-	self select.
 	
 	it := self charIndexToIterator: selection first.
 	
@@ -5436,95 +5293,24 @@ toggleSelectionEmphasisFor: aSymbol
 		
 		text emphasize: aSymbol from: selection first to: selection last ].
 	
-	cursorState := text isIndexLessThanEnd: selection last :: ifTrue:[
-		 #wide.
-	] ifFalse:[ "the selection ends at the text end, making the cursor wide will move it past the end"
-		#narrow].
+	cursorState := #wide.
 	
 	cursor := selection last.
 	
 	self changed: #emphasis
 		! !
 
-!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 16:51:16'!
-serializeFrom: aReadStream
-
-" Here's the fomat
-	
-	cursor cursorState selection-first selection-last [ESCAPE] search-string [ESCAPE] leap-register position-register 
-	
-	[Document Break] 
-	
-	<state of KLibrary, see KLibrary >> serializeOn: >
-	
-"
-	| aScanner aWriteStream sfirst slast |
-	
-	aScanner := SimpleScanner on: aReadStream.
-	
-	cursor := aScanner nextInteger.
-	
-	aScanner skipWhiteSpace.
-	
-	cursorState := aScanner nextWord asSymbol.
-	
-	aScanner skipWhiteSpace.
-	
-	sfirst := aScanner nextInteger.
-
-	aScanner skipWhiteSpace.
-
-	slast := aScanner nextInteger.
-	
-	aScanner skipWhiteSpace.
-
-	selection := sfirst to: slast.
-	
-	aWriteStream := WriteStream on: ''.
-	
-	aScanner eat: Character escape.
-	
-	[aScanner head ~= Character escape]
-		whileTrue:[
-			aWriteStream nextPut: aScanner head.
-			aScanner nextChar ].
-	
-	aScanner eat: Character escape.
-	
-	searchString := WriteStream on: aWriteStream contents.		
-
-	aScanner skipWhiteSpace.
-
-	leapRegister := aScanner nextInteger.
-
-	aScanner skipWhiteSpace.
-	
-	backupRegister := aScanner nextInteger.
-
-	aScanner skipWhiteSpace.
-
-	aScanner eat: Character newDocument.
-
-	text := KLibrary new.
-	
-	text serializeFrom: aReadStream.
-	
-	self changed: #cursor.
-	! !
-
-!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/18/2025 13:29:25'!
+!KaeruEditor methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:55:23'!
 serializeOn: aWriteStream
 
 " Here's the fomat
 	
 	cursor cursorState selection-first selection-last [ESCAPE] search-string [ESCAPE] leap-register position-register search-result
 	
-	[Document Break] 
-	
 	<state of KLibrary, see KLibrary >> serializeOn: >
 	
 "
-	aWriteStream nextPutAll: ( '{1} {2} {3} {4} {5}{6}{7} {8} {9} {10} ' format: { cursor . cursorState . selection first . selection last . Character escape . searchString contents . Character escape . leapRegister . backupRegister . Character newDocument } ).
+	aWriteStream nextPutAll: ( '{1} {2} {3} {4} {5}{6}{7} {8} {9} {10} ' format: { cursor . cursorState . selection first . selection last . Character escape . searchString contents . Character escape . leapRegister . positionRegister . searchSuccessfull  } ).
 	
 	text serializeOn: aWriteStream ! !
 
@@ -5597,15 +5383,10 @@ keyDown: aMorphicEvent
 	controller keyDown: aMorphicEvent.
 ! !
 
-!KaeruMasterMorph methodsFor: 'event handling' stamp: 'DF 10/14/2025 21:21:11'!
+!KaeruMasterMorph methodsFor: 'event handling' stamp: 'Df 9/21/2025 12:56:43'!
 keyStroke: aKeyboardEvent
 
-	controller keyStroke: aKeyboardEvent .
-	
-	self removeAlarm: #autoSave.
-	
-	self addAlarm: #autoSave after: 3*60*1000. "3 min. in millisec"
-	! !
+	controller keyStroke: aKeyboardEvent ! !
 
 !KaeruMasterMorph methodsFor: 'event handling' stamp: 'Df 9/21/2025 12:56:54'!
 keyUp: aMorphicEvent
@@ -5622,7 +5403,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:41:19'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/6/2025 18:10:12'!
 initialize
 
 	| editor |
@@ -5665,10 +5446,8 @@ initialize
 
 	controller at: #titles putController: (KaeruTitlesController new viewMaster: self; yourself). 
 
-	controller at: #leftMargin putController: (KaeruPluggableMarginController new marginGetter: #leftMargin; marginSetter: #setLeftMargin: ; showMarginMessage: #showLeftMargin: ; viewMaster: self; model:editor; yourself). 
-	controller at: #rightMargin putController: (KaeruPluggableMarginController new marginGetter: #rightMargin; marginSetter: #setRightMargin: ; showMarginMessage: #showRightMargin: ; viewMaster: self; model:editor; yourself). 
-
-	controller at: #indent putController: (KaeruPluggableMarginController new marginGetter: #indent; marginSetter: #setParagraphIndent: ; showMarginMessage: #showIndent: ; viewMaster: self; model:editor; yourself). 
+	controller at: #leftMargin putController: (KaeruLeftMarginController new viewMaster: self; model:editor; yourself). 
+	controller at: #rightMargin putController: (KaeruRightMarginController new viewMaster: self; model:editor; yourself). 
 
 	controller activate: #edit.	
 	
@@ -5685,33 +5464,6 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:47'!
-autoSave
-
-	view at:#edit :: model isDirty ifFalse:[^self].
-	
-	Kaeru mutex critical:[
-		Smalltalk saveImage.
-	].
-
-! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:57'!
-clearDirtyFlag
-
-	view at:#edit :: model clearDirtyFlag.
-	
-! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
-drawOn: aCanvas
-
-	" required because the fbdev version sometimes uses this background when displaying strings "
-	
-	aCanvas
-		fillRectangle: self localBounds
-		color: `Color black`.! !
-
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
@@ -5720,13 +5472,6 @@ model
 start
 
 	view at: #edit :: renderText; startBlinking.! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/16/2025 21:04:53'!
-takeFocus
-
-	view at:#edit :: wakeUp.
-	
-	self activeHand hideHardwareCursor ; newKeyboardFocus: (view at: active)! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:19'!
 captureCursorRectangle
@@ -5757,7 +5502,7 @@ drawMarginOn: aCanvas
 	printer drawMargin.
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/17/2025 22:46:58'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/7/2025 22:50:37'!
 drawOn: aCanvas
 	
 	[
@@ -5767,7 +5512,7 @@ drawOn: aCanvas
 			ifTrue:[
 				self drawCursorOn: aCanvas].
 			
-		editor showLeftMargin or: [editor showRightMargin] or:[editor showIndent] ::
+		editor showLeftMargin or: [editor showRightMargin] ::
 			ifTrue:[  
 				self drawMarginOn: aCanvas].
 	
@@ -5777,10 +5522,10 @@ drawOn: aCanvas
 	
 	! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/15/2025 21:13:09'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'Df 9/20/2025 17:35:23'!
 drawRulerOn: aCanvas
 	
-	| xx yy textx dx chargeIndex |
+	| xx yy textx dx |
 	
 	textx := printer displayRect origin x.
 	
@@ -5800,20 +5545,9 @@ drawRulerOn: aCanvas
 			
 	aCanvas image: self class pageNumberIcon at: textx @ (yy + 30 ).
 	
-	ina219 isAvailable ifFalse:[^self].
-	
-	" only draw the battery and socket icons if the ina219 exists "
-	
-	chargeIndex := (ina219 percentCharge / 10) floor max:1.
-	
-	aCanvas image: (BatteryIcons at: chargeIndex) at: textx + (30*dx) @ (yy+32).
-	
-	aCanvas image: (ina219 state = #discharging 
-						ifTrue:[self class socketDischargingIcon]
-						ifFalse:[self class socketChargingIcon ]) at: textx + (33*dx) @ (yy+32). 
 ! !
 
-!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/17/2025 22:46:35'!
+!KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/12/2025 17:27:23'!
 drawTextOn: aCanvas
 
 	" draw the text on an off display form.
@@ -5884,10 +5618,6 @@ drawTextOn: aCanvas
 						ifTrue:[
 							printer setLeftMarginRegister].
 
-					editor showIndent
-						ifTrue:[
-							printer setIndentRegister].
-
 					editor showRightMargin
 						ifTrue:[
 							printer setRightMarginRegister] ].
@@ -5935,12 +5665,12 @@ renderText
 		
 	self drawRulerOn: aCanvas ; drawTextOn: aCanvas.! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/9/2025 11:53:41'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/19/2025 12:17:06'!
 scrollToCursor
 
-	"Ensure that the window includes the cursor "
+	"Ensure that the window includes the cursor and points to a line in the text "
 	
-	| cit ch |
+	| cit ch bb |
 		
 	cit := editor charIndexToIterator: editor cursor.
 	
@@ -5956,30 +5686,42 @@ scrollToCursor
 			" cursor is within the window, no need to do anything"
 			^self].
 	
-	" If the window is further than numLines from cline move it such that window + numLines = ch.
+	" If the window is further than numLines from cline move it such that 
 	
-	window := ch - printer numHalfLines + 1.
-	
-	{ window + printer numHalfLines - 1 = ch }
-	
+	window <= ch < window + printer numHalfLines 
+		
 	"
-	window := ch - printer numHalfLines + 1.
+	bb := cit copy.
+	bb prevLine.
+		
+	" move the window back as long as you can maintain ch < window + printer numHalfLines "
+	
+	[ch < (bb height + printer numHalfLines) ]
+		whileTrue:[
+			bb prevLine ].
+
+	" ch < (bb height + printer numHalfLines) and: ch >= (bb prevLine height + printer numHalfLines) "	
+	
+	bb nextLine.
+	
+	window := bb height. " this ensures that window points to a line in the text "
 	
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/17/2025 20:38:50'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/19/2025 11:42:06'!
 locateFirstLineInWindow
 
-	" Answers an iterator to the first line that should be displayed in the window, also adjusts the window
-	slightly if necessary to ensure that it shows a complete line and does not exclude the cursor "
+	" Answers an iterator to the first line that should be displayed in the window.
 	
-	| bb cit ch gap |
+	We must maintain the invariant that window always points to a half line height of some line in the text.
+	
+	 "
+	
+	| bb cit ch |
 
 	cit := editor charIndexToIterator: editor cursor.
 
-	cit setAtBeginningOfLine.
-	
 	ch := cit height.
 	
 	self assert: window <= ch.
@@ -5991,46 +5733,16 @@ locateFirstLineInWindow
 	" We move bb back until it aligns with window. initially bb is bb height - window half lines after window.
 	
 	"	
-	gap := bb height - window.
 	
-	[gap > 0 and: [window + gap + printer numHalfLines - bb lineHeight > ch ] ]
+	[bb height > window]
 		whileTrue:[
-			bb prevLine.
-			bb isAtLastLineInParagraph and:[bb paragraph isPageBreaking] ::
-				ifTrue:[
-					gap := gap - 1].
-			gap := gap - bb lineHeight ].
-		
-	" gap <= 0 or window + gap + printer numLines - bb lineHeight <= ch
-	
-	gap may be negative which means that the window will not match the line number of the iterator
-	
-	in this case we should change window to match the iterator. 
-	"
-	
-	gap < 0
-		ifTrue:[
+			bb prevLine].
 
-			"
-				self assert: bb height <= ch.
+	self assert: bb height = window.
 	
-				self assert: ch <= bb height + printer numLines.
-			"
-
-			window := bb height.
-			
-			" Could this invalidate the assertion that the cursor is within the window?
-			
-			it is clear that the cursor cannot move below window (because we decrease it)
-			
-			and the cursor cannot appear after the last line in the window becuase the second
-			conjunct ensures that bb height > cursor height . " 
-			
-		].
-
 	^bb! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/15/2025 20:14:54'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/5/2025 16:42:49'!
 initialize
 	
 	super initialize .
@@ -6047,17 +5759,7 @@ initialize
 		
 	showCursor := false.
 	
-	snapshot := Form extent: self morphExtent depth: Display depth.
-	
-	ina219 := INA219 new.
-	
-	ina219 open.
-	
-	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"! !
-
-!KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/17/2025 21:01:43'!
-model
-	^editor! !
+	snapshot := Form extent: self morphExtent depth: Display depth.! !
 
 !KaeruEditorMorph methodsFor: 'accessing' stamp: 'DF 10/3/2025 11:27:31'!
 model: aKaeruEditor
@@ -6075,26 +5777,10 @@ model: aKaeruEditor
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/14/2025 21:30:11'!
-refreshBatteryState
-
-	self renderText.
-	
-	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"
-	
-	self redrawNeeded ! !
-
 !KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/5/2025 16:43:04'!
 update: aSymbol
 	
 	self scrollToCursor ; renderText ; redrawNeeded ! !
-
-!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/16/2025 21:03:15'!
-wakeUp
-
-	" reopen the connection to the INA219 battery chrager after restarting the system "
-	
-	ina219 open.! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:17'!
 invalidateCursorRectangles
@@ -6134,29 +5820,6 @@ stopBlinking
 		showCursor := false.
 		self invalidateCursorRectangles ]! !
 
-!KaeruEditorMorph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 17:53:49'!
-serializeFrom: aReadStream
-
-	| aScanner version |
-	
-"
-	Here's the format
-	
-	Format-Version window <state of KaeruEditor see KaeruEditor >> serializeOn: 
-"
-
-	aScanner := SimpleScanner on: aReadStream.
-	
-	version := aScanner nextInteger.
-	
-	aScanner skipWhiteSpace.
-	
-	window := aScanner nextInteger.
-	
-	aScanner skipWhiteSpace.
-	
-	editor serializeFrom: aReadStream.! !
-
 !KaeruEditorMorph methodsFor: 'object serialization' stamp: 'DF 10/8/2025 11:48:05'!
 serializeOn: aWriteStream
 
@@ -6175,95 +5838,6 @@ serializeOn: aWriteStream
 	aWriteStream nextPut: Character space.
 	
 	editor serializeOn: aWriteStream.! !
-
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:38:16'!
-initialize
-
-	"self initialize"
-	
-	BatteryIcons := Array new:10.
-	
-	BatteryIcons 
-at:1 put:
- 
- (Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 2818572288 131072 134217728 131072 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:2 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 2818572288 10616832 134217728 10616832 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:3 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 2818572288 178388992 134217728 178388992 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:4 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217728 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 2818572288 2862743552 134217728 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:5 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217738 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 2818572298 2862743552 134217738 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:6 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134217898 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 2818572458 2862743552 134217898 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:7 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134220458 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 2818575018 2862743552 134220458 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:8 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134261418 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 2818615978 2862743552 134261418 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:9 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 134916778 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 2819271338 2862743552 134916778 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-; at:10 put:
-
-(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 178956970 2863267840 134217728 131072 145402538 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 2829757098 2862743552 145402538 2862743552 134217728 131072 178956970 2863267840 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
-! !
 
 !KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'Df 9/19/2025 14:03:24'!
 pageNumberIcon
@@ -6331,35 +5905,12 @@ pageNumberIcon
  	offset: 0@0`
 	! !
 
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:40:25'!
-socketChargingIcon
-
- ^(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 43680 0 178956970 2147483648 178956970 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 43690 2818572288 178956970 2818572288 178956970 2147483648 43680 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
-! !
-
-!KaeruEditorMorph class methodsFor: 'as yet unclassified' stamp: 'DF 10/15/2025 20:40:38'!
-socketDischargingIcon
-
- ^(Form
- 	extent: 24@28
- 	depth: 2
- 	fromArray: #( 0 0 0 0 0 0 0 0 0 0 0 0 0 0 43648 0 32800 0 178946058 2147483648 178946048 671088640 32768 134217728 32768 134217728 32768 134217728 32768 134217728 32768 134217728 178946048 671088640 178946058 2147483648 32800 0 43648 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0)
- 	offset: 0@0)
- 
-! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:04:01'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:16'!
 drawOn: aCanvas
 
 	super drawOn: aCanvas.
 	
-	self drawTextOn: aCanvas.
-	
-	"printer canvas: aCanvas.
+	printer canvas: aCanvas.
 	
 	printer clearCanvas.
 	
@@ -6370,73 +5921,9 @@ drawOn: aCanvas
 				printer newLine]
 			ifFalse:[
 				printer putChar: each;  moveRight ] ].
-	"! !
+	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:16:42'!
-drawTextOn: aCanvas
-
-	" draw the help text on aCanvas
-	"
-	
-	| bb ee |
-
-	bb := text begin next. "skip the start-of-text sentinel "
-		
-	printer canvas: aCanvas ; clearCanvas.
-	
-	ee := text end.
-	
-	[ printer isNotAtEnd and: [bb ~= ee] ] 
-		whileTrue:[ | cc  |
-
-			printer attributes: bb attributes.
-			
-			bb isAtFirstLineInParagraph 
-				ifTrue:[
-					printer indentBy: (bb attributes indent) ].
-				
-			cc := bb char. 
-
-			bb isBold
-				ifTrue:[ 
-					printer putBoldChar: cc]
-				ifFalse:[
-					printer putChar: cc].
-			
-			cc = Character tab
-				ifFalse:[
-					printer moveRight]
-				ifTrue:[
-					printer moveToNextTab].
-			
-			bb isAtEndOfLine 
-				ifTrue:[ "If the iterator is not past the end, set the margins and line height according
-					to the next paragraph before starting a new line. This ensures that the new line
-					starts at the correct position. "
-					bb ~= ee
-						ifTrue:[ 	| bn |
-							bn := bb copy next.
-							bn isPastEnd
-								ifFalse:[
-									printer attributes: bn attributes ] ].
-					
-					cc = Character newPage 
-						ifTrue:[
-							printer newSoftPage]
-						ifFalse:[						
-							cc = Character newDocument
-								ifTrue:[
-									printer newDocument]
-								ifFalse:[ 									
-									printer newLine.
-									 ] ] ].
-				
-			bb next ].
-	
-	
-! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:57:41'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/1/2025 21:07:24'!
 initialize 
 
 	super initialize.
@@ -6447,19 +5934,30 @@ initialize
 	
 	printer := KaeruPrinter new.
 	
-	printer displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
+	printer leftMargin: 1; lineSpace: 2; displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
 	
-	text := KLibrary new.
-	
-	'/home/davidf/Projects/Kaeru/parts/Software/parts/help/help.ktf' asFileEntry readStreamDo: [:stream |
-		
-		" skip the header until you get to the part that starts the library text "
-		[stream peek ~= Character newDocument] 
-			whileTrue:[stream next].
-		
-		stream next.
-				
-		text serializeFrom: stream ].
+	text := 
+'Kaeru Copyright (c) David Faitelson 2025 Version 1.0
+
+To type, just type. All typed text is inserted. Line endings and page endings 
+     are automatic. Use [RETURN] to end paragraphs. [PAGE] forces a page to 
+     end. [SHIFT]-[DOCUMENT] begins a new document. If you make a mistake, 
+     press [ERASE] to backspace over it. The blinking cursor shows where text 
+     will be inserted; the solid highlight accompanying the cursor shows what 
+     [ERASE] will erase.
+To move the cursor, hold down a LEAP key, type whatever you want to find -- 
+     a character, a word or phrase -- let go of LEAP after cursor leaps. 
+     After cursor movement, [ERASE] erases text to the right of the cursor. 
+     [UNDO] can undo leaping, erasing and most commands.
+To highlight some text you want to do something with (such as print or erase),
+     leap from one end of it to the other, then press both LEAP keys. To
+     unhighlight, press and release either LEAP key. To adjust the highlight, 
+     tap either LEAP key repeatedly as needed, and press both LEAP keys again.
+Commands do things to highlighted text. Labels on key fronts show other 
+     commands. To use these, hold down [USE FRONT], and, while you hold it, 
+     press command.
+For more information: Hold [USE FRONT], press [EXPLAIN], and then the key you
+     want to know about.'
 ! !
 
 !KaeruScreenSaverMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:52:28'!
@@ -6618,61 +6116,6 @@ initialize
 new
 	^super new
 		image: (Frames at:1).! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:38:52'!
-initialize
-
-	"self initialize"
-	
-	mutex := Semaphore forMutualExclusion.
-	
-	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:57'!
-installSigTermHandler
-
-	[
-		 | sema |
-	
-		sema := OSProcess accessor forwardSigTerm. 
-
-		sema wait.
- 
-		mutex critical:[
-			Smalltalk saveAndQuit
-		].
-
-	] forkNamed: 'SIGTERM handler'
-
-! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:53'!
-mutex
-	^mutex! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:56:41'!
-startUp: aBoolean
-
-	aBoolean ifFalse:[ 
-				
-		" This is not a real startup, we have just saved the image"
-	
-		UISupervisor ui ifNotNil:[ :world | | app |
-		
-			app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-		
-			app ifNotNil:[ app clearDirtyFlag ] ].
-		
-		^self ].
-
-	self installSigTermHandler.
-
-	UISupervisor ui ifNotNil:[ :world | | app |
-		
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-		
-		app ifNotNil:[ app takeFocus  ] ].	
-! !
 
 !ExhaustiveTestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 17:10:14'!
 doErase: aGenerator
@@ -6913,32 +6356,6 @@ testShiftBack
 
 	self assert: dis invariant.	! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
-testBoundaryChecks
-
-	| text lib |
-	
-	text := 'In olden times'.
-
-	lib := KLibrary new.
-
-	self assert: lib invariant.
-	
-	1 to: text size do:[:ii | lib insert: (text at:ii) after: ii.  ].
-	
-	self assert: lib text = (Character newDocument asString, text, Character newDocument asString).
-	
-	self assert: lib invariant.
-
-	self assert: (lib isIndexLessThanEnd: 15) = true.
-	
-	self assert: (lib isIndexLessThanEnd: 16) = false.
-	
-	self assert:(lib charIndexToIterator: 16) = lib end.
-	
-	
-! !
-
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:44:10'!
 testEmpty
 
@@ -7149,48 +6566,12 @@ testIterators
 	
 ! !
 
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 16:52:55'!
-testKaeruEditorSerialize
-
-	| dump aKaeruEditor aReadStream |
-	
-	dump :=  {$3 . $2 . Character space . $w . $i . $d . $e . Character space . $2 . Character space . $2 . Character space . Character escape . Character escape . Character space . $1 . Character space . $1 . Character space . Character smalltalkLeftArrow . Character space . $1 . $0 . $6 . Character space . $6 . Character space . $[ . $l . $e . $f . $t . $M . $a . $r . $g . $i . $n . $: . $6 . Character space . $r . $i . $g . $h . $t . $M . $a . $r . $g . $i . $n . $: . $7 . $2 . Character space . $i . $n . $d . $e . $n . $t . $: . $0 . Character space . $l . $i . $n . $e . $H . $e . $i . $g . $h . $t . $: . $2 . Character space . $t . $a . $b . $S . $t . $o . $p . $s . $: . $[ . $1 . $1 . Character space . $1 . $6 . Character space . $2 . $1 . Character space . $2 . $6 . Character space . $3 . $1 . Character space . $3 . $6 . Character space . $4 . $1 . Character space . $4 . $6 . Character space . $5 . $1 . Character space . $5 . $6 . Character space . $6 . $1 . Character space . $6 . $6 . Character space . $7 . $1 . $] . $] . Character escape . $1 . Character space . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $2 . Character space . $1 . $2 . $3 . Character cr . Character escape . Character escape . Character escape . $6 . Character space . $4 . $5 . $6 . Character newPage . Character escape . Character escape . Character escape . $1 . $0 . Character space . $a . $b . $c . Character space . $d . $e . $f . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $1 . $8 . Character space . $q . $w . $e . $r . $t . $y . Character space . $1 . $9 . $4 . $8 . Character cr . Character escape . Character escape . Character escape . $3 . $0 . Character space . $b . $y . $e . Character smalltalkLeftArrow . Character escape . Character escape . Character escape} .
-	
-	aKaeruEditor := KaeruEditor new.
-	
-	aReadStream := ReadStream on: dump.
-	
-	aKaeruEditor serializeFrom: aReadStream.
-	
-	self assert: true.
-	! !
-
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 16:32:30'!
-testLibrarySerialize
-
-	| aKLibrary dump text aReadStream |
-
-	dump :=   {$1 . $0 . $6 . Character space . $6 . Character space . $[ . $l . $e . $f . $t . $M . $a . $r . $g . $i . $n . $: . $6 . Character space . $r . $i . $g . $h . $t . $M . $a . $r . $g . $i . $n . $: . $7 . $2 . Character space . $i . $n . $d . $e . $n . $t . $: . $0 . Character space . $l . $i . $n . $e . $H . $e . $i . $g . $h . $t . $: . $2 . Character space . $t . $a . $b . $S . $t . $o . $p . $s . $: . $[ . $1 . $1 . Character space . $1 . $6 . Character space . $2 . $1 . Character space . $2 . $6 . Character space . $3 . $1 . Character space . $3 . $6 . Character space . $4 . $1 . Character space . $4 . $6 . Character space . $5 . $1 . Character space . $5 . $6 . Character space . $6 . $1 . Character space . $6 . $6 . Character space . $7 . $1 . $] . $] . Character escape . $1 . Character space . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $2 . Character space . $1 . $2 . $3 . Character cr . Character escape . Character escape . Character escape . $6 . Character space . $4 . $5 . $6 . Character newPage . Character escape . Character escape . Character escape . $1 . $0 . Character space . $a . $b . $c . Character space . $d . $e . $f . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $1 . $8 . Character space . $q . $w . $e . $r . $t . $y . Character space . $1 . $9 . $4 . $8 . Character cr . Character escape . Character escape . Character escape . $3 . $0 . Character space . $b . $y . $e . Character smalltalkLeftArrow . Character escape . Character escape . Character escape} . .
-
-	aReadStream := ReadStream on: dump.
-	
-	aKLibrary := KLibrary new.
-	
-	aKLibrary serializeFrom: aReadStream.
-	
-	text :=  {Character smalltalkLeftArrow . $1 . $2 . $3 . Character cr . $4 . $5 . $6 . Character newPage . $a . $b . $c . Character space . $d . $e . $f . Character smalltalkLeftArrow . $q . $w . $e . $r . $t . $y . Character space . $1 . $9 . $4 . $8 . Character cr . $b . $y . $e . Character smalltalkLeftArrow} .
-	
-	self assert: aKLibrary text asArray = text
-	
-
-! !
-
-!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 16:25:46'!
+!TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/9/2025 11:41:00'!
 testParagraphSerializeFrom
 
 	| aParagraph aReadStream aString defaultParagraphAttributes |
 	
-	aString :=  { $1 . Character space . Character smalltalkLeftArrow . Character escape . Character escape . Character escape .  $2 . Character space . $T . $h . $e . Character space . $f . $i . $r . $s . $t . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $3 . Character space . $o . $n . $c . $e . Character space . $u . $p . $o . $n . Character space . $a . Character space . $t . $i . $m . $e . Character space . $i . $n . Character space . $a . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $f . $a . $r . Character space . $f . $a . $r . Character space . $a . $w . $a . $y . Character newPage . Character escape . Character escape . Character escape . $6 . Character space . $a . Character space . $s . $e . $c . $o . $n . $d . Character space . $p . $a . $g . $e . Character space . $h . $a . $p . $p . $e . $n . $e . $d . $. . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $1 . Character space . $T . $h . $e . Character space . $s . $e . $c . $o . $n . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $4 . Character space . $s . $o . $m . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $1 . Character space . $t . $h . $e . Character space . $n . $e . $x . $t . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $5 . Character space . $t . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $w . $i . $t . $h . Character space . $s . $o . $m . $e . Character space . $b . $o . $l . $d . Character space . $t . $e . $x . $t . Character space . $i . $n . Character space . $i . $t . Character smalltalkLeftArrow . Character escape . Character escape . $[ . $b . $o . $l . $d . $: . $[ . $[ . $5 . Character space . $1 . $0 . $] . $] . $] . Character escape . $1 . $2 . Character space . $T . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $2 . $1 . Character space . $w . $i . $t . $h . Character space . $a . Character space . $s . $i . $n . $g . $l . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character smalltalkLeftArrow . Character escape . Character escape . Character escape}   .
+	aString :=  { Character smalltalkLeftArrow . Character escape . Character escape . Character escape .  $T . $h . $e . Character space . $f . $i . $r . $s . $t . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $o . $n . $c . $e . Character space . $u . $p . $o . $n . Character space . $a . Character space . $t . $i . $m . $e . Character space . $i . $n . Character space . $a . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $f . $a . $r . Character space . $f . $a . $r . Character space . $a . $w . $a . $y . Character newPage . Character escape . Character escape . Character escape . $a . Character space . $s . $e . $c . $o . $n . $d . Character space . $p . $a . $g . $e . Character space . $h . $a . $p . $p . $e . $n . $e . $d . $. . Character smalltalkLeftArrow . Character escape . Character escape . Character escape . $T . $h . $e . Character space . $s . $e . $c . $o . $n . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $s . $o . $m . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $n . $e . $x . $t . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character cr . Character escape . Character escape . Character escape . $t . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character space . $w . $i . $t . $h . Character space . $s . $o . $m . $e . Character space . $b . $o . $l . $d . Character space . $t . $e . $x . $t . Character space . $i . $n . Character space . $i . $t . Character smalltalkLeftArrow . Character escape . Character escape . $[ . $b . $o . $l . $d . $: . $[ . $[ . $5 . Character space . $1 . $0 . $] . $] . $] . Character escape . $T . $h . $e . Character space . $t . $h . $i . $r . $d . Character space . $b . $o . $o . $k . Character cr . Character escape . Character escape . Character escape . $w . $i . $t . $h . Character space . $a . Character space . $s . $i . $n . $g . $l . $e . Character space . $p . $a . $r . $a . $g . $r . $a . $p . $h . Character smalltalkLeftArrow . Character escape . Character escape . Character escape}   .
 
 	defaultParagraphAttributes := KParagraphAttributes new.
 	
@@ -7704,7 +7085,7 @@ serializeOn: aWriteStream
 	
 	! !
 
-!Dictionary class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/17/2025 20:09:37'!
+!Dictionary class methodsFor: '*Kaeru-serializing' stamp: 'DF 10/7/2025 21:56:25'!
 serializeFrom: aReadStream
 
 	| aDictionary aScanner |
@@ -7731,8 +7112,6 @@ serializeFrom: aReadStream
 			aScanner skipWhiteSpace.
 			
 			aDictionary at: key asSymbol put: value ].
-		
-	aScanner eat: $].
 		
 	^ aDictionary
 	! !
@@ -7767,6 +7146,4 @@ newDocument
 
 	^`Character codePoint: 28` "ASCII File separator"! !
 KaeruPrinter initialize!
-KaeruEditorMorph initialize!
 FrogAnimation initialize!
-Kaeru initialize!
