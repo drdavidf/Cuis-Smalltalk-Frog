@@ -1,6 +1,6 @@
-'From Cuis7.3 [latest update: #6895] on 19 October 2025 at 12:23:16 pm'!
+'From Cuis7.3 [latest update: #6895] on 19 October 2025 at 4:20:01 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1101!
+!provides: 'Kaeru' 1 1102!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
@@ -2635,26 +2635,6 @@ fastGlobalIndex: lastValidParagraphIndex
 	^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex .
 ! !
 
-!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/11/2025 13:59:04'!
-globalIndex
-
-	"Answers the global character index represented by this iterator "
-	
-	| index |
-	
-	index := 0.
-	
-	1 to: parIndex - 1 do:[:ii | | par |
-		par := pars at: ii.
-		index := index + par length ].
-	
-	^ parIndex = (pars size + 1)
-		ifTrue:[ " the iterator points one place past the end of text "
-			 index +1 ]
-		ifFalse:[
-			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
-! !
-
 !KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:22'!
 height 
 
@@ -2958,41 +2938,6 @@ charIndexToIterator: anIndex
 	iterator pars: paragraphs ; privParIndex: pi first ; privLineIndex: li first ; privCharIndex: li second. 
 	
 	^iterator! !
-
-!KLibrary methodsFor: 'addressing' stamp: 'Df 9/24/2025 20:33:37'!
-charIndexToLineIndex: aCharIndex
-
-	" Answer the line index and line offset of the line that holds the character at aCharIndex.
-	
-	If aCharIndex is past the end of the text we answer a line index one past the last line in the text. 
-	
-	"
-	
-	| charIndex lineIndex parIndex pp |
-	
-	charIndex := aCharIndex.
-	
-	lineIndex := 0.
-	
-	parIndex := 1.
-	
-	[ parIndex<= paragraphs size and: [ paragraphs at: parIndex :: length < charIndex] ]
-		whileTrue:[ 
-			lineIndex := lineIndex + (paragraphs at: parIndex :: numLines).			
-			charIndex := charIndex - (paragraphs at: parIndex :: length ).			
-			parIndex := parIndex  + 1. ].
-		
-	^parIndex > paragraphs size 
-		ifTrue:[ { lineIndex . 1 } ]
-		ifFalse:[
-			" As we assume that aCharIndex refers to a character in the text, we may assume that
-			parIndex <= paragraphs size and therefore paragraphs at: parIndex :: length > charIndex.
-			Therefore we only need to find the line index that corresponds to charIndex in this paragraph"
-	
-			pp := paragraphs at: parIndex :: charIndexToLineIndex: charIndex.
-	
-			{ lineIndex + pp first . pp second } ]
-	! !
 
 !KLibrary methodsFor: 'addressing' stamp: 'DF 10/9/2025 10:24:13'!
 charIndexToParIndex: anIndex
@@ -5056,10 +5001,6 @@ select
 !KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:19:33'!
 charIndexToIterator: anInteger
 	^text charIndexToIterator: anInteger ! !
-
-!KaeruEditor methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 15:24:55'!
-charIndexToLineIndex: anInteger
-	^text charIndexToLineIndex: anInteger ! !
 
 !KaeruEditor methodsFor: 'searching' stamp: 'Df 9/23/2025 12:35:52'!
 appendAndSearchBack: aCharacter
