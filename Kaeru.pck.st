@@ -1,7 +1,8 @@
-'From Cuis7.5 [latest update: #7615] on 20 October 2025 at 10:10:40 am'!
+'From Cuis7.5 [latest update: #7615] on 24 October 2025 at 10:15:28 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1109!
+!provides: 'Kaeru' 1 1116!
 !requires: 'Regex-Core' 1 6 nil!
+!requires: 'Sound' 1 35 nil!
 !requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
@@ -32,7 +33,7 @@ KaeruEditorController class
 
 !classDefinition: #KaeruHelpController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruHelpController
-	instanceVariableNames: ''
+	instanceVariableNames: 'bothLeapAgainKeysPressed'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
@@ -764,20 +765,33 @@ translateToCharacter: aKeyboardEvent
 					aKeyboardEvent keyCharacter ] ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:25:22'!
 keyDown: aMorphicEvent
+
+	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			bothLeapAgainKeysPressed := true.
+			
+			Transcript show: 'both are down'; cr. ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:09'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:34:46'!
 keyStroke: aKeyboardEvent
 
-! !
+	bothLeapAgainKeysPressed and: [ aKeyboardEvent keyCharacter = $x ] :: ifTrue: [
+		
+		Smalltalk saveAndQuit ].! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:04:38'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:30:32'!
 keyUp: aMorphicEvent
 
 	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[
+
+			Transcript show: 'one is up'; cr.
+			
+			bothLeapAgainKeysPressed := false. "clear the state for next time we enter the help controller "
+	
 			controllerMaster activate: #edit. viewMaster activate: #edit ].
 ! !
 
@@ -5119,6 +5133,11 @@ moveSelectionAfterCursor
 isDirty
 	^dirty! !
 
+!KaeruEditor methodsFor: 'testing' stamp: 'DF 10/24/2025 22:11:47'!
+isEmpty
+
+	^ text isEmpty! !
+
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/23/2025 20:22:55'!
 isExtended
 	^cursorState = #extended! !
@@ -5801,7 +5820,7 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:47'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:06:37'!
 autoSave
 
 	view at:#edit :: model isDirty ifFalse:[^self].
@@ -5810,7 +5829,7 @@ autoSave
 		Smalltalk saveImage.
 	].
 
-! !
+	" see Kaeru >> startUp: for what happens after saveImage completes "! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 21:05:31'!
 clearDirtyFlag
@@ -5828,9 +5847,28 @@ drawOn: aCanvas
 		fillRectangle: self localBounds
 		color: `Color black`.! !
 
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:12:08'!
+isTextLibraryEmpty
+
+	^ view at:#edit :: model isEmpty! !
+
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
+
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:14:35'!
+serializeFrom: aReadStream
+
+	view at:#edit :: model serializeFrom: aReadStream
+
+! !
+
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 17:33:05'!
+serializeOn: aWriteStream
+
+	view at:#edit :: model serializeOn: aWriteStream
+
+! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 17:11:53'!
 start
@@ -6732,6 +6770,36 @@ new
 	^super new
 		image: (Frames at:1).! !
 
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 17:31:23'!
+exportTextLibrary
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+	
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+	
+		app ifNotNil:[ 
+		
+			Smalltalk imagePath asDirectoryEntry // 'text.ktf' writeStreamDo: [ :aWriteStream |
+				app serializeOn: aWriteStream ] ] ].
+
+			
+! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:15:21'!
+importTextLibrary
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+	
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+	
+		app ifNotNil:[ 
+		
+			Smalltalk imagePath asDirectoryEntry // 'text.ktf' readStreamDo: [ :aReadStream |
+				app serializeFrom: aReadStream ] ] ].
+
+			
+! !
+
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:38:52'!
 initialize
 
@@ -6762,6 +6830,21 @@ installSigTermHandler
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:53'!
 mutex
 	^mutex! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:12:25'!
+reportTextEmptyStatus
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+	
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+	
+		app ifNotNil:[ 
+		
+			Smalltalk imagePath asDirectoryEntry // 'status' writeStreamDo: [ :aWriteStream |
+				aWriteStream nextPutAll: ('empty={1}' format: { app isTextLibraryEmpty }) ] ] ].
+
+			
+! !
 
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 17:37:00'!
 startUp: args
