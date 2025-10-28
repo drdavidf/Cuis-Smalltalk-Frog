@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 24 October 2025 at 10:15:28 pm'!
+'From Cuis7.5 [latest update: #7615] on 28 October 2025 at 10:37:45 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1116!
+!provides: 'Kaeru' 1 1144!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -149,6 +149,16 @@ Object subclass: #DisjointIntervalSequence
 	category: 'Kaeru-Text'!
 !classDefinition: 'DisjointIntervalSequence class' category: #'Kaeru-Text'!
 DisjointIntervalSequence class
+	instanceVariableNames: ''!
+
+!classDefinition: #DisjointIntervalTree category: #'Kaeru-Text'!
+Object subclass: #DisjointIntervalTree
+	instanceVariableNames: 'interval children kind'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'DisjointIntervalTree class' category: #'Kaeru-Text'!
+DisjointIntervalTree class
 	instanceVariableNames: ''!
 
 !classDefinition: #DocBookWriter category: #'Kaeru-Text'!
@@ -381,6 +391,16 @@ TestCase subclass: #TestDisjointIntervalSeq
 TestDisjointIntervalSeq class
 	instanceVariableNames: ''!
 
+!classDefinition: #TestDisjointIntervalTree category: #'Kaeru-Text'!
+TestCase subclass: #TestDisjointIntervalTree
+	instanceVariableNames: ''
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'TestDisjointIntervalTree class' category: #'Kaeru-Text'!
+TestDisjointIntervalTree class
+	instanceVariableNames: ''!
+
 !classDefinition: #TestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #TestKLibrary
 	instanceVariableNames: ''
@@ -423,7 +443,14 @@ TestScanner class
 
 
 !DisjointIntervalSequence commentStamp: '<historical>' prior: 0!
-This data structure represents a set of non overlapping semi-open intervals ordered such that the end of an interval is at most equal to the beginning of the next interval.
+This data structure represents a tree of semi-open intervals. 
+
+Each node in the tree has an interval and a sequence of children. The tree maintains the following properties:
+
+1. All the intervals in the children are included in the parent interval.
+
+2. The children are non overlapping and are ordered in an ascending order.
+
 
 !
 
@@ -765,30 +792,30 @@ translateToCharacter: aKeyboardEvent
 					aKeyboardEvent keyCharacter ] ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:25:22'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:31'!
 keyDown: aMorphicEvent
 
 	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
 		ifTrue:[
-			bothLeapAgainKeysPressed := true.
-			
-			Transcript show: 'both are down'; cr. ].
+			bothLeapAgainKeysPressed := true ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:34:46'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:52:08'!
 keyStroke: aKeyboardEvent
 
 	bothLeapAgainKeysPressed and: [ aKeyboardEvent keyCharacter = $x ] :: ifTrue: [
+
+		bothLeapAgainKeysPressed := false. "clear the state for next time we enter the help controller "
+
+		controllerMaster activate: #edit. viewMaster activate: #edit.
 		
 		Smalltalk saveAndQuit ].! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 16:30:32'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:18'!
 keyUp: aMorphicEvent
 
 	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[
-
-			Transcript show: 'one is up'; cr.
 			
 			bothLeapAgainKeysPressed := false. "clear the state for next time we enter the help controller "
 	
@@ -2351,6 +2378,177 @@ serializeOn: aWriteStream
 		aWriteStream nextPut: Character space ].
 	
 	aWriteStream nextPut: $].! !
+
+!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:57:17'!
+interval
+	^interval! !
+
+!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:57:02'!
+interval: anInterval 
+
+	interval := anInterval ! !
+
+!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:52:03'!
+kind: aSymbol
+	kind := aSymbol! !
+
+!DisjointIntervalTree methodsFor: 'testing' stamp: 'DF 10/28/2025 21:57:01'!
+invariant
+
+	" the children trees are ordered such that they do not overlap and in ascending order. "
+	
+	1 to: children size - 1 do:[:ii |
+		self assert: (children at: ii :: interval last <= (children at:ii + 1 :: interval first)) ].
+	
+	" the children are included in this tree's interval "
+	
+	children do:[:each | 
+		self assert: interval first <= each interval first.
+		self assert: each interval last <= interval last ].
+	
+	" the children are valid interval trees "
+	
+	children do:[:each | 
+		self assert: each invariant].
+	
+	^true! !
+
+!DisjointIntervalTree methodsFor: 'initialization' stamp: 'DF 10/28/2025 22:08:37'!
+initialize
+
+	children := OrderedCollection new.
+	
+	kind := #p! !
+
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:00:46'!
+insertInterval: anInterval kind: aSymbol
+
+	| mm uu vv |
+	
+	anInterval first >= anInterval last ifTrue:[^self]. "don't do anything if the interval is empty"
+
+	self assert: interval first <=  anInterval first.
+	self assert: anInterval last <= interval last.
+	
+	children ifEmpty:[
+		children add: (DisjointIntervalTree new interval: anInterval ; kind: aSymbol ; yourself).
+		^self ].
+
+	" mm is the part of anInterval that appears inside the first interval in children "
+	
+	mm := (anInterval first max: children first interval first) to: (anInterval last min: children first interval last).
+
+	children first insertInterval: mm kind: aSymbol.
+		
+	" vv is the part of anInterval that lies after the first interval in children "
+	
+	vv := children first interval last to: anInterval last.
+	
+	self insertInterval: vv kind: aSymbol after: 1.
+	
+	" uu is the part of anInterval where it appears before the first interval in children "
+		
+	uu := anInterval first to: children first interval first.
+
+	uu first < uu last ifTrue:[
+		children addFirst: (DisjointIntervalTree new interval: uu ; kind: aSymbol ; yourself) ].
+		
+	! !
+
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:03:10'!
+insertInterval: anInterval kind: aSymbol after: anIndex
+
+	" insert anInterval assuming that it begins after the interval at anIndex "
+	
+	| mm uu vv |
+	
+	anInterval first >= anInterval last ifTrue:[^self]. "don't do anything if the interval is empty"
+
+	self assert: interval first <=  anInterval first.
+	self assert: anInterval last <= interval last.
+
+	self assert: (children at: anIndex) interval last <= anInterval first.
+
+	anIndex = children size ifTrue:[ " the interval appears after the last interval in the list "
+		children add: (DisjointIntervalTree new interval: anInterval ; kind: aSymbol ; yourself).
+		^self ].
+
+	" mm is the part of anInterval that appears inside the next interval in children "
+	
+	mm := (anInterval first max: (children at: anIndex+1) interval first) to: (anInterval last min: (children at: anIndex+1) interval last).
+
+	(children at: anIndex+1)  insertInterval: mm kind: aSymbol.
+		
+	" vv is the part of anInterval that lies after the first interval in children "
+	
+	vv := (children at: anIndex+1) interval last to: anInterval last.
+	
+	self insertInterval: vv kind: aSymbol after: anIndex + 1.
+	
+	" uu is the part of anInterval where it appears before the next interval in children "
+		
+	uu := anInterval first to: (children at: anIndex+1) interval first.
+
+	uu first < uu last ifTrue:[
+		children add: (DisjointIntervalTree new interval: uu ; kind: aSymbol ; yourself) after: anIndex ].
+		
+	! !
+
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 20:06:38'!
+tagsOf: anIndex
+
+	| cc |
+	
+	self assert: interval first <= anIndex.
+	self assert: anIndex < interval last.
+	
+	cc := children detect:[:each | 
+			each interval first <= anIndex and:[anIndex < each interval last ]  ] 
+		ifNone:[ nil ].
+		
+	^cc isNil ifTrue:[
+		Set with: kind ]
+	ifFalse:[
+		(Set with: kind) , (cc tagsOf: anIndex) ]
+	
+	
+
+	! !
+
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:33:41'!
+transform: aString at: anIndex into: aWriteStream
+
+	| ii jj |
+	
+	self assert: anIndex <= aString size.
+	
+	self assert: anIndex <= interval last.
+	
+	aWriteStream nextPutAll: ('<{1}>' format: { kind }).
+	
+	jj := 1.
+	
+	ii := anIndex.
+	
+	[ jj <= children size ] whileTrue:[
+		
+		ii = (children at: jj) interval first :: ifTrue:[
+			
+			ii := (children at:jj) transform: aString at: ii into: aWriteStream.
+			jj := jj + 1]
+		ifFalse:[
+			aWriteStream nextPut: (aString at: ii).
+			ii := ii + 1].		
+		].
+
+	[ ii < interval last ] whileTrue:[
+	
+		aWriteStream nextPut: (aString at:ii).
+		ii := ii + 1].
+	
+	aWriteStream nextPutAll: ('</{1}>' format: { kind }).
+	
+	^ii! !
 
 !DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 16:52:18'!
 library: aKLibrary
@@ -6587,7 +6785,7 @@ drawTextOn: aCanvas
 	
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 21:39:37'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/25/2025 13:42:46'!
 initialize 
 
 	super initialize.
@@ -6602,7 +6800,7 @@ initialize
 	
 	text := KLibrary new.
 	
-	'help/help.ktf' asFileEntry readStreamDo: [:stream |
+	Smalltalk imagePath asDirectoryEntry / 'help' // 'help.ktf' readStreamDo: [:stream |
 		
 		" skip the header until you get to the part that starts the library text "
 		[stream peek ~= Character newDocument] 
@@ -6770,32 +6968,68 @@ new
 	^super new
 		image: (Frames at:1).! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 17:31:23'!
+!Kaeru class methodsFor: 'headless' stamp: 'DF 10/25/2025 12:55:06'!
 exportTextLibrary
 
 	UISupervisor ui ifNotNil:[ :world | | app |
 	
 		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-	
-		app ifNotNil:[ 
+
+		self assert: app notNil.
 		
-			Smalltalk imagePath asDirectoryEntry // 'text.ktf' writeStreamDo: [ :aWriteStream |
-				app serializeOn: aWriteStream ] ] ].
+		Smalltalk imagePath asDirectoryEntry // 'text.ktf' writeStreamDo: [ :aWriteStream |
+				app serializeOn: aWriteStream ] ] .
 
 			
 ! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:15:21'!
+!Kaeru class methodsFor: 'headless' stamp: 'DF 10/25/2025 12:54:47'!
 importTextLibrary
 
 	UISupervisor ui ifNotNil:[ :world | | app |
 	
 		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
 	
-		app ifNotNil:[ 
+		self assert: app notNil.
+
+		self assert: app isTextLibraryEmpty.
+				
+		Smalltalk imagePath asDirectoryEntry // 'text.ktf' readStreamDo: [ :aReadStream |
+				app serializeFrom: aReadStream ] ] .
+
+			
+! !
+
+!Kaeru class methodsFor: 'headless' stamp: 'DF 10/25/2025 13:13:52'!
+performHeadlessRequest: request
+	
+	request = 'export' ifTrue:[
 		
-			Smalltalk imagePath asDirectoryEntry // 'text.ktf' readStreamDo: [ :aReadStream |
-				app serializeFrom: aReadStream ] ] ].
+		^ self exportTextLibrary].
+	
+	request = 'import' ifTrue:[
+		
+		self assert: true.
+		
+		^self importTextLibrary ].
+	
+	request = 'status' ifTrue:[
+		
+		^self reportTextEmptyStatus ].
+	
+	self assert: false! !
+
+!Kaeru class methodsFor: 'headless' stamp: 'DF 10/25/2025 13:15:54'!
+reportTextEmptyStatus
+
+	UISupervisor ui ifNotNil:[ :world | | app |
+	
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+	
+		self assert: app notNil.
+
+		Smalltalk imagePath asDirectoryEntry // 'status' forceWriteStreamDo: [ :aWriteStream |
+			aWriteStream nextPutAll: ('empty={1}' format: { app isTextLibraryEmpty }) ] ].
 
 			
 ! !
@@ -6831,24 +7065,22 @@ installSigTermHandler
 mutex
 	^mutex! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:12:25'!
-reportTextEmptyStatus
-
-	UISupervisor ui ifNotNil:[ :world | | app |
-	
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-	
-		app ifNotNil:[ 
-		
-			Smalltalk imagePath asDirectoryEntry // 'status' writeStreamDo: [ :aWriteStream |
-				aWriteStream nextPutAll: ('empty={1}' format: { app isTextLibraryEmpty }) ] ] ].
-
-			
-! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 17:37:00'!
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/25/2025 13:14:06'!
 startUp: args
 
+	Transcript logToStdout: false.
+	
+	Smalltalk isHeadless ifTrue:[
+
+		Transcript logToStdout: true.
+			
+		self assert: Smalltalk startUpArguments size = 2.
+		
+		self performHeadlessRequest: Smalltalk startUpArguments second.	
+	
+		Smalltalk quit.
+	].
+	
 	args isKindOf: Boolean :: ifTrue:[ | aBoolean |
 		aBoolean := args.
 		
@@ -7111,6 +7343,61 @@ testShiftBack
 	dis shiftBack: 5 from: 6.
 
 	self assert: dis invariant.	! !
+
+!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:08:24'!
+testInsert
+
+	| aTree |
+	
+	aTree := DisjointIntervalTree new.
+	
+	aTree interval: (1 to: 10).
+	
+	self assert: aTree invariant.
+	
+	self assert: (aTree tagsOf: 1) = { #p } asSet.
+	
+	aTree insertInterval: (3 to: 6) kind: #bold.
+
+	self assert: aTree invariant.
+
+	self assert: (aTree tagsOf: 1) = { #p } asSet.
+
+	self assert: (aTree tagsOf: 3) = { #p . #bold } asSet.
+
+	self assert: (aTree tagsOf: 6) = { #p } asSet.
+
+	aTree insertInterval: (5 to: 8) kind: #italics.
+
+	self assert: aTree invariant.
+
+	self assert: (aTree tagsOf: 1) = { #p } asSet.
+
+	self assert: (aTree tagsOf: 3) = { #p . #bold } asSet.
+
+	self assert: (aTree tagsOf: 5) = { #p . #bold . #italics } asSet.
+	! !
+
+!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:37:39'!
+testTransform
+
+	| aTree aWriteStream |
+	
+	aTree := DisjointIntervalTree new.
+	
+	aTree interval: (1 to: 10).
+		
+	aTree insertInterval: (3 to: 6) kind: #bold.
+
+	aTree insertInterval: (5 to: 8) kind: #italics.
+
+	self assert: aTree invariant.
+
+	aWriteStream := WriteStream on: ''.
+	
+	aTree transform: '1234567890' at: 1  into: aWriteStream.
+	
+	self assert: aWriteStream contents = '<p>12<bold>34<italics>5</italics></bold><italics>67</italics>89</p>'! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
 testBoundaryChecks
