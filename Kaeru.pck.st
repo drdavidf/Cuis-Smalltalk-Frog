@@ -1,6 +1,7 @@
-'From Cuis7.5 [latest update: #7615] on 28 October 2025 at 10:37:45 pm'!
+'From Cuis7.5 [latest update: #7615] on 31 October 2025 at 9:20:25 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1144!
+!provides: 'Kaeru' 1 1176!
+!requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
 !requires: 'YAXO' 1 28 nil!
@@ -161,16 +162,6 @@ Object subclass: #DisjointIntervalTree
 DisjointIntervalTree class
 	instanceVariableNames: ''!
 
-!classDefinition: #DocBookWriter category: #'Kaeru-Text'!
-Object subclass: #DocBookWriter
-	instanceVariableNames: 'klib'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Text'!
-!classDefinition: 'DocBookWriter class' category: #'Kaeru-Text'!
-DocBookWriter class
-	instanceVariableNames: ''!
-
 !classDefinition: #KBackwardStream category: #'Kaeru-Text'!
 Object subclass: #KBackwardStream
 	instanceVariableNames: 'kiterator'
@@ -259,6 +250,16 @@ Object subclass: #KTokenStream
 	category: 'Kaeru-Text'!
 !classDefinition: 'KTokenStream class' category: #'Kaeru-Text'!
 KTokenStream class
+	instanceVariableNames: ''!
+
+!classDefinition: #OpenDocWriter category: #'Kaeru-Text'!
+Object subclass: #OpenDocWriter
+	instanceVariableNames: 'templateDirectory styleCounter style styleStream textStream styleWriter textWriter pageWidth pageHeight charWidth displayWidth'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Text'!
+!classDefinition: 'OpenDocWriter class' category: #'Kaeru-Text'!
+OpenDocWriter class
 	instanceVariableNames: ''!
 
 !classDefinition: #SimpleScanner category: #'Kaeru-Text'!
@@ -2413,12 +2414,12 @@ invariant
 	
 	^true! !
 
-!DisjointIntervalTree methodsFor: 'initialization' stamp: 'DF 10/28/2025 22:08:37'!
+!DisjointIntervalTree methodsFor: 'initialization' stamp: 'DF 10/31/2025 21:02:29'!
 initialize
 
 	children := OrderedCollection new.
 	
-	kind := #p! !
+	kind := #clear! !
 
 !DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:00:46'!
 insertInterval: anInterval kind: aSymbol
@@ -2515,8 +2516,8 @@ tagsOf: anIndex
 
 	! !
 
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:33:41'!
-transform: aString at: anIndex into: aWriteStream
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 21:18:46'!
+transform: aString at: anIndex into: anXMLWriter
 
 	| ii jj |
 	
@@ -2524,7 +2525,7 @@ transform: aString at: anIndex into: aWriteStream
 	
 	self assert: anIndex <= interval last.
 	
-	aWriteStream nextPutAll: ('<{1}>' format: { kind }).
+	anXMLWriter startElement: 'text:span' attributeList:{ 'text:style-name' -> kind } asDictionary ; endTag.
 	
 	jj := 1.
 	
@@ -2534,110 +2535,21 @@ transform: aString at: anIndex into: aWriteStream
 		
 		ii = (children at: jj) interval first :: ifTrue:[
 			
-			ii := (children at:jj) transform: aString at: ii into: aWriteStream.
+			ii := (children at:jj) transform: aString at: ii into: anXMLWriter.
 			jj := jj + 1]
 		ifFalse:[
-			aWriteStream nextPut: (aString at: ii).
+			anXMLWriter putChar: (aString at: ii).
 			ii := ii + 1].		
 		].
 
 	[ ii < interval last ] whileTrue:[
 	
-		aWriteStream nextPut: (aString at:ii).
+		anXMLWriter putChar: (aString at:ii).
 		ii := ii + 1].
 	
-	aWriteStream nextPutAll: ('</{1}>' format: { kind }).
+	anXMLWriter endTag: 'text:span'.
 	
 	^ii! !
-
-!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 16:52:18'!
-library: aKLibrary
-	klib := aKLibrary ! !
-
-!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:52:47'!
-renderDocumentAt: anIterator on: anXMLWriter
-
-	| bb title |
-	
-	anXMLWriter  startTag: 'book' ; endTag.
-	
-	bb := anIterator.
-	
-	title := bb line.
-	
-	anXMLWriter startTag: 'title'; endTag.
-	
-	anXMLWriter pcData: title ; endTag: 'title'.
-	
-	[ bb paragraph isDocBreaking ]
-		whileFalse:[
-			self renderParagraphAt: bb on: anXMLWriter.
-			bb nextParagraph ].
-
-	self renderParagraphAt: bb on: anXMLWriter.
-	bb nextParagraph.
-	
-	anXMLWriter endTag: 'book'.
-	
-	^bb ! !
-
-!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:59'!
-renderLibraryOn: anXMLWriter
-
-	| bb ee attrs |
-
-	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
-
-	attrs := self asXML: klib attributes.
-	
-	attrs at: 'xmlns' put: 'http://docbook.org/ns/docbook' .
-	
-	anXMLWriter  startElement: 'set' attributeList: attrs ; endTag.
-	
-	ee := klib end.
-	bb := klib begin.
-	
-	[ bb ~= ee ]
-	
-		whileTrue:[			
-			bb next.
-			bb := self renderDocumentAt: bb on: anXMLWriter ] .
-	
-	anXMLWriter endTag: 'set'.! !
-
-!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:56:09'!
-renderParagraphAt: anIterator on: anXMLWriter
-
-	| text pp defaults |
-	
-	defaults := klib attributes.
-	
-	pp := anIterator paragraph.
-	
-	pp attributes == defaults ifTrue:[
-		anXMLWriter startTag: 'par'  ; endTag.
-	]
-	ifFalse:[
-		
-		anXMLWriter startElement: 'par' attributeList: (self asXML: pp attributes ) ; endTag.
-	].
-
-	text := anIterator paragraph text.
-	
-	anXMLWriter pcData: text.
-	
-	pp emphasis ifNotNil:[
-		anXMLWriter startTag: 'emphasis' ; endTag.
-			
-			pp emphasis keys do:[:each |
-			
-				pp emphasis at: each :: do:[:ival |
-					anXMLWriter startElement: 'interval' attributeList: { 'first' -> ival first asString . 'last' -> ival last asString } asDictionary ; endEmptyTag: 'interval' ] ].
-		
-		anXMLWriter endTag: 'emphasis' ].
-		
-	anXMLWriter endTag: 'par'.	
-	! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
@@ -3035,11 +2947,13 @@ nextLine
 	
 ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/30/2025 16:58:51'!
 nextParagraph
 
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	lineIndex := pars at: parIndex :: numLines .
 
+	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
+	
 	parIndex < pars size 
 		ifTrue:[
 			self privNextPar. 
@@ -4955,6 +4869,236 @@ on: anOrderedSequence
 
 	stream := ReadStream on: anOrderedSequence.
 ! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:45:17'!
+documentAttributes
+
+^{
+'office:mimetype' -> 'application/vnd.oasis.opendocument.text' .
+'xmlns:office'->'urn:oasis:names:tc:opendocument:xmlns:office:1.0' .
+'xmlns:fo'->'urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0' . 'xmlns:style'->'urn:oasis:names:tc:opendocument:xmlns:style:1.0' . 'xmlns:text'->'urn:oasis:names:tc:opendocument:xmlns:text:1.0' .
+'xmlns:of'->'urn:oasis:names:tc:opendocument:xmlns:of:1.2'.
+'office:version' -> '1.4'
+} asDictionary
+	! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 18:09:09'!
+initialize
+
+	| font |
+	
+	styleStream := WriteStream on:''.
+	
+	textStream := WriteStream on:''.
+	
+	styleWriter := XMLWriter on: styleStream.
+	
+	textWriter := XMLWriter on: textStream.
+	
+	pageWidth := 210.0. "millimeter"
+	
+	pageHeight := 297.0. "millimeter"
+	
+	font := FontFamily familyName: 'Courier Prime' pointSize: 12.
+
+	charWidth :=  font widthOf:$M. "in pixels"
+	
+	displayWidth := 1024.0 "in pixels"
+	
+! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 20:05:33'!
+renderDocumentAt: anIterator
+
+	| bb title |
+"	
+	anXMLWriter  startTag: 'book' ; endTag.
+	"
+	bb := anIterator.
+	
+	title := bb line.
+	"
+	anXMLWriter startTag: 'title'; endTag.
+	
+	anXMLWriter pcData: title ; endTag: 'title'. 
+	"
+
+	styleWriter startTag: 'office:automatic-styles' ; endTag.
+	
+	[ bb paragraph isDocBreaking ]
+		whileFalse:[
+			self renderParagraphAt: bb.
+			bb nextParagraph ].
+
+	self renderParagraphAt: bb.
+
+	styleWriter endTag: 'office:automatic-styles'.
+
+	bb nextParagraph.
+	"
+	anXMLWriter endTag: 'book'.
+	"
+	^bb ! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:34:14'!
+renderFonts
+
+	styleWriter startTag: 'office:font-face-decls' ; endTag.
+	
+	styleWriter startElement: 'style:font-face' attributeList: { 'style:name' -> 'Courier Prime' . 'style:font-pitch' -> 'fixed' } asDictionary ; endEmptyTag: 'style:font-face'.
+	
+	styleWriter endTag: 'office:font-face-decls'.! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:45:17'!
+renderLibrary: aKLibrary on: anXMLWriter
+
+	| bb ee |
+
+	styleCounter := 1.
+	
+	style := aKLibrary attributes.
+	
+	self renderFonts ;  renderStyles. 
+
+	ee := aKLibrary end.
+	bb := aKLibrary begin.
+	
+	[ bb ~= ee ]
+	
+		whileTrue:[			
+			bb next.
+			bb := self renderDocumentAt: bb  ] .
+
+	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
+
+	anXMLWriter startElement: 'office:document' attributeList: self documentAttributes ; endTag. 	
+
+	anXMLWriter stream nextPutAll: styleStream contents.
+
+	anXMLWriter 
+		startTag: 'office:body' ; endTag ;
+			startTag: 'office:text' ; endTag.
+	
+	anXMLWriter stream nextPutAll: textStream contents.
+	
+	anXMLWriter 
+			endTag: 'office:text' ;
+		endTag: 'office:body' ;
+	endTag: 'office:document'
+	! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 18:16:59'!
+renderParagraphAt: anIterator 
+
+	| text pp |
+	
+	pp := anIterator paragraph.
+	
+	style = pp attributes ifFalse:[
+		
+		style := pp attributes.
+		
+		styleCounter := styleCounter + 1.
+		
+		self renderParagraphStyle: style. 
+	].
+	
+	textWriter startElement: 'text:p' attributeList: { 'text:style-name' -> ('P{1}' format:{styleCounter}) } asDictionary ; endTag.
+	
+	text := anIterator paragraph text.
+	
+	textWriter pcData: text allButLast.
+	
+	pp emphasis ifNotNil:[ ].
+		
+	textWriter endTag: 'text:p'.	
+! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 20:18:09'!
+renderParagraphStyle: aKParagraphAttributes
+	
+	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'Standard' . 'style:master-page-name' -> '' } asDictionary ; endTag.
+	
+	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
+	
+	styleWriter startElement: 'style:paragraph-properties' attributeList: { 
+		'fo:margin-left' -> ('{1}mm' format: { aKParagraphAttributes leftMargin * charWidth * (pageWidth / displayWidth) } ) .  
+		'fo:margin-right' -> ('{1}mm' format: { pageWidth - (aKParagraphAttributes rightMargin * charWidth * (pageWidth / displayWidth)) } ) .
+		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary ; endEmptyTag: 'style:paragraph-properties'.
+		
+	styleWriter endTag: 'style:style'.
+		! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:32:42'!
+renderStyles
+
+	styleWriter startTag: 'office:styles' ; endTag.
+	
+		styleWriter startElement: 'style:default-style' attributeList: { 'style:family' -> 'paragraph' } asDictionary ; endTag.
+	
+			styleWriter startElement: 'style:paragraph-properties' attributeList: { 'style:writing-mode' -> 'page' } asDictionary  ; endEmptyTag: 'style:paragraph-properties'.
+	
+			styleWriter startElement: 'style:text-properties' attributeList: { 'style:font-name' -> 'Courier Prime' . 'fo:font-size' -> '12pt' . 'fo:language' -> 'en' } asDictionary ; endEmptyTag: 'style:text-properties'.
+			
+		styleWriter endTag: 'style:default-style'.
+	
+		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'Standard' . 'style:family' -> 'paragraph' . 'style:class' -> 'text' } asDictionary ; endEmptyTag: 'style:style'.
+
+		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'Bold' . 'style:family' -> 'text' .  } asDictionary ; endTag.
+	
+			styleWriter startElement: 'style:text-properties' attributeList: { 'fo:font-weight' -> 'bold' } asDictionary ; endEmptyTag: 'style:text-properties'.
+			
+		styleWriter endTag: 'style:style'.
+		
+	styleWriter endTag: 'office:styles'.
+	
+	styleWriter startTag: 'office:automatic-styles' ; endTag.
+	
+		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
+		
+			styleWriter startElement: 'style:page-layout-properties' attributeList: 
+			{
+				'fo:page-width' -> '210mm' .
+				'fo:page-height' -> '297mm'.
+				'style:num-format' -> '1'.
+				'style:print-orientation' -> 'portrait'.
+				'fo:margin-top' -> '1cm' .
+				'fo:margin-bottom' -> '1cm' .
+				'fo:margin-left' -> '1cm'.
+				'fo:margin-right' -> '1cm'
+			} asDictionary ; endTag.
+			
+			styleWriter endTag: 'style:page-layout-properties'.
+		styleWriter endTag: 'style:page-layout'.
+		
+	styleWriter endTag: 'office:automatic-styles'.
+	
+	styleWriter startTag: 'office:master-styles' ; endTag.
+	
+		styleWriter startElement: 'style:master-page' attributeList: { 'style:name' -> 'Standard' . 'style:page-layout-name' -> 'A4' } asDictionary ; endEmptyTag: 'style:master-page'.
+	
+	styleWriter endTag: 'office:master-styles'.
+	! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:43:33'!
+writeDocument: aKLibrary inDirectory: aDirectory
+
+	| documentName dir content anXMLWriter |
+	
+	documentName := 'kaeru.fodt'.	
+		
+	dir := aDirectory.
+	
+	content := dir // documentName .
+	
+	anXMLWriter := XMLWriter on: content writeStream.
+	
+	self renderLibrary: aKLibrary on: anXMLWriter.
+	
+	anXMLWriter stream close.
+
+
+	! !
 
 !SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:45:45'!
 eat: aCharacter
@@ -7378,10 +7522,10 @@ testInsert
 	self assert: (aTree tagsOf: 5) = { #p . #bold . #italics } asSet.
 	! !
 
-!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:37:39'!
+!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 21:04:03'!
 testTransform
 
-	| aTree aWriteStream |
+	| aTree aWriteStream anXMLWriter |
 	
 	aTree := DisjointIntervalTree new.
 	
@@ -7395,9 +7539,15 @@ testTransform
 
 	aWriteStream := WriteStream on: ''.
 	
-	aTree transform: '1234567890' at: 1  into: aWriteStream.
+	anXMLWriter := XMLWriter on: aWriteStream.
 	
-	self assert: aWriteStream contents = '<p>12<bold>34<italics>5</italics></bold><italics>67</italics>89</p>'! !
+	aTree transform: '1234567890' at: 1  into: anXMLWriter.
+	
+	self assert: aWriteStream contents =  '
+<text:span text:style-name="clear">12
+<text:span text:style-name="bold">34
+<text:span text:style-name="italics">5</text:span></text:span>
+<text:span text:style-name="italics">67</text:span>89</text:span>' .! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
 testBoundaryChecks
@@ -8097,6 +8247,74 @@ testDictionary
 	
 ! !
 
+!Archive methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:22:10'!
+writeToFileNamed: aFileName notifying: aBlock
+
+	"Catch attempts to overwrite existing zip file"
+	(self canWriteToFileNamed: aFileName)
+		ifFalse: [ ^self error: (aFileName, ' is needed by one or more members in this archive') ].
+	aFileName asFileEntry writeStreamDo: [ :stream |
+		self writeTo: stream notifying: aBlock ]! !
+
+!ZipArchive methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:21:57'!
+writeTo: stream notifying: aBlock
+	stream binary.
+	members do: [ :member |
+		member writeTo: stream notifying: aBlock. 
+		member endRead.
+	].
+	writeCentralDirectoryOffset := stream position.
+	self writeCentralDirectoryTo: stream.
+	! !
+
+!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:49'!
+compressDataTo: aStream notifying: aBlock
+	"Copy my deflated data to the given stream."
+	| encoder startPos endPos |
+
+	encoder := ZipWriteStream on: aStream.
+	startPos := aStream position.
+
+	[ readDataRemaining > 0 ] whileTrue: [ | data |
+		data := self readRawChunk: (4096 min: readDataRemaining).
+		data := data asByteArray.
+		encoder nextPutAll: data.
+		readDataRemaining := readDataRemaining - data size.
+		aBlock value: data size.
+	].
+	encoder finish. "not close!!"
+	endPos := aStream position.
+	compressedSize := endPos - startPos.
+	crc32 := encoder crc.
+! !
+
+!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:53'!
+writeDataTo: aStream notifying: aBlock
+	"Copy my (possibly inflated or deflated) data to the given stream.
+	This might do compression, decompression, or straight copying, depending
+	on the values of compressionMethod and desiredCompressionMethod"
+
+	"Note: Do not shortcut this method if uncompressedSize = 0. Even in this case
+	data may be produced by the compressor (i.e., '' zipped size > 0) and must
+	be stored in the file or else other utilities will treat the zip file as corrupt."
+
+	(compressionMethod = CompressionStored and: [ desiredCompressionMethod = CompressionDeflated ])
+		ifTrue: [ ^self compressDataTo: aStream notifying: aBlock ].
+
+	(compressionMethod = CompressionDeflated and: [ desiredCompressionMethod = CompressionStored ])
+		ifTrue: [ ^self uncompressDataTo: aStream ].
+
+	self copyDataTo: aStream.! !
+
+!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:58'!
+writeTo: aStream notifying: aBlock
+
+	self rewindData.
+	writeLocalHeaderRelativeOffset := aStream position.
+	self writeLocalFileHeaderTo: aStream.
+	self writeDataTo: aStream notifying: aBlock.
+	self refreshLocalFileHeaderTo: aStream.! !
+
 !Array methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 17:20:14'!
 printAsNakedList: aStream
 	self do: [:each| each printAsLiteralOn: aStream] separatedBy: [aStream space].
@@ -8252,6 +8470,20 @@ isPageSeparator
 newDocument
 
 	^`Character codePoint: 28` "ASCII File separator"! !
+
+!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 10/31/2025 21:20:11'!
+putChar: aCharacter
+
+	( XMLTranslationMap at: aCharacter codePoint + 1) = 0 
+		ifTrue:[
+			aCharacter = Character tab
+				ifTrue:[
+					self stream nextPutAll: '<text:tab/>' ]
+				ifFalse:[
+					self stream nextPut: aCharacter] ]
+		ifFalse:[
+			self stream nextPutAll: (XMLTranslation at: aCharacter codePoint ) ].
+	! !
 KaeruPrinter initialize!
 KaeruEditorMorph initialize!
 FrogAnimation initialize!
