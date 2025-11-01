@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 31 October 2025 at 9:20:25 pm'!
+'From Cuis7.5 [latest update: #7615] on 1 November 2025 at 10:12:23 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1176!
+!provides: 'Kaeru' 1 1182!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -4907,7 +4907,7 @@ initialize
 	
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 20:05:33'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:12:18'!
 renderDocumentAt: anIterator
 
 	| bb title |
@@ -4922,8 +4922,6 @@ renderDocumentAt: anIterator
 	
 	anXMLWriter pcData: title ; endTag: 'title'. 
 	"
-
-	styleWriter startTag: 'office:automatic-styles' ; endTag.
 	
 	[ bb paragraph isDocBreaking ]
 		whileFalse:[
@@ -4931,8 +4929,6 @@ renderDocumentAt: anIterator
 			bb nextParagraph ].
 
 	self renderParagraphAt: bb.
-
-	styleWriter endTag: 'office:automatic-styles'.
 
 	bb nextParagraph.
 	"
@@ -4949,7 +4945,7 @@ renderFonts
 	
 	styleWriter endTag: 'office:font-face-decls'.! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:45:17'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:10:45'!
 renderLibrary: aKLibrary on: anXMLWriter
 
 	| bb ee |
@@ -4958,7 +4954,9 @@ renderLibrary: aKLibrary on: anXMLWriter
 	
 	style := aKLibrary attributes.
 	
-	self renderFonts ;  renderStyles. 
+	self renderFonts ; renderStyles.
+
+	styleWriter startTag: 'office:automatic-styles' ; endTag.
 
 	ee := aKLibrary end.
 	bb := aKLibrary begin.
@@ -4969,6 +4967,12 @@ renderLibrary: aKLibrary on: anXMLWriter
 			bb next.
 			bb := self renderDocumentAt: bb  ] .
 
+	self renderPageLayout.
+	
+	styleWriter endTag: 'office:automatic-styles'.
+	
+	self renderMasterPage.
+
 	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
 
 	anXMLWriter startElement: 'office:document' attributeList: self documentAttributes ; endTag. 	
@@ -4977,7 +4981,7 @@ renderLibrary: aKLibrary on: anXMLWriter
 
 	anXMLWriter 
 		startTag: 'office:body' ; endTag ;
-			startTag: 'office:text' ; endTag.
+			startElement: 'office:text' attributeList:{ 'text:use-soft-page-breaks' -> 'true' } asDictionary ; endTag.
 	
 	anXMLWriter stream nextPutAll: textStream contents.
 	
@@ -4987,20 +4991,77 @@ renderLibrary: aKLibrary on: anXMLWriter
 	endTag: 'office:document'
 	! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 18:16:59'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:04:10'!
+renderMasterPage
+	
+	styleWriter startTag: 'office:master-styles' ; endTag.
+	
+		styleWriter startElement: 'style:master-page' attributeList: { 'style:name' -> 'Standard' . 'style:page-layout-name' -> 'A4' } asDictionary ; endEmptyTag: 'style:master-page'.
+	
+	styleWriter endTag: 'office:master-styles'.
+	! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:03:52'!
+renderPageLayout
+	
+		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
+		
+			styleWriter startElement: 'style:page-layout-properties' attributeList: 
+			{
+				'fo:page-width' -> '210mm' .
+				'fo:page-height' -> '297mm'.
+				'style:num-format' -> '1'.
+				'style:print-orientation' -> 'portrait'.
+				'fo:margin-top' -> '1cm' .
+				'fo:margin-bottom' -> '1cm' .
+				'fo:margin-left' -> '1cm'.
+				'fo:margin-right' -> '1cm'
+			} asDictionary ; endTag.
+			
+			styleWriter endTag: 'style:page-layout-properties'.
+		styleWriter endTag: 'style:page-layout'.
+		
+	! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 21:04:04'!
 renderParagraphAt: anIterator 
 
 	| text pp |
 	
+	" There are 4 options: 
+	
+	1. the paragraph ends with a page break character
+	
+	1.1. the paragraph has a style that is different from the current style
+
+		- create a new style but don't set the current style to the new style
+		- add a page break-after to the style
+	
+	1.2. the paragraph has the same style as the current style
+
+		- create a new style but don't set the current style to the new style
+		- add a page break-after to the style
+	
+	2. the paragraph does not end with a page break character
+	
+	2.1. the paragraph has a style that is different from the current style
+
+		- create a new style and set the current style to the new style
+	
+	2.2. the paragraph has the same style as the current style
+
+		- use the current style
+	
+	"
 	pp := anIterator paragraph.
 	
-	style = pp attributes ifFalse:[
+	style ~= pp attributes or: [pp isPageBreaking] :: ifTrue:[
 		
 		style := pp attributes.
 		
 		styleCounter := styleCounter + 1.
 		
-		self renderParagraphStyle: style. 
+		self renderParagraphStyle: pp. 
 	].
 	
 	textWriter startElement: 'text:p' attributeList: { 'text:style-name' -> ('P{1}' format:{styleCounter}) } asDictionary ; endTag.
@@ -5012,24 +5073,35 @@ renderParagraphAt: anIterator
 	pp emphasis ifNotNil:[ ].
 		
 	textWriter endTag: 'text:p'.	
+	
+	
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 20:18:09'!
-renderParagraphStyle: aKParagraphAttributes
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 21:01:06'!
+renderParagraphStyle: aKParagraph
+
+	| aKParagraphAttributes aDictionary |
+	
+	aKParagraphAttributes := aKParagraph attributes.
 	
 	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'Standard' . 'style:master-page-name' -> '' } asDictionary ; endTag.
 	
 	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
-	
-	styleWriter startElement: 'style:paragraph-properties' attributeList: { 
+
+	aDictionary := { 
 		'fo:margin-left' -> ('{1}mm' format: { aKParagraphAttributes leftMargin * charWidth * (pageWidth / displayWidth) } ) .  
 		'fo:margin-right' -> ('{1}mm' format: { pageWidth - (aKParagraphAttributes rightMargin * charWidth * (pageWidth / displayWidth)) } ) .
-		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary ; endEmptyTag: 'style:paragraph-properties'.
+		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary.
+		
+	aKParagraph isPageBreaking ifTrue:[
+		aDictionary at: 'fo:break-after' put: 'page'. ].	
+	
+	styleWriter startElement: 'style:paragraph-properties' attributeList: aDictionary ; endEmptyTag: 'style:paragraph-properties'.
 		
 	styleWriter endTag: 'style:style'.
 		! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:32:42'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:10:56'!
 renderStyles
 
 	styleWriter startTag: 'office:styles' ; endTag.
@@ -5051,7 +5123,8 @@ renderStyles
 		styleWriter endTag: 'style:style'.
 		
 	styleWriter endTag: 'office:styles'.
-	
+
+"	
 	styleWriter startTag: 'office:automatic-styles' ; endTag.
 	
 		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
@@ -5078,7 +5151,7 @@ renderStyles
 		styleWriter startElement: 'style:master-page' attributeList: { 'style:name' -> 'Standard' . 'style:page-layout-name' -> 'A4' } asDictionary ; endEmptyTag: 'style:master-page'.
 	
 	styleWriter endTag: 'office:master-styles'.
-	! !
+	"! !
 
 !OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:43:33'!
 writeDocument: aKLibrary inDirectory: aDirectory
@@ -5754,7 +5827,7 @@ rightMargin
 	^ par attributes rightMargin.
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/18/2025 18:52:21'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/1/2025 14:59:57'!
 setLeftMargin: anInteger
 
 	"Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
@@ -5764,7 +5837,7 @@ setLeftMargin: anInteger
 	
 	it := text charIndexToIterator: cursor.
 	
-	leftm := it paragraph leftMargin.
+	leftm := it paragraph attributes leftMargin.
 	
 	it = text begin
 		ifTrue:[^leftm].
