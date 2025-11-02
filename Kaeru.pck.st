@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 1 November 2025 at 10:12:23 pm'!
+'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 5:12:53 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1182!
+!provides: 'Kaeru' 1 1184!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -4907,6 +4907,22 @@ initialize
 	
 ! !
 
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:07:35'!
+makeParagraphStyleAttributes: aKParagraph
+
+	| aKParagraphAttributes |
+	
+	aKParagraphAttributes := aKParagraph attributes.
+	
+	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
+
+	^​ { 
+		'fo:margin-left' -> ('{1}mm' format: { aKParagraphAttributes leftMargin * charWidth * (pageWidth / displayWidth) } ) .  
+		'fo:margin-right' -> ('{1}mm' format: { pageWidth - (aKParagraphAttributes rightMargin * charWidth * (pageWidth / displayWidth)) } ) .
+		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary.
+		
+	! !
+
 !OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:12:18'!
 renderDocumentAt: anIterator
 
@@ -5023,7 +5039,7 @@ renderPageLayout
 		
 	! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 21:04:04'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:12:38'!
 renderParagraphAt: anIterator 
 
 	| text pp |
@@ -5061,7 +5077,7 @@ renderParagraphAt: anIterator
 		
 		styleCounter := styleCounter + 1.
 		
-		self renderParagraphStyle: pp. 
+		self renderParagraphStyle: pp breakPage: pp isPageBreaking.
 	].
 	
 	textWriter startElement: 'text:p' attributeList: { 'text:style-name' -> ('P{1}' format:{styleCounter}) } asDictionary ; endTag.
@@ -5071,29 +5087,31 @@ renderParagraphAt: anIterator
 	textWriter pcData: text allButLast.
 	
 	pp emphasis ifNotNil:[ ].
+	
+	pp isPageBreaking ifTrue:[
+	
+	" create a style without a page break to prevent the page break from propagating to the next paragraph "	
+		style := pp attributes.
+		
+		styleCounter := styleCounter + 1.
+		
+		self renderParagraphStyle: pp breakPage: false 	].
 		
 	textWriter endTag: 'text:p'.	
 	
 	
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 21:01:06'!
-renderParagraphStyle: aKParagraph
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:10:04'!
+renderParagraphStyle: aKParagraph breakPage: isPageBreaking
 
-	| aKParagraphAttributes aDictionary |
-	
-	aKParagraphAttributes := aKParagraph attributes.
-	
+	| aDictionary |
+		
 	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'Standard' . 'style:master-page-name' -> '' } asDictionary ; endTag.
 	
-	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
-
-	aDictionary := { 
-		'fo:margin-left' -> ('{1}mm' format: { aKParagraphAttributes leftMargin * charWidth * (pageWidth / displayWidth) } ) .  
-		'fo:margin-right' -> ('{1}mm' format: { pageWidth - (aKParagraphAttributes rightMargin * charWidth * (pageWidth / displayWidth)) } ) .
-		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary.
+	aDictionary := self makeParagraphStyleAttributes: aKParagraph.
 		
-	aKParagraph isPageBreaking ifTrue:[
+	isPageBreaking ifTrue:[
 		aDictionary at: 'fo:break-after' put: 'page'. ].	
 	
 	styleWriter startElement: 'style:paragraph-properties' attributeList: aDictionary ; endEmptyTag: 'style:paragraph-properties'.
@@ -5101,7 +5119,7 @@ renderParagraphStyle: aKParagraph
 	styleWriter endTag: 'style:style'.
 		! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:10:56'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:15:42'!
 renderStyles
 
 	styleWriter startTag: 'office:styles' ; endTag.
@@ -5123,35 +5141,7 @@ renderStyles
 		styleWriter endTag: 'style:style'.
 		
 	styleWriter endTag: 'office:styles'.
-
-"	
-	styleWriter startTag: 'office:automatic-styles' ; endTag.
-	
-		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
-		
-			styleWriter startElement: 'style:page-layout-properties' attributeList: 
-			{
-				'fo:page-width' -> '210mm' .
-				'fo:page-height' -> '297mm'.
-				'style:num-format' -> '1'.
-				'style:print-orientation' -> 'portrait'.
-				'fo:margin-top' -> '1cm' .
-				'fo:margin-bottom' -> '1cm' .
-				'fo:margin-left' -> '1cm'.
-				'fo:margin-right' -> '1cm'
-			} asDictionary ; endTag.
-			
-			styleWriter endTag: 'style:page-layout-properties'.
-		styleWriter endTag: 'style:page-layout'.
-		
-	styleWriter endTag: 'office:automatic-styles'.
-	
-	styleWriter startTag: 'office:master-styles' ; endTag.
-	
-		styleWriter startElement: 'style:master-page' attributeList: { 'style:name' -> 'Standard' . 'style:page-layout-name' -> 'A4' } asDictionary ; endEmptyTag: 'style:master-page'.
-	
-	styleWriter endTag: 'office:master-styles'.
-	"! !
+! !
 
 !OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:43:33'!
 writeDocument: aKLibrary inDirectory: aDirectory
