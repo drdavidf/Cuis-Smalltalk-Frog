@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 7:15:43 pm'!
+'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 9:39:44 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1194!
+!provides: 'Kaeru' 1 1196!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -1660,7 +1660,7 @@ isNotAtEnd
 
 	^ yy + hh < (displayRect corner y + 1.01)! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/9/2025 11:42:34'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 11/2/2025 21:38:01'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
@@ -1675,7 +1675,7 @@ initialize
 	
 	dy := font lineSpacing.
 
-	numLines := 23. "how many line units fit on the physical display"
+	numLines := 22. "how many line units fit on the physical display"
 
 	displayWidth := 80 * dx.
 
@@ -6565,7 +6565,7 @@ scrollToCursor
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/19/2025 11:42:06'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 11/2/2025 20:43:03'!
 locateFirstLineInWindow
 
 	" Answers an iterator to the first line that should be displayed in the window.
@@ -6585,6 +6585,8 @@ locateFirstLineInWindow
 	self assert: ch <= (window +printer numHalfLines).
 	
 	bb := cit copy.
+	
+	bb setAtBeginningOfLine.
 	
 	" We move bb back until it aligns with window. initially bb is bb height - window half lines after window.
 	
