@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 5:12:53 pm'!
+'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 7:15:43 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1184!
+!provides: 'Kaeru' 1 1194!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -2421,7 +2421,7 @@ initialize
 	
 	kind := #clear! !
 
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:00:46'!
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:57:49'!
 insertInterval: anInterval kind: aSymbol
 
 	| mm uu vv |
@@ -2443,7 +2443,7 @@ insertInterval: anInterval kind: aSymbol
 		
 	" vv is the part of anInterval that lies after the first interval in children "
 	
-	vv := children first interval last to: anInterval last.
+	vv := (anInterval first max: children first interval last) to: anInterval last.
 	
 	self insertInterval: vv kind: aSymbol after: 1.
 	
@@ -4907,13 +4907,9 @@ initialize
 	
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:07:35'!
-makeParagraphStyleAttributes: aKParagraph
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:13:32'!
+makeParagraphStyleAttributes: aKParagraphAttributes
 
-	| aKParagraphAttributes |
-	
-	aKParagraphAttributes := aKParagraph attributes.
-	
 	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
 
 	^​ { 
@@ -5017,7 +5013,7 @@ renderMasterPage
 	styleWriter endTag: 'office:master-styles'.
 	! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:03:52'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:11:33'!
 renderPageLayout
 	
 		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
@@ -5028,10 +5024,10 @@ renderPageLayout
 				'fo:page-height' -> '297mm'.
 				'style:num-format' -> '1'.
 				'style:print-orientation' -> 'portrait'.
-				'fo:margin-top' -> '1cm' .
-				'fo:margin-bottom' -> '1cm' .
-				'fo:margin-left' -> '1cm'.
-				'fo:margin-right' -> '1cm'
+				'fo:margin-top' -> '2cm' .
+				'fo:margin-bottom' -> '2.5cm' .
+				'fo:margin-left' -> '0cm'.
+				'fo:margin-right' -> '0cm'
 			} asDictionary ; endTag.
 			
 			styleWriter endTag: 'style:page-layout-properties'.
@@ -5039,7 +5035,7 @@ renderPageLayout
 		
 	! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:12:38'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:25:38'!
 renderParagraphAt: anIterator 
 
 	| text pp |
@@ -5082,11 +5078,13 @@ renderParagraphAt: anIterator
 	
 	textWriter startElement: 'text:p' attributeList: { 'text:style-name' -> ('P{1}' format:{styleCounter}) } asDictionary ; endTag.
 	
-	text := anIterator paragraph text.
+	pp emphasis isNil
+		ifTrue:[
+			text := pp text.
 	
-	textWriter pcData: text allButLast.
-	
-	pp emphasis ifNotNil:[ ].
+			textWriter pcData: text allButLast.]
+		ifFalse:[
+			self renderParagraphText: pp on: textWriter ].
 	
 	pp isPageBreaking ifTrue:[
 	
@@ -5102,14 +5100,14 @@ renderParagraphAt: anIterator
 	
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:10:04'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:14:11'!
 renderParagraphStyle: aKParagraph breakPage: isPageBreaking
 
 	| aDictionary |
 		
-	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'Standard' . 'style:master-page-name' -> '' } asDictionary ; endTag.
+	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'P1' . 'style:master-page-name' -> '' } asDictionary ; endTag.
 	
-	aDictionary := self makeParagraphStyleAttributes: aKParagraph.
+	aDictionary := self makeParagraphStyleAttributes: aKParagraph attributes.
 		
 	isPageBreaking ifTrue:[
 		aDictionary at: 'fo:break-after' put: 'page'. ].	
@@ -5119,9 +5117,32 @@ renderParagraphStyle: aKParagraph breakPage: isPageBreaking
 	styleWriter endTag: 'style:style'.
 		! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:15:42'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:27:52'!
+renderParagraphText: aKParagraph on: anXMLWriter
+
+	| aTree canonical |
+	
+	aTree := DisjointIntervalTree new.
+	
+	aTree interval: (1 to: aKParagraph length).
+	
+	aKParagraph emphasis keys do:[:eachKey |
+		aKParagraph emphasis at: eachKey :: do:[:eachInterval |
+		aTree insertInterval: eachInterval kind: eachKey ] ].
+
+	canonical := anXMLWriter canonical.
+	
+	anXMLWriter canonical:true. "setting this to true prevents the xml writer from adding newlines to the text"
+
+	aTree transform: aKParagraph text at: 1 into: anXMLWriter.
+	
+	anXMLWriter canonical:canonical. "reset it back to how it was before the call "
+! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:15:31'!
 renderStyles
 
+	| aDictionary |
 	styleWriter startTag: 'office:styles' ; endTag.
 	
 		styleWriter startElement: 'style:default-style' attributeList: { 'style:family' -> 'paragraph' } asDictionary ; endTag.
@@ -5132,9 +5153,15 @@ renderStyles
 			
 		styleWriter endTag: 'style:default-style'.
 	
-		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'Standard' . 'style:family' -> 'paragraph' . 'style:class' -> 'text' } asDictionary ; endEmptyTag: 'style:style'.
+		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'P1' . 'style:family' -> 'paragraph' . 'style:class' -> 'text' } asDictionary ; endTag.
+		
+			aDictionary := self makeParagraphStyleAttributes: style.
+		
+			styleWriter startElement: 'style:paragraph-properties' attributeList: aDictionary ; endEmptyTag: 'style:paragraph-properties'.
+		
+	styleWriter endTag: 'style:style'.
 
-		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'Bold' . 'style:family' -> 'text' .  } asDictionary ; endTag.
+		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'bold' . 'style:family' -> 'text' .  } asDictionary ; endTag.
 	
 			styleWriter startElement: 'style:text-properties' attributeList: { 'fo:font-weight' -> 'bold' } asDictionary ; endEmptyTag: 'style:text-properties'.
 			
@@ -7612,6 +7639,56 @@ testTransform
 <text:span text:style-name="italics">5</text:span></text:span>
 <text:span text:style-name="italics">67</text:span>89</text:span>' .! !
 
+!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:18:57'!
+testTransformKParagraph
+
+	| text par defaultParagraphAttributes aTree anXMLWriter aWriteStream expected |
+	
+	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
+
+	defaultParagraphAttributes := KParagraphAttributes new.
+	
+	defaultParagraphAttributes 
+		leftMargin: 6; 
+		rightMargin: 72;
+		indent: 0;
+		lineHeight: 2; " in half line units "
+		tabStops: (11 to: 72 by:5 :: asArray).
+
+	par := KParagraph new.
+	
+	par attributes: defaultParagraphAttributes.
+	
+	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
+	
+	self assert: par text = text.
+	
+	par emphasize: #bold from: 10 to: 15.
+	
+	par emphasize: #italics from: 335 to: 342.
+	
+	aTree := DisjointIntervalTree new.
+	
+	aTree interval: (1 to: par length).
+	
+	par emphasis at: #bold :: do:[:each |
+		aTree insertInterval: each kind: #bold ].
+
+	par emphasis at: #italics :: do:[:each |
+		aTree insertInterval: each kind: #italics ].
+
+	aWriteStream := WriteStream on: ''.
+	
+	anXMLWriter := XMLWriter on: aWriteStream.
+
+	anXMLWriter canonical:true.
+	
+	aTree transform: par text at: 1 into: anXMLWriter.
+
+	expected := '<text:span text:style-name="clear">In olden <text:span text:style-name="bold">times</text:span>, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, <text:span text:style-name="italics">beneath</text:span> whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play</text:span>'.
+
+	self assert: aWriteStream contents =  expected.! !
+
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
 testBoundaryChecks
 
@@ -8189,14 +8266,25 @@ testErase
 	self assert: par text = ((text copyFrom:1 to: 4) , (text copyFrom: 173 to: text size)).
 	! !
 
-!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 8/16/2025 21:39:42'!
+!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:25:04'!
 testInsert
 
-	| text par |
+	| text par defaultParagraphAttributes |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
+	defaultParagraphAttributes := KParagraphAttributes new.
+	
+	defaultParagraphAttributes 
+		leftMargin: 6; 
+		rightMargin: 72;
+		indent: 0;
+		lineHeight: 2; " in half line units "
+		tabStops: (11 to: 72 by:5 :: asArray).
+
 	par := KParagraph new.
+	
+	par attributes: defaultParagraphAttributes.
 	
 	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
 	
@@ -8534,18 +8622,21 @@ newDocument
 
 	^`Character codePoint: 28` "ASCII File separator"! !
 
-!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 10/31/2025 21:20:11'!
+!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/2/2025 17:37:31'!
 putChar: aCharacter
 
-	( XMLTranslationMap at: aCharacter codePoint + 1) = 0 
-		ifTrue:[
-			aCharacter = Character tab
-				ifTrue:[
-					self stream nextPutAll: '<text:tab/>' ]
-				ifFalse:[
-					self stream nextPut: aCharacter] ]
+	aCharacter codePoint <= 255 ifTrue:[
+		 ((XMLTranslationMap at: aCharacter codePoint + 1) = 0 )
+			ifTrue:[
+				aCharacter = Character tab
+					ifTrue:[
+						self stream nextPutAll: '<text:tab/>' ]
+					ifFalse:[
+						self stream nextPut: aCharacter] ] 			
+			ifFalse:[
+				self stream nextPutAll: (XMLTranslation at: aCharacter codePoint ) ] ]
 		ifFalse:[
-			self stream nextPutAll: (XMLTranslation at: aCharacter codePoint ) ].
+			stream nextPut: aCharacter].
 	! !
 KaeruPrinter initialize!
 KaeruEditorMorph initialize!
