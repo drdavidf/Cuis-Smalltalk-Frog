@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 2 November 2025 at 9:39:44 pm'!
+'From Cuis7.5 [latest update: #7615] on 3 November 2025 at 5:41:51 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1196!
+!provides: 'Kaeru' 1 1205!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -534,12 +534,12 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
+!KaeruEditorController methodsFor: 'state machine' stamp: 'DF 11/3/2025 15:30:15'!
 doTransitionFor: aSymbol
 
 	| entry |
 	
-	entry := transitions at: { state . aSymbol }.
+	entry := transitions at: { state . aSymbol } ifAbsent:[^self].
 	
 	state := entry isArray
 		ifTrue:[
@@ -2495,6 +2495,16 @@ insertInterval: anInterval kind: aSymbol after: anIndex
 		
 	! !
 
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:13:49'!
+putChar: aCharacter into: anXMLWriter
+
+	aCharacter = Character space
+		ifTrue:[
+			anXMLWriter startTag: 'text:s' ; endEmptyTag: 'text:s']
+		ifFalse:[
+			anXMLWriter putChar: aCharacter ].
+! !
+
 !DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 20:06:38'!
 tagsOf: anIndex
 
@@ -2516,7 +2526,7 @@ tagsOf: anIndex
 
 	! !
 
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 21:18:46'!
+!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:37:10'!
 transform: aString at: anIndex into: anXMLWriter
 
 	| ii jj |
@@ -2532,24 +2542,22 @@ transform: aString at: anIndex into: anXMLWriter
 	ii := anIndex.
 	
 	[ jj <= children size ] whileTrue:[
-		
-		ii = (children at: jj) interval first :: ifTrue:[
-			
-			ii := (children at:jj) transform: aString at: ii into: anXMLWriter.
-			jj := jj + 1]
-		ifFalse:[
-			anXMLWriter putChar: (aString at: ii).
-			ii := ii + 1].		
-		].
 
-	[ ii < interval last ] whileTrue:[
+		anXMLWriter putChars: aString from:ii upto: (children at: jj) interval first.
+		
+		ii := (children at: jj) interval first.
+		
+		ii := (children at:jj) transform: aString at: ii into: anXMLWriter.
+		
+		self assert: ii = (children at: jj) interval last.
+		
+		jj := jj + 1].
 	
-		anXMLWriter putChar: (aString at:ii).
-		ii := ii + 1].
+	anXMLWriter putChars: aString from:ii upto: interval last. 
 	
 	anXMLWriter endTag: 'text:span'.
 	
-	^ii! !
+	^interval last! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
@@ -5035,10 +5043,10 @@ renderPageLayout
 		
 	! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:25:38'!
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 15:36:02'!
 renderParagraphAt: anIterator 
 
-	| text pp |
+	| pp |
 	
 	" There are 4 options: 
 	
@@ -5080,9 +5088,7 @@ renderParagraphAt: anIterator
 	
 	pp emphasis isNil
 		ifTrue:[
-			text := pp text.
-	
-			textWriter pcData: text allButLast.]
+			self renderPlainParagraphText: pp on: textWriter ]
 		ifFalse:[
 			self renderParagraphText: pp on: textWriter ].
 	
@@ -5136,6 +5142,22 @@ renderParagraphText: aKParagraph on: anXMLWriter
 
 	aTree transform: aKParagraph text at: 1 into: anXMLWriter.
 	
+	anXMLWriter canonical:canonical. "reset it back to how it was before the call "
+! !
+
+!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:19:46'!
+renderPlainParagraphText: aKParagraph on: anXMLWriter
+
+	| canonical text |
+	
+	canonical := anXMLWriter canonical.
+	
+	anXMLWriter canonical:true. "setting this to true prevents the xml writer from adding newlines to the text"
+
+	text := aKParagraph text.
+	
+	anXMLWriter putChars: text from: 1 upto: text size - 1. 
+		
 	anXMLWriter canonical:canonical. "reset it back to how it was before the call "
 ! !
 
@@ -5677,13 +5699,16 @@ resetSelection
 	
 	leapRegister := cursor ! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/17/2025 13:13:04'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/3/2025 16:37:01'!
 select
 
 	text isIndexLessThanEnd: cursor ::
 		ifFalse:[
+			self assert: cursor > 1.
 			cursor := cursor - 1].	
 		
+	self assert: leapRegister > 0.
+	
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
 	
 	self assert: (text isIndexLeqEnd: selection last).
@@ -7580,7 +7605,7 @@ testShiftBack
 
 	self assert: dis invariant.	! !
 
-!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:08:24'!
+!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:27:32'!
 testInsert
 
 	| aTree |
@@ -7591,27 +7616,27 @@ testInsert
 	
 	self assert: aTree invariant.
 	
-	self assert: (aTree tagsOf: 1) = { #p } asSet.
+	self assert: (aTree tagsOf: 1) = { #clear } asSet.
 	
 	aTree insertInterval: (3 to: 6) kind: #bold.
 
 	self assert: aTree invariant.
 
-	self assert: (aTree tagsOf: 1) = { #p } asSet.
+	self assert: (aTree tagsOf: 1) = { #clear } asSet.
 
-	self assert: (aTree tagsOf: 3) = { #p . #bold } asSet.
+	self assert: (aTree tagsOf: 3) = { #clear . #bold } asSet.
 
-	self assert: (aTree tagsOf: 6) = { #p } asSet.
+	self assert: (aTree tagsOf: 6) = { #clear } asSet.
 
 	aTree insertInterval: (5 to: 8) kind: #italics.
 
 	self assert: aTree invariant.
 
-	self assert: (aTree tagsOf: 1) = { #p } asSet.
+	self assert: (aTree tagsOf: 1) = { #clear } asSet.
 
-	self assert: (aTree tagsOf: 3) = { #p . #bold } asSet.
+	self assert: (aTree tagsOf: 3) = { #clear . #bold } asSet.
 
-	self assert: (aTree tagsOf: 5) = { #p . #bold . #italics } asSet.
+	self assert: (aTree tagsOf: 5) = { #clear . #bold . #italics } asSet.
 	! !
 
 !TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 21:04:03'!
@@ -8624,22 +8649,51 @@ newDocument
 
 	^`Character codePoint: 28` "ASCII File separator"! !
 
-!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/2/2025 17:37:31'!
+!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/3/2025 16:28:35'!
 putChar: aCharacter
 
 	aCharacter codePoint <= 255 ifTrue:[
 		 ((XMLTranslationMap at: aCharacter codePoint + 1) = 0 )
 			ifTrue:[
+				self stream nextPut: aCharacter] 
+			ifFalse:[
 				aCharacter = Character tab
 					ifTrue:[
 						self stream nextPutAll: '<text:tab/>' ]
 					ifFalse:[
-						self stream nextPut: aCharacter] ] 			
-			ifFalse:[
-				self stream nextPutAll: (XMLTranslation at: aCharacter codePoint ) ] ]
+				
+						self stream nextPutAll: (XMLTranslation at: aCharacter  ) ] ] ]
 		ifFalse:[
 			stream nextPut: aCharacter].
 	! !
+
+!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/3/2025 17:41:32'!
+putChars: aString from:bb upto: ee
+
+	|ii |
+	
+	ii := bb.
+	
+	[ii ~= ee] whileTrue:[ | spaceCount |
+		
+		spaceCount := 0.
+		
+		[ii ~= ee and: [(aString at:ii) = Character space ] ] whileTrue:[
+			spaceCount := spaceCount + 1.
+			ii := ii + 1].
+		
+		spaceCount <= 1
+			ifTrue:[
+				spaceCount = 0 
+					ifTrue:[
+						self putChar: (aString at:ii).
+						ii := ii + 1]
+					ifFalse:[
+						self putChar: Character space ] ]
+			ifFalse:[
+				self startElement: 'text:s' attributeList: { 'text:c' -> ('{1}' format:{spaceCount}) } asDictionary ; endEmptyTag:'text:s'. ] ].
+
+! !
 KaeruPrinter initialize!
 KaeruEditorMorph initialize!
 FrogAnimation initialize!
