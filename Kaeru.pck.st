@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 3 November 2025 at 5:41:51 pm'!
+'From Cuis7.5 [latest update: #7615] on 4 November 2025 at 7:30:04 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1205!
+!provides: 'Kaeru' 1 1209!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -40,16 +40,6 @@ KaeruController subclass: #KaeruHelpController
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruHelpController class' category: #'Kaeru-Keyboard'!
 KaeruHelpController class
-	instanceVariableNames: ''!
-
-!classDefinition: #KaeruLeftMarginController category: #'Kaeru-Keyboard'!
-KaeruController subclass: #KaeruLeftMarginController
-	instanceVariableNames: 'model left margin right'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruLeftMarginController class' category: #'Kaeru-Keyboard'!
-KaeruLeftMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruMasterController category: #'Kaeru-Keyboard'!
@@ -826,76 +816,6 @@ keyUp: aMorphicEvent
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
 state
 	^#help! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:00:50'!
-acceptControl
-
-	margin := model leftMargin! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:48'!
-initialize
-
-	super initialize.
-	
-	left := #up.
-	
-	right := #up.
-	
-	margin := 6.! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:21'!
-keyDown: aMorphicEvent
-
-	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			left := #down ].
-		
-	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			right := #down ].
-! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:53:27'!
-keyStroke: aMorphicEvent
-
-	! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:09:20'!
-keyUp: aMorphicEvent
-
-	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin - 1 max: 0.
-			
-			model setLeftMargin: margin].
-		
-	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			left := #up ].
-
-	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin + 1 min: 79.
-			
-			model setLeftMargin: margin].
-		
-	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			right := #up ].
-
-	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[
-			model showLeftMargin: false.
-			controllerMaster activate: #edit.  ].
-! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:27:51'!
-model: aKaeruEditor
-	model := aKaeruEditor ! !
-
-!KaeruLeftMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:48:57'!
-state
-	^#leftMargin! !
 
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
@@ -2704,6 +2624,11 @@ isAtLastLineInParagraph
 	
 	^ lineIndex = (pars at:parIndex) numLines and:[charIndex = 1]! !
 
+!KForwardIterator methodsFor: 'testing' stamp: 'DF 11/4/2025 18:47:22'!
+isAtLastParagraph
+	
+	^ parIndex = pars size! !
+
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:29'!
 isAtStart
 	
@@ -2979,6 +2904,13 @@ pars: anOrderedCollection
 setAtBeginningOfLine
 
 	charIndex := 1.! !
+
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 11/4/2025 19:14:41'!
+setAtBeginningOfParagraph
+
+	charIndex := 1.
+	
+	lineIndex := 1.! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
@@ -5699,14 +5631,19 @@ resetSelection
 	
 	leapRegister := cursor ! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/3/2025 16:37:01'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/4/2025 18:24:25'!
 select
 
 	text isIndexLessThanEnd: cursor ::
 		ifFalse:[
 			self assert: cursor > 1.
 			cursor := cursor - 1].	
-		
+
+	text isIndexLessThanEnd: leapRegister ::
+		ifFalse:[
+			self assert: leapRegister > 1.
+			leapRegister := leapRegister - 1].	
+	
 	self assert: leapRegister > 0.
 	
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
@@ -5869,15 +5806,84 @@ rightMargin
 	^ par attributes rightMargin.
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/1/2025 14:59:57'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:24:43'!
+setFrom: bIndex to: eIndex leftMargin: anInteger
+
+	" 
+	
+	Set the left margins of all the paragraphs in the iterator range [bb,ee) to anInteger, 
+	provided that anInteger is between 1 and rightMargin - 6. Paragraphs in the selection 
+	whose right margin is too close will not change their left maring. 
+	
+	"
+	
+	| bb ee par rightm |
+	
+	self assert: anInteger > 0.
+	
+	bb := text charIndexToIterator: bIndex :: setAtBeginningOfParagraph.
+	ee := text charIndexToIterator: eIndex :: setAtBeginningOfParagraph.
+	
+	[ bb ~=  ee ] whileTrue:[
+		
+		par := bb paragraph.
+	
+		rightm := par attributes rightMargin.
+	
+		anInteger < (rightm - 6)
+			ifTrue:[		
+				par leftMargin: anInteger].
+		
+		bb nextParagraph.
+	].
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:29:58'!
+setFrom: bIndex to: eIndex rightMargin: anInteger
+
+	" 
+	
+	Set the right margins of all the paragraphs in the iterator range [bb,ee) to anInteger, 
+	provided that anInteger is between leftMargin + 6 and 79. Paragraphs in the selection 
+	whose left margin is too close will not change their right margin. 
+	
+	"
+	
+	| bb ee par leftm |
+	
+	self assert: anInteger > 0.
+	
+	bb := text charIndexToIterator: bIndex :: setAtBeginningOfParagraph.
+	ee := text charIndexToIterator: eIndex :: setAtBeginningOfParagraph.
+	
+	[ bb ~=  ee ] whileTrue:[
+		
+		par := bb paragraph.
+
+		leftm := par attributes leftMargin.
+	
+		anInteger > (leftm + 6)
+			ifTrue:[		
+				par leftMargin: anInteger].
+		
+		bb nextParagraph.
+	].
+	! !
+
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:23:38'!
 setLeftMargin: anInteger
 
-	"Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
+	" if the cursor is extended set the left margin of all the paragraphs in the selection. Otherwise, set the
+	left margin of the paragraph that has the cursor.
+	
+	Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
 	rightMargin - 6. Answer the actual left margin "
 	
 	| it par rightm leftm |
 	
 	it := text charIndexToIterator: cursor.
+
+	par := it paragraph.
 	
 	leftm := it paragraph attributes leftMargin.
 	
@@ -5889,15 +5895,17 @@ setLeftMargin: anInteger
 	
 	anInteger <= 0
 		ifTrue:[^leftm].
-
-	par := it paragraph.
 	
 	rightm := par attributes rightMargin.
 	
 	anInteger >= (rightm - 6)
 		ifTrue:[^leftm].
 		
-	it paragraph leftMargin: anInteger.
+	par leftMargin: anInteger.
+	
+	self isExtended 
+		ifTrue:[
+			self setFrom: selection first to: selection last leftMargin: anInteger].
 	
 	self changed: #margins.
 	
@@ -5940,7 +5948,7 @@ setParagraphIndent: anInteger
 	^anInteger
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/18/2025 18:52:06'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:30:00'!
 setRightMargin: anInteger
 
 	"Set the right margin of the paragraph in which the cursor is located to anInteger, provided that anInteger is between leftMargin + 6 and 79. Answer the actual right margin "
@@ -5958,7 +5966,7 @@ setRightMargin: anInteger
 		ifTrue:[^rightm].
 	
 	anInteger >= 80
-		ifTrue:[^rightm].
+		ifTrue:[^rightm]. 
 
 	par := it paragraph.
 	
@@ -5968,6 +5976,10 @@ setRightMargin: anInteger
 		ifTrue:[^rightm].
 		
 	it paragraph rightMargin: anInteger.
+
+	self isExtended 
+		ifTrue:[
+			self setFrom: selection first to: selection last rightMargin: anInteger].
 	
 	self changed: #margins.
 	
