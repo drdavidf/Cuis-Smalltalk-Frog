@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 4 November 2025 at 7:30:04 pm'!
+'From Cuis7.5 [latest update: #7615] on 5 November 2025 at 4:15:03 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1209!
+!provides: 'Kaeru' 1 1215!
 !requires: 'Compression' 1 43 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Sound' 1 35 nil!
@@ -524,12 +524,16 @@ viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'DF 11/3/2025 15:30:15'!
+!KaeruEditorController methodsFor: 'state machine' stamp: 'DF 11/5/2025 15:41:14'!
 doTransitionFor: aSymbol
 
 	| entry |
 	
-	entry := transitions at: { state . aSymbol } ifAbsent:[^self].
+	entry := transitions at: { state . aSymbol } ifAbsent:[
+		
+		Transcript show: ('{1} has no transition on {2}' format:{state . aSymbol}) ; cr.
+		
+		^self].
 	
 	state := entry isArray
 		ifTrue:[
@@ -539,7 +543,7 @@ doTransitionFor: aSymbol
 			entry ].
 		! !
 
-!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/18/2025 15:06:55'!
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 11/5/2025 14:42:10'!
 initialize
 
 	super initialize.
@@ -550,26 +554,32 @@ initialize
 		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
 		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
 		{ #editingState . #keyStroke } -> #editingState .
+		{ #editingState . #command } -> #editingState .
 
 		{ #freshEditingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
 		{ #freshEditingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
-		{ #freshEditingState . #keyStroke } -> { #editingState . [:editor | editor resetSelection ] } .
+		{ #freshEditingState . #keyStroke } -> { #editingState  . [:editor | editor resetSelection ] }.
+		{ #freshEditingState . #command } -> #editingState .
 		
 		{ #startLeapLeftState . #leapLeftUp } -> { #freshEditingState . [:editor | editor creepBack] }.
 		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
+		{ #startLeapLeftState . #command } -> #leapLeftState.
 		
 		{ #leapLeftState . #leapLeftUp } -> #freshEditingState .
 		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
+		{ #leapLeftState . #command } -> #leapLeftState . 
 
 		{ #startLeapRightState . #leapRightUp } -> { #freshEditingState . [:editor | editor creepForward ] }.
 		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapRightState . #keyStroke } -> #leapRightState.
+		{ #startLeapRightState . #command } -> #leapRightState.
 
 		{ #leapRightState . #leapRightUp } -> #freshEditingState  .
 		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
 		{ #leapRightState . #keyStroke } -> #leapRightState . 
+		{ #leapRightState . #command } -> #leapRightState . 
 
 		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
 		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
@@ -580,22 +590,25 @@ initialize
 		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
 		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
 		{ #selectingReadyState . #keyStroke } -> #editingState.
+		{ #selectingReadyState . #command } -> #editingState.
 		
 		{ #leapLeftSelectState . #leapLeftUp } -> { #freshEditingState . [:editor | editor collapseLeft ] } .
 		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
 		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
+		{ #leapLeftSelectState . #command } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
 		
 		{ #leapRightSelectState . #leapRightUp } -> { #freshEditingState . [:editor | editor collapseRight ] } .
 		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
 		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
+		{ #leapRightSelectState . #command } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
 		
 		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
 		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
+		{ #searchLeftSelectState . #command } -> #searchLeftSelectState .
 		
 		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
-		
 		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
+		{ #searchRightSelectState . #command } ->  #searchRightSelectState  .
 		
 	} asDictionary.
 	! !
@@ -618,10 +631,14 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:20:48'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 15:39:48'!
 keyStroke: aKeyboardEvent
 
-	self doTransitionFor: #keyStroke.
+	Transcript show: ('Editor Controller keyStroke. state = {1} . transitioning ... ' format:{ state}) ; cr.
+ 	
+	self doTransitionFor: (useFront = #up ifTrue:[ #keyStroke ] ifFalse: [#command]).
+
+	Transcript show: ('Editor Controller keyStroke. state = {1} . ' format:{ state}) ; cr.
 
 	state = #editingState
 		ifTrue:[
@@ -676,7 +693,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:43:13'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 14:30:36'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -5306,7 +5323,7 @@ creepForward
 	self changed: #cursor		
 ! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:20:09'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 11/5/2025 14:59:00'!
 erase
 
 	dirty := true.
@@ -5354,7 +5371,7 @@ eraseNarrow
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:54:15'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 11/5/2025 14:58:47'!
 eraseSelection
 
 	self assert: selection first > 1.
@@ -5370,7 +5387,8 @@ eraseSelection
 	selection := selection last to: selection last.
 	
 	cursorState := text isEmpty 
-		ifTrue:[#wide].
+		ifTrue:[#wide]
+		ifFalse:[#narrow].
 			
 	self changed: #erase.! !
 
@@ -5622,7 +5640,7 @@ collapseRight
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 15:09:58'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/5/2025 14:42:59'!
 resetSelection
 
 	" set the leap register to the cursor, reseting the selection.
@@ -6023,7 +6041,7 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/18/2025 15:13:03'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 11/5/2025 15:45:22'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
@@ -6693,8 +6711,14 @@ refreshBatteryState
 	
 	self redrawNeeded ! !
 
-!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/5/2025 16:43:04'!
+!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 11/5/2025 16:12:33'!
 update: aSymbol
+	
+	blinkingRate = 1 ifFalse:[
+		
+		blinkingRate := 1.
+		
+		self stopBlinking ; startBlinking ].
 	
 	self scrollToCursor ; renderText ; redrawNeeded ! !
 
@@ -6705,18 +6729,16 @@ wakeUp
 	
 	ina219 open.! !
 
-!KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'DF 10/19/2025 21:05:27'!
+!KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'DF 11/5/2025 16:14:50'!
 clearDirtyFlag
 
 	" Sent when the image was just saved, mark the text as clean and set the cursor blink rate to 3 Hz "
 	
 	editor clearDirtyFlag.
 	
-	self stopBlinking.
-	
 	blinkingRate := 3.
 	
-	self startBlinking ! !
+	self stopBlinking; startBlinking ! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:17'!
 invalidateCursorRectangles
