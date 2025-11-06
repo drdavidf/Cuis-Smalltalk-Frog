@@ -1,10 +1,10 @@
-'From Cuis7.5 [latest update: #7615] on 5 November 2025 at 4:15:03 pm'!
+'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:16:38 am'!
 'Description '!
-!provides: 'Kaeru' 1 1215!
-!requires: 'Compression' 1 43 nil!
-!requires: 'Regex-Core' 1 6 nil!
-!requires: 'Sound' 1 35 nil!
+!provides: 'Kaeru' 1 1225!
 !requires: 'YAXO' 1 28 nil!
+!requires: 'Regex-Core' 1 6 nil!
+!requires: 'Compression' 1 43 nil!
+!requires: 'Sound' 1 35 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
@@ -34,7 +34,7 @@ KaeruEditorController class
 
 !classDefinition: #KaeruHelpController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruHelpController
-	instanceVariableNames: 'bothLeapAgainKeysPressed'
+	instanceVariableNames: 'bothLeapAgainKeysPressed view'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
@@ -314,7 +314,7 @@ KaeruEditorMorph class
 
 !classDefinition: #KaeruHelpMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruHelpMorph
-	instanceVariableNames: 'text printer'
+	instanceVariableNames: 'text printer entries helpEntry'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -800,6 +800,11 @@ translateToCharacter: aKeyboardEvent
 					aKeyboardEvent keyCharacter ] ].
 ! !
 
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:58:11'!
+acceptControl
+
+	view setHelpEntryTo: $n.! !
+
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:31'!
 keyDown: aMorphicEvent
 
@@ -808,7 +813,7 @@ keyDown: aMorphicEvent
 			bothLeapAgainKeysPressed := true ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:52:08'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:00:00'!
 keyStroke: aKeyboardEvent
 
 	bothLeapAgainKeysPressed and: [ aKeyboardEvent keyCharacter = $x ] :: ifTrue: [
@@ -817,7 +822,11 @@ keyStroke: aKeyboardEvent
 
 		controllerMaster activate: #edit. viewMaster activate: #edit.
 		
-		Smalltalk saveAndQuit ].! !
+		Smalltalk saveAndQuit ].
+	
+	view setHelpEntryTo: aKeyboardEvent keyCharacter.
+	
+	! !
 
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:18'!
 keyUp: aMorphicEvent
@@ -833,6 +842,11 @@ keyUp: aMorphicEvent
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
 state
 	^#help! !
+
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:54:19'!
+view: aHelpMorph
+
+	view := aHelpMorph ! !
 
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
@@ -4012,7 +4026,7 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:31:32'!
+!KLibrary methodsFor: 'object serialization' stamp: 'DF 11/5/2025 22:16:18'!
 serializeFrom: aReadStream
 
 	" Here's the format: 
@@ -4057,6 +4071,8 @@ serializeFrom: aReadStream
 			aParagraph attributes: defaultParagraphAttributes.
 			
 			aParagraph serializeFrom: aReadStream. 
+			
+			self assert: aParagraph notEmpty.
 			
 			scanner eat: Character escape.
 			
@@ -4647,7 +4663,7 @@ unemphasize: aSymbol from: aBegin to: anEnd
 	
 	emphasis at:aSymbol :: erase: (aBegin to: anEnd).	! !
 
-!KParagraph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:16:35'!
+!KParagraph methodsFor: 'object serialization' stamp: 'DF 11/6/2025 08:48:44'!
 serializeFrom: aReadStream
 
 	| aScanner text |
@@ -4656,7 +4672,7 @@ serializeFrom: aReadStream
 	
 	startingCharacterIndex := aScanner nextInteger. 
 	
-	aScanner skipWhiteSpace.
+	aScanner eat: Character space. "after the index there must be exactly one space before the paragraph's text begins."
 	
 	text := WriteStream on: ''.
 	
@@ -6244,7 +6260,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:41:19'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 11/6/2025 08:54:26'!
 initialize
 
 	| editor |
@@ -6281,7 +6297,7 @@ initialize
 	
 	controller at: #edit putController: (KaeruEditorController new viewMaster: self; model: editor; yourself).
 
-	controller at: #help putController: (KaeruHelpController new viewMaster: self; yourself). 
+	controller at: #help putController: (KaeruHelpController new view: (view at: #help) ; viewMaster: self; yourself).  
 
 	controller at: #sleep putController: (KaeruScreenSaverController new viewMaster: self; yourself). 
 
@@ -6996,39 +7012,36 @@ socketDischargingIcon
  
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:04:01'!
-drawOn: aCanvas
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:15:14'!
+displayHelpEntryOn: aCanvas
 
-	super drawOn: aCanvas.
+	| bb title |
 	
-	self drawTextOn: aCanvas.
+	title := entries at: helpEntry ifAbsent: ['NOT A COMMAND'].
 	
-	"printer canvas: aCanvas.
+	bb := text searchFrom: text begin forwardFor: title.
 	
-	printer clearCanvas.
+	bb ifNil:[
 	
-	text do:[:each |
-		
-		each isLineSeparator 
-			ifTrue:[
-				printer newLine]
-			ifFalse:[
-				printer putChar: each;  moveRight ] ].
-	"! !
+		bb :=  text searchFrom: text begin forwardFor: 'NOT WRITTEN YET'].
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:16:42'!
-drawTextOn: aCanvas
+	self assert: bb notNil.
+	
+	self drawDocumentAt: bb on: aCanvas
+	
+	! !
+
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:51:06'!
+drawDocumentAt: bb on: aCanvas
 
 	" draw the help text on aCanvas
 	"
-	
-	| bb ee |
 
-	bb := text begin next. "skip the start-of-text sentinel "
-		
-	printer canvas: aCanvas ; clearCanvas.
+	| ee |
 	
-	ee := text end.
+	ee := text searchFrom: bb forwardFor: 	(String with:Character newDocument).
+	
+	printer canvas: aCanvas ; clearCanvas.
 	
 	[ printer isNotAtEnd and: [bb ~= ee] ] 
 		whileTrue:[ | cc  |
@@ -7080,7 +7093,19 @@ drawTextOn: aCanvas
 	
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/25/2025 13:42:46'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:12:07'!
+drawOn: aCanvas
+
+	[
+		super drawOn: aCanvas.
+	
+		self displayHelpEntryOn: aCanvas.
+
+	]
+	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
+! !
+
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:58:23'!
 initialize 
 
 	super initialize.
@@ -7092,6 +7117,26 @@ initialize
 	printer := KaeruPrinter new.
 	
 	printer displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
+
+	entries := { 
+		$n -> 'Kaeru' .
+		$u -> 'LINE SPACE' .
+		$w -> 'BOLD' .
+		$t -> 'STYLE' .
+		$e -> 'CAPS' .
+		$a -> 'COPY' .
+		$- -> 'INDENT' .
+		$= -> 'RIGHT MARGIN' .
+		$` -> 'LEFT MARGIN' 
+	} asDictionary.
+	
+	helpEntry := $n.
+	
+	self loadHelpFile 
+! !
+
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 22:04:40'!
+loadHelpFile 
 	
 	text := KLibrary new.
 	
@@ -7104,7 +7149,15 @@ initialize
 		stream next.
 				
 		text serializeFrom: stream ].
+	
 ! !
+
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:01:20'!
+setHelpEntryTo: aCharacter
+
+	helpEntry := aCharacter.
+	
+	self redrawNeeded ! !
 
 !KaeruScreenSaverMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:52:28'!
 initialize
