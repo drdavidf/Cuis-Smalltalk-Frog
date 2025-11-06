@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:35:08 am'!
+'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:37:15 am'!
 'Description '!
-!provides: 'Kaeru' 1 1228!
+!provides: 'Kaeru' 1 1229!
 !requires: 'YAXO' 1 28 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Compression' 1 43 nil!
@@ -7012,18 +7012,18 @@ socketDischargingIcon
  
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:15:14'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:37:09'!
 displayHelpEntryOn: aCanvas
 
 	| bb title |
 	
-	title := entries at: helpEntry ifAbsent: ['NOT A COMMAND'].
+	title := entries at: helpEntry ifAbsent: [Character newDocument asString, 'NOT A COMMAND'].
 	
 	bb := text searchFrom: text begin forwardFor: title.
 	
 	bb ifNil:[
 	
-		bb :=  text searchFrom: text begin forwardFor: 'NOT WRITTEN YET'].
+		bb :=  text searchFrom: text begin forwardFor: Character newDocument asString, 'NOT WRITTEN YET'].
 
 	self assert: bb notNil.
 	
