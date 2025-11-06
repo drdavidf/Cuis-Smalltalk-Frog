@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:16:38 am'!
+'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:24:31 am'!
 'Description '!
-!provides: 'Kaeru' 1 1225!
+!provides: 'Kaeru' 1 1226!
 !requires: 'YAXO' 1 28 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Compression' 1 43 nil!
@@ -7105,7 +7105,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:58:23'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:23:45'!
 initialize 
 
 	super initialize.
@@ -7128,7 +7128,7 @@ initialize
 		$- -> 'INDENT' .
 		$= -> 'RIGHT MARGIN' .
 		$` -> 'LEFT MARGIN' 
-	} asDictionary.
+	} collect:[:each | each key -> (Character newDocument asString , each value) ] :: asDictionary.
 	
 	helpEntry := $n.
 	
