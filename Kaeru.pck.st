@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:24:31 am'!
+'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:35:08 am'!
 'Description '!
-!provides: 'Kaeru' 1 1226!
+!provides: 'Kaeru' 1 1228!
 !requires: 'YAXO' 1 28 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Compression' 1 43 nil!
@@ -7031,7 +7031,7 @@ displayHelpEntryOn: aCanvas
 	
 	! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:51:06'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:35:00'!
 drawDocumentAt: bb on: aCanvas
 
 	" draw the help text on aCanvas
@@ -7039,7 +7039,11 @@ drawDocumentAt: bb on: aCanvas
 
 	| ee |
 	
-	ee := text searchFrom: bb forwardFor: 	(String with:Character newDocument).
+	self assert: bb char = Character newDocument.
+	
+	bb next.
+	
+	ee := text searchFrom: bb forwardFor: (String with:Character newDocument).
 	
 	printer canvas: aCanvas ; clearCanvas.
 	
@@ -7083,6 +7087,7 @@ drawDocumentAt: bb on: aCanvas
 						ifFalse:[						
 							cc = Character newDocument
 								ifTrue:[
+									self assert: false.
 									printer newDocument]
 								ifFalse:[ 									
 									printer newLine.
@@ -7105,7 +7110,7 @@ drawOn: aCanvas
 	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:23:45'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:26:48'!
 initialize 
 
 	super initialize.
@@ -7122,7 +7127,7 @@ initialize
 		$n -> 'Kaeru' .
 		$u -> 'LINE SPACE' .
 		$w -> 'BOLD' .
-		$t -> 'STYLE' .
+		$t -> 'PARAGRAPH STYLE' .
 		$e -> 'CAPS' .
 		$a -> 'COPY' .
 		$- -> 'INDENT' .
