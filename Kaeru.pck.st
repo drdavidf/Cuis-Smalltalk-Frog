@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 6 November 2025 at 9:37:15 am'!
+'From Cuis7.5 [latest update: #7615] on 8 November 2025 at 9:12:11 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1229!
+!provides: 'Kaeru' 1 1238!
 !requires: 'YAXO' 1 28 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Compression' 1 43 nil!
@@ -360,7 +360,7 @@ CodePackage subclass: #Kaeru
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'Kaeru class' category: #'Kaeru-Keyboard'!
 Kaeru class
-	instanceVariableNames: 'mutex'!
+	instanceVariableNames: 'mutex beep'!
 
 !classDefinition: #ExhaustiveTestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #ExhaustiveTestKLibrary
@@ -6323,23 +6323,21 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:06:37'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:32:22'!
 autoSave
 
-	view at:#edit :: model isDirty ifFalse:[^self].
+	view at:#edit :: isDirty ifFalse:[^self].
 	
 	Kaeru mutex critical:[
-		Smalltalk saveImage.
+		Smalltalk saveImage .
 	].
 
-	" see Kaeru >> startUp: for what happens after saveImage completes "! !
+	" control never reaches here, see Kaeru >> didSaveImage "! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 21:05:31'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:35:59'!
 clearDirtyFlag
 
-	view at:#edit :: clearDirtyFlag.
-	
-! !
+	view at: #edit :: clearDirtyFlag .! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
 drawOn: aCanvas
@@ -6793,6 +6791,11 @@ stopBlinking
 	showCursor ifTrue: [
 		showCursor := false.
 		self invalidateCursorRectangles ]! !
+
+!KaeruEditorMorph methodsFor: 'testing' stamp: 'DF 11/6/2025 18:51:38'!
+isDirty
+	^editor isDirty 
+	! !
 
 !KaeruEditorMorph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 17:53:49'!
 serializeFrom: aReadStream
@@ -7387,14 +7390,34 @@ reportTextEmptyStatus
 			
 ! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:38:52'!
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:20'!
+beep
+
+	SoundPlayer playSound: beep! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:57:26'!
+didSaveImage
+	
+	UISupervisor ui ifNotNil:[ :world | | app |
+		
+		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+				
+		app ifNotNil:[ app  clearDirtyFlag  ] ].	
+	
+	! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:10:53'!
 initialize
 
 	"self initialize"
 	
+	beep := SampledSound fromWaveFileNamed: Smalltalk imagePath asDirectoryEntry / 'audio' // 'beep.wav'.
+
 	mutex := Semaphore forMutualExclusion.
 	
-	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.! !
+	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.
+	
+! !
 
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:57'!
 installSigTermHandler
@@ -7414,11 +7437,25 @@ installSigTermHandler
 
 ! !
 
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:52'!
+lostChangesOnStartUp
+
+	self beep.
+	
+	Transcript show:'some changes may have been lost'; cr .! !
+
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:53'!
 mutex
 	^mutex! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/25/2025 13:14:06'!
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:59'!
+saveChunkNotFound
+
+	self beep.
+	
+	Transcript show:'save chunk not found. proceed with caution.'; cr .! !
+
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 18:49:42'!
 startUp: args
 
 	Transcript logToStdout: false.
@@ -7434,21 +7471,6 @@ startUp: args
 		Smalltalk quit.
 	].
 	
-	args isKindOf: Boolean :: ifTrue:[ | aBoolean |
-		aBoolean := args.
-		
-		aBoolean ifFalse:[ 
-					
-			" This is not a real startup, we have just saved the image"
-		
-			UISupervisor ui ifNotNil:[ :world | | app |
-			
-				app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-			
-				app ifNotNil:[ app clearDirtyFlag ] ].
-			
-			^self ] ].
-
 	self installSigTermHandler.
 
 	UISupervisor ui ifNotNil:[ :world | | app |
