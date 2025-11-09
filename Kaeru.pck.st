@@ -1,6 +1,6 @@
-'From Cuis7.5 [latest update: #7615] on 8 November 2025 at 9:12:11 pm'!
+'From Cuis7.5 [latest update: #7615] on 9 November 2025 at 9:26:22 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1238!
+!provides: 'Kaeru' 1 1239!
 !requires: 'YAXO' 1 28 nil!
 !requires: 'Regex-Core' 1 6 nil!
 !requires: 'Compression' 1 43 nil!
@@ -7455,7 +7455,7 @@ saveChunkNotFound
 	
 	Transcript show:'save chunk not found. proceed with caution.'; cr .! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 18:49:42'!
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/9/2025 21:25:53'!
 startUp: args
 
 	Transcript logToStdout: false.
@@ -7470,6 +7470,8 @@ startUp: args
 	
 		Smalltalk quit.
 	].
+	
+	SoundPlayer primSoundStop ; shutDown; initialize.
 	
 	self installSigTermHandler.
 
