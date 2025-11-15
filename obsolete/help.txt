@@ -1,0 +1,16 @@
+To type, just type. All typed text is inserted. Line endings and page endings 
+	are automatic. Use [RETURN] to end paragraphs. [PAGE] forces a page to end. [SHIFT]-[DOCUMENT] begins a new document. If you make a mistake, press [ERASE] 
+	to backspace over it. The blinking cursor shows where text will be inserted; 
+	the solid highlight accompanying the cursor shows what [ERASE] will erase.
+To move the cursor, hold down a LEAP key, type whatever you want to find -- 
+	a character, a word or phrase -- let go of the LEAP key after cursor leaps. 
+	After cursor movement, [ERASE] erases text to the right of the cursor. 
+	[UNDO] can undo leaping, erasing and most commands.
+To highlight some text you want to do something with (such as print or erase),
+	leap from one end of it to the other, then press both LEAP keys. To
+	unhighlight, press and release either LEAP key. Toadjust the highlight, 
+	tap either LEAP key repeatedly as needed, then press both LEAP keys again.
+Commands do things to highlighted text. Labels on key fronts show other commands.
+	To use these, hold down [USE FRONT], and, while you hold it, press command.
+For more information: Hold [USE FRONT], press [EXPLAIN], and then the key you
+	want to know about. 

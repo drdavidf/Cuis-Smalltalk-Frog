@@ -1,0 +1,207 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=latex 2024.9.6)  12 SEP 2025 11:25
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**kaeru.tex
+(./kaeru.tex
+LaTeX2e <2024-06-01> patch level 2
+L3 programming layer <2024-08-16>
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/article.cls
+Document Class: article 2024/02/08 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2024/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2024/02/08 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count194
+\c@section=\count195
+\c@subsection=\count196
+\c@subsubsection=\count197
+\c@paragraph=\count198
+\c@subparagraph=\count199
+\c@figure=\count266
+\c@table=\count267
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen141
+)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/zed-csp/zed-csp.sty
+Package: zed-csp 95/01/11 0c zed-csp package
+\c@mv@zed=\count268
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `zed'
+(Font)                  OT1/cmr/m/n --> OT1/cmr/m/n on input line 86.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `zed'
+(Font)                  OT1/cmr/bx/n --> OT1/cmr/bx/n on input line 86.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `zed'
+(Font)                  OT1/cmss/m/n --> OT1/cmss/m/n on input line 86.
+\symitalics=\mathgroup4
+LaTeX Font Info:    Redeclaring math alphabet \mathrm on input line 86.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 86.
+\symlasy=\mathgroup5
+\symAMSa=\mathgroup6
+\symAMSb=\mathgroup7
+LaTeX Font Info:    Redeclaring math symbol \sqsubset on input line 308.
+LaTeX Font Info:    Redeclaring math symbol \sqsupset on input line 308.
+LaTeX Font Info:    Redeclaring math symbol \mho on input line 308.
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 308.
+\zedindent=\dimen142
+\zedleftsep=\dimen143
+\zedtab=\dimen144
+\zedbar=\dimen145
+\zedskip=\skip51
+\interzedlinepenalty=\count269
+\preboxpenalty=\count270
+)
+(/usr/local/texlive/2024/texmf-dist/tex/latex/l3backend/l3backend-dvips.def
+File: l3backend-dvips.def 2024-05-08 L3 backend support: dvips
+\l__pdf_internal_box=\box52
+\l__pdf_backend_content_box=\box53
+\l__pdf_backend_model_box=\box54
+\g__pdf_backend_annotation_int=\count271
+\g__pdf_backend_link_int=\count272
+\g__pdf_backend_link_sf_int=\count273
+)
+(./kaeru.aux)
+\openout1 = `kaeru.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 6.
+LaTeX Font Info:    ... okay on input line 6.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <12> on input line 8.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <8> on input line 8.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <6> on input line 8.
+LaTeX Font Info:    Trying to load font information for U+lasy on input line 8.
+
+ (/usr/local/texlive/2024/texmf-dist/tex/latex/base/ulasy.fd
+File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
+)
+LaTeX Font Info:    Trying to load font information for U+msa on input line 8.
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 8.
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 16.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 16.
+
+
+[1
+
+]
+
+[2]
+Overfull \hbox (28.29994pt too wide) in alignment at lines 104--109
+[] 
+ []
+
+
+Overfull \hbox (51.04422pt too wide) in alignment at lines 113--118
+[] 
+ []
+
+
+Overfull \hbox (20.14186pt too wide) in alignment at lines 139--145
+[] 
+ []
+
+
+
+[3]
+
+[4]
+
+[5]
+
+[6]
+
+[7]
+
+[8]
+Overfull \hbox (51.47093pt too wide) in alignment at lines 381--387
+[] 
+ []
+
+
+
+[9]
+
+[10]
+Overfull \hbox (8.81062pt too wide) in alignment at lines 461--463
+[] 
+ []
+
+
+
+[11]
+Overfull \hbox (93.0991pt too wide) in alignment at lines 516--533
+[] 
+ []
+
+
+
+[12]
+
+[13]
+Overfull \hbox (14.03508pt too wide) in alignment at lines 567--577
+[] 
+ []
+
+
+Overfull \hbox (31.25723pt too wide) in alignment at lines 580--590
+[] 
+ []
+
+
+
+[14]
+Overfull \hbox (26.45488pt too wide) in alignment at lines 627--638
+[] 
+ []
+
+
+
+[15]
+Overfull \hbox (26.88266pt too wide) in alignment at lines 677--688
+[] 
+ []
+
+
+
+[16]
+
+[17]
+
+[18] (./kaeru.aux)
+ ***********
+LaTeX2e <2024-06-01> patch level 2
+L3 programming layer <2024-08-16>
+ ***********
+ ) 
+Here is how much of TeX's memory you used:
+ 1285 strings out of 473580
+ 16826 string characters out of 5728261
+ 1943954 words of memory out of 5000000
+ 24220 multiletter control sequences out of 15000+600000
+ 568749 words of font info for 78 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 35i,11n,50p,792b,224s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+Output written on kaeru.dvi (18 pages, 60908 bytes).

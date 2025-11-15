@@ -1,12 +1,9 @@
-'From Cuis7.5 [latest update: #7620] on 15 November 2025 at 9:37:49 pm'!
+'From Cuis7.5 [latest update: #7615] on 19 October 2025 at 5:16:52 pm'!
 'Description '!
-!provides: 'Kaeru' 1 1246!
-!requires: 'YAXO' 1 28 nil!
-!requires: 'I2C' 1 24 nil!
-!requires: 'OSProcess' 1 36 nil!
-!requires: 'Sound' 1 35 nil!
-!requires: 'Compression' 1 43 nil!
+!provides: 'Kaeru' 1 1165!
+!requires: 'I2C' 1 19 nil!
 !requires: 'Regex-Core' 1 6 nil!
+!requires: 'YAXO' 1 28 nil!
 SystemOrganization addCategory: #Kaeru!
 SystemOrganization addCategory: #'Kaeru-Keyboard'!
 SystemOrganization addCategory: #'Kaeru-Morphic'!
@@ -36,7 +33,7 @@ KaeruEditorController class
 
 !classDefinition: #KaeruHelpController category: #'Kaeru-Keyboard'!
 KaeruController subclass: #KaeruHelpController
-	instanceVariableNames: 'bothLeapAgainKeysPressed view'
+	instanceVariableNames: ''
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Keyboard'!
@@ -62,16 +59,6 @@ KaeruController subclass: #KaeruPluggableMarginController
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'KaeruPluggableMarginController class' category: #'Kaeru-Keyboard'!
 KaeruPluggableMarginController class
-	instanceVariableNames: ''!
-
-!classDefinition: #KaeruRightMarginController category: #'Kaeru-Keyboard'!
-KaeruController subclass: #KaeruRightMarginController
-	instanceVariableNames: 'model left margin right'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Keyboard'!
-!classDefinition: 'KaeruRightMarginController class' category: #'Kaeru-Keyboard'!
-KaeruRightMarginController class
 	instanceVariableNames: ''!
 
 !classDefinition: #KaeruScreenSaverController category: #'Kaeru-Keyboard'!
@@ -124,6 +111,16 @@ LinuxKeyboardMapper subclass: #LinuxRaspiKeyboardMapper
 LinuxRaspiKeyboardMapper class
 	instanceVariableNames: ''!
 
+!classDefinition: #KaeruKeyboardStateMachine category: #'Kaeru-Keyboard'!
+Object subclass: #KaeruKeyboardStateMachine
+	instanceVariableNames: 'leapLeft leapRight leapAgain mapper'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'Kaeru-Keyboard'!
+!classDefinition: 'KaeruKeyboardStateMachine class' category: #'Kaeru-Keyboard'!
+KaeruKeyboardStateMachine class
+	instanceVariableNames: ''!
+
 !classDefinition: #KaeruPrinter category: #'Kaeru-Morphic'!
 Object subclass: #KaeruPrinter
 	instanceVariableNames: 'lineNumber pageNumber dx dy yy xx foreground background canvas font displayWidth pageNumberFont pageSize displayHeight numLines displayRect statusFont cursorRect rulerCursorRect cursorOffset separatorH attributes marginRegister boldFont'
@@ -144,14 +141,14 @@ Object subclass: #DisjointIntervalSequence
 DisjointIntervalSequence class
 	instanceVariableNames: ''!
 
-!classDefinition: #DisjointIntervalTree category: #'Kaeru-Text'!
-Object subclass: #DisjointIntervalTree
-	instanceVariableNames: 'interval children kind'
+!classDefinition: #DocBookWriter category: #'Kaeru-Text'!
+Object subclass: #DocBookWriter
+	instanceVariableNames: 'klib'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Text'!
-!classDefinition: 'DisjointIntervalTree class' category: #'Kaeru-Text'!
-DisjointIntervalTree class
+!classDefinition: 'DocBookWriter class' category: #'Kaeru-Text'!
+DocBookWriter class
 	instanceVariableNames: ''!
 
 !classDefinition: #KBackwardStream category: #'Kaeru-Text'!
@@ -244,16 +241,6 @@ Object subclass: #KTokenStream
 KTokenStream class
 	instanceVariableNames: ''!
 
-!classDefinition: #OpenDocWriter category: #'Kaeru-Text'!
-Object subclass: #OpenDocWriter
-	instanceVariableNames: 'templateDirectory styleCounter style styleStream textStream styleWriter textWriter pageWidth pageHeight charWidth displayWidth'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Text'!
-!classDefinition: 'OpenDocWriter class' category: #'Kaeru-Text'!
-OpenDocWriter class
-	instanceVariableNames: ''!
-
 !classDefinition: #SimpleScanner category: #'Kaeru-Text'!
 Object subclass: #SimpleScanner
 	instanceVariableNames: 'stream'
@@ -306,7 +293,7 @@ KaeruMasterMorph class
 
 !classDefinition: #KaeruEditorMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruEditorMorph
-	instanceVariableNames: 'rulerFont window printer wc editor showCursor snapshot ina219 blinkingRate'
+	instanceVariableNames: 'rulerFont window printer wc editor showCursor snapshot ina219'
 	classVariableNames: 'BatteryIcons IconForLineSpace IconForLineSpaceSelected'
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -316,7 +303,7 @@ KaeruEditorMorph class
 
 !classDefinition: #KaeruHelpMorph category: #'Kaeru-Morphic'!
 ColoredBoxMorph subclass: #KaeruHelpMorph
-	instanceVariableNames: 'text printer entries helpEntry'
+	instanceVariableNames: 'text printer'
 	classVariableNames: ''
 	poolDictionaries: ''
 	category: 'Kaeru-Morphic'!
@@ -362,7 +349,7 @@ CodePackage subclass: #Kaeru
 	category: 'Kaeru-Keyboard'!
 !classDefinition: 'Kaeru class' category: #'Kaeru-Keyboard'!
 Kaeru class
-	instanceVariableNames: 'mutex beep'!
+	instanceVariableNames: 'mutex'!
 
 !classDefinition: #ExhaustiveTestKLibrary category: #'Kaeru-Text'!
 TestCase subclass: #ExhaustiveTestKLibrary
@@ -382,16 +369,6 @@ TestCase subclass: #TestDisjointIntervalSeq
 	category: 'Kaeru-Text'!
 !classDefinition: 'TestDisjointIntervalSeq class' category: #'Kaeru-Text'!
 TestDisjointIntervalSeq class
-	instanceVariableNames: ''!
-
-!classDefinition: #TestDisjointIntervalTree category: #'Kaeru-Text'!
-TestCase subclass: #TestDisjointIntervalTree
-	instanceVariableNames: ''
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'Kaeru-Text'!
-!classDefinition: 'TestDisjointIntervalTree class' category: #'Kaeru-Text'!
-TestDisjointIntervalTree class
 	instanceVariableNames: ''!
 
 !classDefinition: #TestKLibrary category: #'Kaeru-Text'!
@@ -436,14 +413,7 @@ TestScanner class
 
 
 !DisjointIntervalSequence commentStamp: '<historical>' prior: 0!
-This data structure represents a tree of semi-open intervals. 
-
-Each node in the tree has an interval and a sequence of children. The tree maintains the following properties:
-
-1. All the intervals in the children are included in the parent interval.
-
-2. The children are non overlapping and are ordered in an ascending order.
-
+This data structure represents a set of non overlapping semi-open intervals ordered such that the end of an interval is at most equal to the beginning of the next interval.
 
 !
 
@@ -521,26 +491,17 @@ keyUp: aMorphicEvent
 
 	self subclassResponsibility ! !
 
-!KaeruController methodsFor: 'as yet unclassified' stamp: 'DF 11/12/2025 21:55:57'!
-keyboardMapper: aKeyboardMapper
-
-	keyboardMapper := aKeyboardMapper ! !
-
 !KaeruController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:03:59'!
 viewMaster: aKaeruMorph
 
 	viewMaster := aKaeruMorph ! !
 
-!KaeruEditorController methodsFor: 'state machine' stamp: 'DF 11/5/2025 15:41:14'!
+!KaeruEditorController methodsFor: 'state machine' stamp: 'Df 9/25/2025 12:38:04'!
 doTransitionFor: aSymbol
 
 	| entry |
 	
-	entry := transitions at: { state . aSymbol } ifAbsent:[
-		
-		Transcript show: ('{1} has no transition on {2}' format:{state . aSymbol}) ; cr.
-		
-		^self].
+	entry := transitions at: { state . aSymbol }.
 	
 	state := entry isArray
 		ifTrue:[
@@ -550,7 +511,7 @@ doTransitionFor: aSymbol
 			entry ].
 		! !
 
-!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 11/5/2025 14:42:10'!
+!KaeruEditorController methodsFor: 'initialization' stamp: 'DF 10/18/2025 15:06:55'!
 initialize
 
 	super initialize.
@@ -561,32 +522,26 @@ initialize
 		{ #editingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
 		{ #editingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
 		{ #editingState . #keyStroke } -> #editingState .
-		{ #editingState . #command } -> #editingState .
 
 		{ #freshEditingState . #leapLeftDown } -> { #startLeapLeftState . [:editor | editor restartSearch ] }.
 		{ #freshEditingState . #leapRightDown } -> { #startLeapRightState . [:editor | editor restartSearch ] }.
-		{ #freshEditingState . #keyStroke } -> { #editingState  . [:editor | editor resetSelection ] }.
-		{ #freshEditingState . #command } -> #editingState .
+		{ #freshEditingState . #keyStroke } -> { #editingState . [:editor | editor resetSelection ] } .
 		
 		{ #startLeapLeftState . #leapLeftUp } -> { #freshEditingState . [:editor | editor creepBack] }.
 		{ #startLeapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapLeftState . #keyStroke } -> #leapLeftState.
-		{ #startLeapLeftState . #command } -> #leapLeftState.
 		
 		{ #leapLeftState . #leapLeftUp } -> #freshEditingState .
 		{ #leapLeftState . #leapRightDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #leapLeftState . #keyStroke } -> #leapLeftState . 
-		{ #leapLeftState . #command } -> #leapLeftState . 
 
 		{ #startLeapRightState . #leapRightUp } -> { #freshEditingState . [:editor | editor creepForward ] }.
 		{ #startLeapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select ] }.
 		{ #startLeapRightState . #keyStroke } -> #leapRightState.
-		{ #startLeapRightState . #command } -> #leapRightState.
 
 		{ #leapRightState . #leapRightUp } -> #freshEditingState  .
 		{ #leapRightState . #leapLeftDown } -> { #selectingStartState . [:editor | editor select] }.
 		{ #leapRightState . #keyStroke } -> #leapRightState . 
-		{ #leapRightState . #command } -> #leapRightState . 
 
 		{ #selectingStartState . #leapLeftUp } -> #selectingInProgressState . 	
 		{ #selectingStartState . #leapRightUp } -> #selectingInProgressState . 
@@ -597,25 +552,22 @@ initialize
 		{ #selectingReadyState . #leapLeftDown } -> #leapLeftSelectState.
 		{ #selectingReadyState . #leapRightDown } -> #leapRightSelectState.
 		{ #selectingReadyState . #keyStroke } -> #editingState.
-		{ #selectingReadyState . #command } -> #editingState.
 		
 		{ #leapLeftSelectState . #leapLeftUp } -> { #freshEditingState . [:editor | editor collapseLeft ] } .
 		{ #leapLeftSelectState . #leapRightDown } -> #selectingStartState.
 		{ #leapLeftSelectState . #keyStroke } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
-		{ #leapLeftSelectState . #command } -> { #searchLeftSelectState . [:editor | editor restartSearch ] }.
 		
 		{ #leapRightSelectState . #leapRightUp } -> { #freshEditingState . [:editor | editor collapseRight ] } .
 		{ #leapRightSelectState . #leapLeftDown } -> #selectingStartState.
 		{ #leapRightSelectState . #keyStroke } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
-		{ #leapRightSelectState . #command } -> { #searchRightSelectState . [:editor | editor restartSearch ] }.
 		
 		{ #searchLeftSelectState . #leapLeftUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
 		{ #searchLeftSelectState . #keyStroke } -> #searchLeftSelectState .
-		{ #searchLeftSelectState . #command } -> #searchLeftSelectState .
 		
 		{ #searchRightSelectState . #leapRightUp } -> { #selectingReadyState . [:editor | editor moveSelectionAfterCursor ] }.
+		
 		{ #searchRightSelectState . #keyStroke } ->  #searchRightSelectState  .
-		{ #searchRightSelectState . #command } ->  #searchRightSelectState  .
 		
 	} asDictionary.
 	! !
@@ -638,14 +590,10 @@ keyDown: aMorphicEvent
 
 ! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 15:39:48'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:20:48'!
 keyStroke: aKeyboardEvent
 
-	Transcript show: ('Editor Controller keyStroke. state = {1} . transitioning ... ' format:{ state}) ; cr.
- 	
-	self doTransitionFor: (useFront = #up ifTrue:[ #keyStroke ] ifFalse: [#command]).
-
-	Transcript show: ('Editor Controller keyStroke. state = {1} . ' format:{ state}) ; cr.
+	self doTransitionFor: #keyStroke.
 
 	state = #editingState
 		ifTrue:[
@@ -700,7 +648,7 @@ possiblyLeapAgain
 			model creepForward; searchForward ].
 		! !
 
-!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 14:30:36'!
+!KaeruEditorController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:43:13'!
 processEditing: aKeyboardEvent
 
 	self assert: state = #editingState. 
@@ -807,53 +755,26 @@ translateToCharacter: aKeyboardEvent
 					aKeyboardEvent keyCharacter ] ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:58:11'!
-acceptControl
-
-	view setHelpEntryTo: $n.! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:31'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:03'!
 keyDown: aMorphicEvent
-
-	keyboardMapper isLeapAgainKeyDown: aMorphicEvent ::
-		ifTrue:[
-			bothLeapAgainKeysPressed := true ].
 ! !
 
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:00:00'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 22:02:09'!
 keyStroke: aKeyboardEvent
 
-	bothLeapAgainKeysPressed and: [ aKeyboardEvent keyCharacter = $x ] :: ifTrue: [
+! !
 
-		bothLeapAgainKeysPressed := false. "clear the state for next time we enter the help controller "
-
-		controllerMaster activate: #edit. viewMaster activate: #edit.
-		
-		Smalltalk saveAndQuit ].
-	
-	view setHelpEntryTo: aKeyboardEvent keyCharacter.
-	
-	! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 10/27/2025 20:51:18'!
+!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 13:04:38'!
 keyUp: aMorphicEvent
 
 	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
 		ifTrue:[
-			
-			bothLeapAgainKeysPressed := false. "clear the state for next time we enter the help controller "
-	
 			controllerMaster activate: #edit. viewMaster activate: #edit ].
 ! !
 
 !KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 21:29:23'!
 state
 	^#help! !
-
-!KaeruHelpController methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 08:54:19'!
-view: aHelpMorph
-
-	view := aHelpMorph ! !
 
 !KaeruMasterController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 19:53:52'!
 activate: aSymbol
@@ -992,78 +913,6 @@ showMarginMessage: aSymbol
 !KaeruPluggableMarginController methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 22:00:15'!
 state
 	^marginGetter! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:01:02'!
-acceptControl
-
-	margin := model rightMargin! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-initialize
-
-	super initialize.
-	
-	left := #up.
-	
-	right := #up.
-	
-	margin := 6.! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-keyDown: aMorphicEvent
-
-	keyboardMapper isLeapLeftKeyDown: aMorphicEvent ::
-		ifTrue:[
-			left := #down ].
-		
-	keyboardMapper isLeapRightKeyDown: aMorphicEvent ::
-		ifTrue:[
-			right := #down ].
-! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-keyStroke: aMorphicEvent
-
-	! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 20:23:53'!
-keyUp: aMorphicEvent
-
-	self assert: model showRightMargin.
-		
-	left = #down and: [keyboardMapper isLeapLeftKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin - 1 max: 0.
-			
-			model setRightMargin: margin].
-		
-	keyboardMapper isLeapLeftKeyUp: aMorphicEvent ::
-		ifTrue:[
-			left := #up ].
-
-	right = #down and: [keyboardMapper isLeapRightKeyUp: aMorphicEvent ] ::
-		ifTrue:[
-			margin := margin + 1 min: 79.
-			
-			model setRightMargin: margin].
-		
-	keyboardMapper isLeapRightKeyUp: aMorphicEvent ::
-		ifTrue:[
-			right := #up ].
-
-	keyboardMapper isLeapAgainKeyUp: aMorphicEvent ::
-		ifTrue:[ 
-			model showRightMargin: false.
-			controllerMaster activate: #edit.  ].
-! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:31'!
-model: aKaeruEditor
-	model := aKaeruEditor ! !
-
-!KaeruRightMarginController methodsFor: 'as yet unclassified' stamp: 'DF 9/29/2025 18:54:37'!
-state
-	^#rightMargin! !
 
 !KaeruScreenSaverController methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:55:32'!
 keyDown: aMorphicEvent
@@ -1210,11 +1059,6 @@ isPageKey: aMorphicEvent
 
 	^aMorphicEvent isPageDown and:[ aMorphicEvent shiftPressed not ]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 20:50:12'!
-isDocumentKey: aMorphicEvent
-	
-	^aMorphicEvent keyValue = 0xFF67 and:[ aMorphicEvent  shiftPressed ]! !
-
 !LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 5/30/2025 22:42:24'!
 isLeapAgainKeyDown: aMorphicEvent
 	^aMorphicEvent controlKeyPressed ! !
@@ -1239,10 +1083,60 @@ isLeapRightKeyDown: aMorphicEvent
 isLeapRightKeyUp: aMorphicEvent
 	^ aMorphicEvent keyValue = 0xFFEA and: [(aMorphicEvent buttons bitAnd: 128) = 0]! !
 
-!LinuxRaspiKeyboardMapper methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 20:49:56'!
-isPageKey: aMorphicEvent
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:16'!
+initialize
 
-	^aMorphicEvent keyValue = 0xFF67 and:[ aMorphicEvent shiftPressed not ]! !
+	mapper := LinuxKeyboardMapper new.
+
+	leapLeft := #up.
+	
+	leapRight := #up.
+	
+	leapAgain := #up.! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:27'!
+keyDown: aMorphicEvent
+
+	mapper isLeapLeftKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #down ].
+
+	mapper isLeapRightKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #down ].
+
+	mapper isLeapAgainKeyDown: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #down ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:00:59'!
+keyUp: aMorphicEvent
+
+	mapper isLeapLeftKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapLeft := #up ].
+
+	mapper isLeapRightKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapRight := #up ].
+
+	mapper isLeapAgainKeyUp: aMorphicEvent ::
+		ifTrue:[
+			leapAgain := #up ]
+! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:02:03'!
+leapAgain
+	^leapAgain! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:33'!
+leapLeft
+	^leapLeft! !
+
+!KaeruKeyboardStateMachine methodsFor: 'as yet unclassified' stamp: 'Df 9/7/2025 19:01:50'!
+leapRight
+	^leapRight ! !
 
 !KaeruPrinter methodsFor: 'address calculation' stamp: 'DF 10/4/2025 08:55:02'!
 calculateCursorRectangles	 
@@ -1618,7 +1512,7 @@ isNotAtEnd
 
 	^ yy + hh < (displayRect corner y + 1.01)! !
 
-!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 11/2/2025 21:38:01'!
+!KaeruPrinter methodsFor: 'initialization' stamp: 'DF 10/9/2025 11:42:34'!
 initialize
 
 	pageNumberFont := FontFamily familyName: 'Courier Prime' pointSize: 9.	
@@ -1633,7 +1527,7 @@ initialize
 	
 	dy := font lineSpacing.
 
-	numLines := 22. "how many line units fit on the physical display"
+	numLines := 23. "how many line units fit on the physical display"
 
 	displayWidth := 80 * dx.
 
@@ -2338,184 +2232,94 @@ serializeOn: aWriteStream
 	
 	aWriteStream nextPut: $].! !
 
-!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:57:17'!
-interval
-	^interval! !
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 16:52:18'!
+library: aKLibrary
+	klib := aKLibrary ! !
 
-!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:57:02'!
-interval: anInterval 
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:52:47'!
+renderDocumentAt: anIterator on: anXMLWriter
 
-	interval := anInterval ! !
-
-!DisjointIntervalTree methodsFor: 'accessing' stamp: 'DF 10/28/2025 19:52:03'!
-kind: aSymbol
-	kind := aSymbol! !
-
-!DisjointIntervalTree methodsFor: 'testing' stamp: 'DF 10/28/2025 21:57:01'!
-invariant
-
-	" the children trees are ordered such that they do not overlap and in ascending order. "
+	| bb title |
 	
-	1 to: children size - 1 do:[:ii |
-		self assert: (children at: ii :: interval last <= (children at:ii + 1 :: interval first)) ].
+	anXMLWriter  startTag: 'book' ; endTag.
 	
-	" the children are included in this tree's interval "
+	bb := anIterator.
 	
-	children do:[:each | 
-		self assert: interval first <= each interval first.
-		self assert: each interval last <= interval last ].
+	title := bb line.
 	
-	" the children are valid interval trees "
+	anXMLWriter startTag: 'title'; endTag.
 	
-	children do:[:each | 
-		self assert: each invariant].
+	anXMLWriter pcData: title ; endTag: 'title'.
 	
-	^true! !
+	[ bb paragraph isDocBreaking ]
+		whileFalse:[
+			self renderParagraphAt: bb on: anXMLWriter.
+			bb nextParagraph ].
 
-!DisjointIntervalTree methodsFor: 'initialization' stamp: 'DF 10/31/2025 21:02:29'!
-initialize
-
-	children := OrderedCollection new.
+	self renderParagraphAt: bb on: anXMLWriter.
+	bb nextParagraph.
 	
-	kind := #clear! !
-
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:57:49'!
-insertInterval: anInterval kind: aSymbol
-
-	| mm uu vv |
+	anXMLWriter endTag: 'book'.
 	
-	anInterval first >= anInterval last ifTrue:[^self]. "don't do anything if the interval is empty"
+	^bb ! !
 
-	self assert: interval first <=  anInterval first.
-	self assert: anInterval last <= interval last.
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:59'!
+renderLibraryOn: anXMLWriter
+
+	| bb ee attrs |
+
+	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
+
+	attrs := self asXML: klib attributes.
 	
-	children ifEmpty:[
-		children add: (DisjointIntervalTree new interval: anInterval ; kind: aSymbol ; yourself).
-		^self ].
-
-	" mm is the part of anInterval that appears inside the first interval in children "
+	attrs at: 'xmlns' put: 'http://docbook.org/ns/docbook' .
 	
-	mm := (anInterval first max: children first interval first) to: (anInterval last min: children first interval last).
-
-	children first insertInterval: mm kind: aSymbol.
-		
-	" vv is the part of anInterval that lies after the first interval in children "
+	anXMLWriter  startElement: 'set' attributeList: attrs ; endTag.
 	
-	vv := (anInterval first max: children first interval last) to: anInterval last.
+	ee := klib end.
+	bb := klib begin.
 	
-	self insertInterval: vv kind: aSymbol after: 1.
+	[ bb ~= ee ]
 	
-	" uu is the part of anInterval where it appears before the first interval in children "
-		
-	uu := anInterval first to: children first interval first.
-
-	uu first < uu last ifTrue:[
-		children addFirst: (DisjointIntervalTree new interval: uu ; kind: aSymbol ; yourself) ].
-		
-	! !
-
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 22:03:10'!
-insertInterval: anInterval kind: aSymbol after: anIndex
-
-	" insert anInterval assuming that it begins after the interval at anIndex "
+		whileTrue:[			
+			bb next.
+			bb := self renderDocumentAt: bb on: anXMLWriter ] .
 	
-	| mm uu vv |
+	anXMLWriter endTag: 'set'.! !
+
+!DocBookWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:56:09'!
+renderParagraphAt: anIterator on: anXMLWriter
+
+	| text pp defaults |
 	
-	anInterval first >= anInterval last ifTrue:[^self]. "don't do anything if the interval is empty"
-
-	self assert: interval first <=  anInterval first.
-	self assert: anInterval last <= interval last.
-
-	self assert: (children at: anIndex) interval last <= anInterval first.
-
-	anIndex = children size ifTrue:[ " the interval appears after the last interval in the list "
-		children add: (DisjointIntervalTree new interval: anInterval ; kind: aSymbol ; yourself).
-		^self ].
-
-	" mm is the part of anInterval that appears inside the next interval in children "
+	defaults := klib attributes.
 	
-	mm := (anInterval first max: (children at: anIndex+1) interval first) to: (anInterval last min: (children at: anIndex+1) interval last).
-
-	(children at: anIndex+1)  insertInterval: mm kind: aSymbol.
-		
-	" vv is the part of anInterval that lies after the first interval in children "
+	pp := anIterator paragraph.
 	
-	vv := (children at: anIndex+1) interval last to: anInterval last.
-	
-	self insertInterval: vv kind: aSymbol after: anIndex + 1.
-	
-	" uu is the part of anInterval where it appears before the next interval in children "
-		
-	uu := anInterval first to: (children at: anIndex+1) interval first.
-
-	uu first < uu last ifTrue:[
-		children add: (DisjointIntervalTree new interval: uu ; kind: aSymbol ; yourself) after: anIndex ].
-		
-	! !
-
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:13:49'!
-putChar: aCharacter into: anXMLWriter
-
-	aCharacter = Character space
-		ifTrue:[
-			anXMLWriter startTag: 'text:s' ; endEmptyTag: 'text:s']
-		ifFalse:[
-			anXMLWriter putChar: aCharacter ].
-! !
-
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/28/2025 20:06:38'!
-tagsOf: anIndex
-
-	| cc |
-	
-	self assert: interval first <= anIndex.
-	self assert: anIndex < interval last.
-	
-	cc := children detect:[:each | 
-			each interval first <= anIndex and:[anIndex < each interval last ]  ] 
-		ifNone:[ nil ].
-		
-	^cc isNil ifTrue:[
-		Set with: kind ]
+	pp attributes == defaults ifTrue:[
+		anXMLWriter startTag: 'par'  ; endTag.
+	]
 	ifFalse:[
-		(Set with: kind) , (cc tagsOf: anIndex) ]
-	
-	
+		
+		anXMLWriter startElement: 'par' attributeList: (self asXML: pp attributes ) ; endTag.
+	].
 
+	text := anIterator paragraph text.
+	
+	anXMLWriter pcData: text.
+	
+	pp emphasis ifNotNil:[
+		anXMLWriter startTag: 'emphasis' ; endTag.
+			
+			pp emphasis keys do:[:each |
+			
+				pp emphasis at: each :: do:[:ival |
+					anXMLWriter startElement: 'interval' attributeList: { 'first' -> ival first asString . 'last' -> ival last asString } asDictionary ; endEmptyTag: 'interval' ] ].
+		
+		anXMLWriter endTag: 'emphasis' ].
+		
+	anXMLWriter endTag: 'par'.	
 	! !
-
-!DisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:37:10'!
-transform: aString at: anIndex into: anXMLWriter
-
-	| ii jj |
-	
-	self assert: anIndex <= aString size.
-	
-	self assert: anIndex <= interval last.
-	
-	anXMLWriter startElement: 'text:span' attributeList:{ 'text:style-name' -> kind } asDictionary ; endTag.
-	
-	jj := 1.
-	
-	ii := anIndex.
-	
-	[ jj <= children size ] whileTrue:[
-
-		anXMLWriter putChars: aString from:ii upto: (children at: jj) interval first.
-		
-		ii := (children at: jj) interval first.
-		
-		ii := (children at:jj) transform: aString at: ii into: anXMLWriter.
-		
-		self assert: ii = (children at: jj) interval last.
-		
-		jj := jj + 1].
-	
-	anXMLWriter putChars: aString from:ii upto: interval last. 
-	
-	anXMLWriter endTag: 'text:span'.
-	
-	^interval last! !
 
 !KBackwardStream methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 18:28:08'!
 atEnd
@@ -2662,11 +2466,6 @@ isAtLastLineInParagraph
 	
 	^ lineIndex = (pars at:parIndex) numLines and:[charIndex = 1]! !
 
-!KForwardIterator methodsFor: 'testing' stamp: 'DF 11/4/2025 18:47:22'!
-isAtLastParagraph
-	
-	^ parIndex = pars size! !
-
 !KForwardIterator methodsFor: 'testing' stamp: 'Df 9/12/2025 16:37:29'!
 isAtStart
 	
@@ -2728,6 +2527,26 @@ fastGlobalIndex: lastValidParagraphIndex
 		index := index + par length ].
 	
 	^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex .
+! !
+
+!KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/11/2025 13:59:04'!
+globalIndex
+
+	"Answers the global character index represented by this iterator "
+	
+	| index |
+	
+	index := 0.
+	
+	1 to: parIndex - 1 do:[:ii | | par |
+		par := pars at: ii.
+		index := index + par length ].
+	
+	^ parIndex = (pars size + 1)
+		ifTrue:[ " the iterator points one place past the end of text "
+			 index +1 ]
+		ifFalse:[
+			^index + (pars at: parIndex :: lineIndexToCharIndex: lineIndex) + charIndex ].
 ! !
 
 !KForwardIterator methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:22'!
@@ -2898,10 +2717,8 @@ next
 	
 	self privNextPar! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/19/2025 12:22:50'!
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/3/2025 12:53:05'!
 nextLine
-
-	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
 
 	lineIndex <  (pars at: parIndex :: numLines )
 		ifTrue:[
@@ -2918,13 +2735,11 @@ nextLine
 	
 ! !
 
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/30/2025 16:58:51'!
+!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 17:48:04'!
 nextParagraph
 
-	lineIndex := pars at: parIndex :: numLines .
-
 	charIndex := pars at: parIndex :: lineAt: lineIndex :: length.
-	
+
 	parIndex < pars size 
 		ifTrue:[
 			self privNextPar. 
@@ -2942,13 +2757,6 @@ pars: anOrderedCollection
 setAtBeginningOfLine
 
 	charIndex := 1.! !
-
-!KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 11/4/2025 19:14:41'!
-setAtBeginningOfParagraph
-
-	charIndex := 1.
-	
-	lineIndex := 1.! !
 
 !KForwardIterator methodsFor: 'as yet unclassified' stamp: 'DF 9/28/2025 14:39:55'!
 setAtEnd
@@ -4033,7 +3841,7 @@ unemphasize: aSymbol from: aBeginIndex to: anEndIndex
 	
 ! !
 
-!KLibrary methodsFor: 'object serialization' stamp: 'DF 11/5/2025 22:16:18'!
+!KLibrary methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:31:32'!
 serializeFrom: aReadStream
 
 	" Here's the format: 
@@ -4078,8 +3886,6 @@ serializeFrom: aReadStream
 			aParagraph attributes: defaultParagraphAttributes.
 			
 			aParagraph serializeFrom: aReadStream. 
-			
-			self assert: aParagraph notEmpty.
 			
 			scanner eat: Character escape.
 			
@@ -4491,7 +4297,7 @@ charIndexToLineIndex: anIndex
 
 	^ { pp . ii }! !
 
-!KParagraph methodsFor: 'accessing' stamp: 'DF 10/9/2025 11:34:42'!
+!KParagraph methodsFor: 'accessing' stamp: 'DF 10/18/2025 22:41:24'!
 height
 
 	| hh |
@@ -4501,7 +4307,7 @@ height
 	
 	^self isPageBreaking 
 		ifTrue:[
-			hh +1]
+			hh + 2]  " a document or a soft page break takes the space of a single line, 2 half lines "
 		ifFalse:[
 			hh]! !
 
@@ -4670,7 +4476,7 @@ unemphasize: aSymbol from: aBegin to: anEnd
 	
 	emphasis at:aSymbol :: erase: (aBegin to: anEnd).	! !
 
-!KParagraph methodsFor: 'object serialization' stamp: 'DF 11/6/2025 08:48:44'!
+!KParagraph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 16:16:35'!
 serializeFrom: aReadStream
 
 	| aScanner text |
@@ -4679,7 +4485,7 @@ serializeFrom: aReadStream
 	
 	startingCharacterIndex := aScanner nextInteger. 
 	
-	aScanner eat: Character space. "after the index there must be exactly one space before the paragraph's text begins."
+	aScanner skipWhiteSpace.
 	
 	text := WriteStream on: ''.
 	
@@ -4850,340 +4656,6 @@ on: anOrderedSequence
 	stream := ReadStream on: anOrderedSequence.
 ! !
 
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:45:17'!
-documentAttributes
-
-^{
-'office:mimetype' -> 'application/vnd.oasis.opendocument.text' .
-'xmlns:office'->'urn:oasis:names:tc:opendocument:xmlns:office:1.0' .
-'xmlns:fo'->'urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0' . 'xmlns:style'->'urn:oasis:names:tc:opendocument:xmlns:style:1.0' . 'xmlns:text'->'urn:oasis:names:tc:opendocument:xmlns:text:1.0' .
-'xmlns:of'->'urn:oasis:names:tc:opendocument:xmlns:of:1.2'.
-'office:version' -> '1.4'
-} asDictionary
-	! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 18:09:09'!
-initialize
-
-	| font |
-	
-	styleStream := WriteStream on:''.
-	
-	textStream := WriteStream on:''.
-	
-	styleWriter := XMLWriter on: styleStream.
-	
-	textWriter := XMLWriter on: textStream.
-	
-	pageWidth := 210.0. "millimeter"
-	
-	pageHeight := 297.0. "millimeter"
-	
-	font := FontFamily familyName: 'Courier Prime' pointSize: 12.
-
-	charWidth :=  font widthOf:$M. "in pixels"
-	
-	displayWidth := 1024.0 "in pixels"
-	
-! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:13:32'!
-makeParagraphStyleAttributes: aKParagraphAttributes
-
-	" calculate margins by the relative proportion of a single character's width in pixels relative to the display width (1024 pixels) "
-
-	^​ { 
-		'fo:margin-left' -> ('{1}mm' format: { aKParagraphAttributes leftMargin * charWidth * (pageWidth / displayWidth) } ) .  
-		'fo:margin-right' -> ('{1}mm' format: { pageWidth - (aKParagraphAttributes rightMargin * charWidth * (pageWidth / displayWidth)) } ) .
-		'fo:text-indent' -> ('{1}mm' format:{aKParagraphAttributes indent * charWidth * (pageWidth / displayWidth) })  } asDictionary.
-		
-	! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:12:18'!
-renderDocumentAt: anIterator
-
-	| bb title |
-"	
-	anXMLWriter  startTag: 'book' ; endTag.
-	"
-	bb := anIterator.
-	
-	title := bb line.
-	"
-	anXMLWriter startTag: 'title'; endTag.
-	
-	anXMLWriter pcData: title ; endTag: 'title'. 
-	"
-	
-	[ bb paragraph isDocBreaking ]
-		whileFalse:[
-			self renderParagraphAt: bb.
-			bb nextParagraph ].
-
-	self renderParagraphAt: bb.
-
-	bb nextParagraph.
-	"
-	anXMLWriter endTag: 'book'.
-	"
-	^bb ! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 17:34:14'!
-renderFonts
-
-	styleWriter startTag: 'office:font-face-decls' ; endTag.
-	
-	styleWriter startElement: 'style:font-face' attributeList: { 'style:name' -> 'Courier Prime' . 'style:font-pitch' -> 'fixed' } asDictionary ; endEmptyTag: 'style:font-face'.
-	
-	styleWriter endTag: 'office:font-face-decls'.! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:10:45'!
-renderLibrary: aKLibrary on: anXMLWriter
-
-	| bb ee |
-
-	styleCounter := 1.
-	
-	style := aKLibrary attributes.
-	
-	self renderFonts ; renderStyles.
-
-	styleWriter startTag: 'office:automatic-styles' ; endTag.
-
-	ee := aKLibrary end.
-	bb := aKLibrary begin.
-	
-	[ bb ~= ee ]
-	
-		whileTrue:[			
-			bb next.
-			bb := self renderDocumentAt: bb  ] .
-
-	self renderPageLayout.
-	
-	styleWriter endTag: 'office:automatic-styles'.
-	
-	self renderMasterPage.
-
-	anXMLWriter xmlDeclaration: '1.0' encoding: 'UTF-8'.
-
-	anXMLWriter startElement: 'office:document' attributeList: self documentAttributes ; endTag. 	
-
-	anXMLWriter stream nextPutAll: styleStream contents.
-
-	anXMLWriter 
-		startTag: 'office:body' ; endTag ;
-			startElement: 'office:text' attributeList:{ 'text:use-soft-page-breaks' -> 'true' } asDictionary ; endTag.
-	
-	anXMLWriter stream nextPutAll: textStream contents.
-	
-	anXMLWriter 
-			endTag: 'office:text' ;
-		endTag: 'office:body' ;
-	endTag: 'office:document'
-	! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/1/2025 22:04:10'!
-renderMasterPage
-	
-	styleWriter startTag: 'office:master-styles' ; endTag.
-	
-		styleWriter startElement: 'style:master-page' attributeList: { 'style:name' -> 'Standard' . 'style:page-layout-name' -> 'A4' } asDictionary ; endEmptyTag: 'style:master-page'.
-	
-	styleWriter endTag: 'office:master-styles'.
-	! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:11:33'!
-renderPageLayout
-	
-		styleWriter startElement: 'style:page-layout' attributeList: { 'style:name' -> 'A4' } asDictionary ; endTag.
-		
-			styleWriter startElement: 'style:page-layout-properties' attributeList: 
-			{
-				'fo:page-width' -> '210mm' .
-				'fo:page-height' -> '297mm'.
-				'style:num-format' -> '1'.
-				'style:print-orientation' -> 'portrait'.
-				'fo:margin-top' -> '2cm' .
-				'fo:margin-bottom' -> '2.5cm' .
-				'fo:margin-left' -> '0cm'.
-				'fo:margin-right' -> '0cm'
-			} asDictionary ; endTag.
-			
-			styleWriter endTag: 'style:page-layout-properties'.
-		styleWriter endTag: 'style:page-layout'.
-		
-	! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 15:36:02'!
-renderParagraphAt: anIterator 
-
-	| pp |
-	
-	" There are 4 options: 
-	
-	1. the paragraph ends with a page break character
-	
-	1.1. the paragraph has a style that is different from the current style
-
-		- create a new style but don't set the current style to the new style
-		- add a page break-after to the style
-	
-	1.2. the paragraph has the same style as the current style
-
-		- create a new style but don't set the current style to the new style
-		- add a page break-after to the style
-	
-	2. the paragraph does not end with a page break character
-	
-	2.1. the paragraph has a style that is different from the current style
-
-		- create a new style and set the current style to the new style
-	
-	2.2. the paragraph has the same style as the current style
-
-		- use the current style
-	
-	"
-	pp := anIterator paragraph.
-	
-	style ~= pp attributes or: [pp isPageBreaking] :: ifTrue:[
-		
-		style := pp attributes.
-		
-		styleCounter := styleCounter + 1.
-		
-		self renderParagraphStyle: pp breakPage: pp isPageBreaking.
-	].
-	
-	textWriter startElement: 'text:p' attributeList: { 'text:style-name' -> ('P{1}' format:{styleCounter}) } asDictionary ; endTag.
-	
-	pp emphasis isNil
-		ifTrue:[
-			self renderPlainParagraphText: pp on: textWriter ]
-		ifFalse:[
-			self renderParagraphText: pp on: textWriter ].
-	
-	pp isPageBreaking ifTrue:[
-	
-	" create a style without a page break to prevent the page break from propagating to the next paragraph "	
-		style := pp attributes.
-		
-		styleCounter := styleCounter + 1.
-		
-		self renderParagraphStyle: pp breakPage: false 	].
-		
-	textWriter endTag: 'text:p'.	
-	
-	
-! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:14:11'!
-renderParagraphStyle: aKParagraph breakPage: isPageBreaking
-
-	| aDictionary |
-		
-	styleWriter startElement: 'style:style' attributeList: { 'style:name' -> ('P{1}' format:{styleCounter}) . 'style:family' -> 'paragraph' . 'style:parent-style-name' -> 'P1' . 'style:master-page-name' -> '' } asDictionary ; endTag.
-	
-	aDictionary := self makeParagraphStyleAttributes: aKParagraph attributes.
-		
-	isPageBreaking ifTrue:[
-		aDictionary at: 'fo:break-after' put: 'page'. ].	
-	
-	styleWriter startElement: 'style:paragraph-properties' attributeList: aDictionary ; endEmptyTag: 'style:paragraph-properties'.
-		
-	styleWriter endTag: 'style:style'.
-		! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:27:52'!
-renderParagraphText: aKParagraph on: anXMLWriter
-
-	| aTree canonical |
-	
-	aTree := DisjointIntervalTree new.
-	
-	aTree interval: (1 to: aKParagraph length).
-	
-	aKParagraph emphasis keys do:[:eachKey |
-		aKParagraph emphasis at: eachKey :: do:[:eachInterval |
-		aTree insertInterval: eachInterval kind: eachKey ] ].
-
-	canonical := anXMLWriter canonical.
-	
-	anXMLWriter canonical:true. "setting this to true prevents the xml writer from adding newlines to the text"
-
-	aTree transform: aKParagraph text at: 1 into: anXMLWriter.
-	
-	anXMLWriter canonical:canonical. "reset it back to how it was before the call "
-! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:19:46'!
-renderPlainParagraphText: aKParagraph on: anXMLWriter
-
-	| canonical text |
-	
-	canonical := anXMLWriter canonical.
-	
-	anXMLWriter canonical:true. "setting this to true prevents the xml writer from adding newlines to the text"
-
-	text := aKParagraph text.
-	
-	anXMLWriter putChars: text from: 1 upto: text size - 1. 
-		
-	anXMLWriter canonical:canonical. "reset it back to how it was before the call "
-! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 19:15:31'!
-renderStyles
-
-	| aDictionary |
-	styleWriter startTag: 'office:styles' ; endTag.
-	
-		styleWriter startElement: 'style:default-style' attributeList: { 'style:family' -> 'paragraph' } asDictionary ; endTag.
-	
-			styleWriter startElement: 'style:paragraph-properties' attributeList: { 'style:writing-mode' -> 'page' } asDictionary  ; endEmptyTag: 'style:paragraph-properties'.
-	
-			styleWriter startElement: 'style:text-properties' attributeList: { 'style:font-name' -> 'Courier Prime' . 'fo:font-size' -> '12pt' . 'fo:language' -> 'en' } asDictionary ; endEmptyTag: 'style:text-properties'.
-			
-		styleWriter endTag: 'style:default-style'.
-	
-		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'P1' . 'style:family' -> 'paragraph' . 'style:class' -> 'text' } asDictionary ; endTag.
-		
-			aDictionary := self makeParagraphStyleAttributes: style.
-		
-			styleWriter startElement: 'style:paragraph-properties' attributeList: aDictionary ; endEmptyTag: 'style:paragraph-properties'.
-		
-	styleWriter endTag: 'style:style'.
-
-		styleWriter startElement: 'style:style' attributeList: { 'style:name' -> 'bold' . 'style:family' -> 'text' .  } asDictionary ; endTag.
-	
-			styleWriter startElement: 'style:text-properties' attributeList: { 'fo:font-weight' -> 'bold' } asDictionary ; endEmptyTag: 'style:text-properties'.
-			
-		styleWriter endTag: 'style:style'.
-		
-	styleWriter endTag: 'office:styles'.
-! !
-
-!OpenDocWriter methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 15:43:33'!
-writeDocument: aKLibrary inDirectory: aDirectory
-
-	| documentName dir content anXMLWriter |
-	
-	documentName := 'kaeru.fodt'.	
-		
-	dir := aDirectory.
-	
-	content := dir // documentName .
-	
-	anXMLWriter := XMLWriter on: content writeStream.
-	
-	self renderLibrary: aKLibrary on: anXMLWriter.
-	
-	anXMLWriter stream close.
-
-
-	! !
-
 !SimpleScanner methodsFor: 'as yet unclassified' stamp: 'DF 10/7/2025 20:45:45'!
 eat: aCharacter
 
@@ -5346,7 +4818,7 @@ creepForward
 	self changed: #cursor		
 ! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 11/5/2025 14:59:00'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/18/2025 11:20:09'!
 erase
 
 	dirty := true.
@@ -5394,7 +4866,7 @@ eraseNarrow
 			
 	self changed: #erase.! !
 
-!KaeruEditor methodsFor: 'editing' stamp: 'DF 11/5/2025 14:58:47'!
+!KaeruEditor methodsFor: 'editing' stamp: 'DF 10/17/2025 13:54:15'!
 eraseSelection
 
 	self assert: selection first > 1.
@@ -5410,8 +4882,7 @@ eraseSelection
 	selection := selection last to: selection last.
 	
 	cursorState := text isEmpty 
-		ifTrue:[#wide]
-		ifFalse:[#narrow].
+		ifTrue:[#wide].
 			
 	self changed: #erase.! !
 
@@ -5560,11 +5031,6 @@ moveSelectionAfterCursor
 isDirty
 	^dirty! !
 
-!KaeruEditor methodsFor: 'testing' stamp: 'DF 10/24/2025 22:11:47'!
-isEmpty
-
-	^ text isEmpty! !
-
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/23/2025 20:22:55'!
 isExtended
 	^cursorState = #extended! !
@@ -5572,10 +5038,6 @@ isExtended
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/21/2025 21:13:19'!
 isNarrow
 	^ cursorState = #narrow! !
-
-!KaeruEditor methodsFor: 'testing' stamp: 'Df 9/24/2025 21:53:10'!
-isSearchSuccessfull
-	^ positionRegister ~= cursor ! !
 
 !KaeruEditor methodsFor: 'testing' stamp: 'Df 9/21/2025 21:13:12'!
 isWide
@@ -5663,7 +5125,7 @@ collapseRight
 	
 	self changed: #cursor! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/5/2025 14:42:59'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/18/2025 15:09:58'!
 resetSelection
 
 	" set the leap register to the cursor, reseting the selection.
@@ -5672,21 +5134,13 @@ resetSelection
 	
 	leapRegister := cursor ! !
 
-!KaeruEditor methodsFor: 'selection' stamp: 'DF 11/4/2025 18:24:25'!
+!KaeruEditor methodsFor: 'selection' stamp: 'DF 10/17/2025 13:13:04'!
 select
 
 	text isIndexLessThanEnd: cursor ::
 		ifFalse:[
-			self assert: cursor > 1.
 			cursor := cursor - 1].	
-
-	text isIndexLessThanEnd: leapRegister ::
-		ifFalse:[
-			self assert: leapRegister > 1.
-			leapRegister := leapRegister - 1].	
-	
-	self assert: leapRegister > 0.
-	
+		
 	selection := ((leapRegister min: cursor) max:2) to: (leapRegister max: cursor) + 1.
 	
 	self assert: (text isIndexLeqEnd: selection last).
@@ -5847,86 +5301,17 @@ rightMargin
 	^ par attributes rightMargin.
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:24:43'!
-setFrom: bIndex to: eIndex leftMargin: anInteger
-
-	" 
-	
-	Set the left margins of all the paragraphs in the iterator range [bb,ee) to anInteger, 
-	provided that anInteger is between 1 and rightMargin - 6. Paragraphs in the selection 
-	whose right margin is too close will not change their left maring. 
-	
-	"
-	
-	| bb ee par rightm |
-	
-	self assert: anInteger > 0.
-	
-	bb := text charIndexToIterator: bIndex :: setAtBeginningOfParagraph.
-	ee := text charIndexToIterator: eIndex :: setAtBeginningOfParagraph.
-	
-	[ bb ~=  ee ] whileTrue:[
-		
-		par := bb paragraph.
-	
-		rightm := par attributes rightMargin.
-	
-		anInteger < (rightm - 6)
-			ifTrue:[		
-				par leftMargin: anInteger].
-		
-		bb nextParagraph.
-	].
-	! !
-
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:29:58'!
-setFrom: bIndex to: eIndex rightMargin: anInteger
-
-	" 
-	
-	Set the right margins of all the paragraphs in the iterator range [bb,ee) to anInteger, 
-	provided that anInteger is between leftMargin + 6 and 79. Paragraphs in the selection 
-	whose left margin is too close will not change their right margin. 
-	
-	"
-	
-	| bb ee par leftm |
-	
-	self assert: anInteger > 0.
-	
-	bb := text charIndexToIterator: bIndex :: setAtBeginningOfParagraph.
-	ee := text charIndexToIterator: eIndex :: setAtBeginningOfParagraph.
-	
-	[ bb ~=  ee ] whileTrue:[
-		
-		par := bb paragraph.
-
-		leftm := par attributes leftMargin.
-	
-		anInteger > (leftm + 6)
-			ifTrue:[		
-				par leftMargin: anInteger].
-		
-		bb nextParagraph.
-	].
-	! !
-
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:23:38'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/18/2025 18:52:21'!
 setLeftMargin: anInteger
 
-	" if the cursor is extended set the left margin of all the paragraphs in the selection. Otherwise, set the
-	left margin of the paragraph that has the cursor.
-	
-	Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
+	"Set the paragraph in which the cursor is located to anInteger, provided that anInteger is between 1 and
 	rightMargin - 6. Answer the actual left margin "
 	
 	| it par rightm leftm |
 	
 	it := text charIndexToIterator: cursor.
-
-	par := it paragraph.
 	
-	leftm := it paragraph attributes leftMargin.
+	leftm := it paragraph leftMargin.
 	
 	it = text begin
 		ifTrue:[^leftm].
@@ -5936,17 +5321,15 @@ setLeftMargin: anInteger
 	
 	anInteger <= 0
 		ifTrue:[^leftm].
+
+	par := it paragraph.
 	
 	rightm := par attributes rightMargin.
 	
 	anInteger >= (rightm - 6)
 		ifTrue:[^leftm].
 		
-	par leftMargin: anInteger.
-	
-	self isExtended 
-		ifTrue:[
-			self setFrom: selection first to: selection last leftMargin: anInteger].
+	it paragraph leftMargin: anInteger.
 	
 	self changed: #margins.
 	
@@ -5989,7 +5372,7 @@ setParagraphIndent: anInteger
 	^anInteger
 	! !
 
-!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 11/4/2025 19:30:00'!
+!KaeruEditor methodsFor: 'paragraph attributes' stamp: 'DF 10/18/2025 18:52:06'!
 setRightMargin: anInteger
 
 	"Set the right margin of the paragraph in which the cursor is located to anInteger, provided that anInteger is between leftMargin + 6 and 79. Answer the actual right margin "
@@ -6007,7 +5390,7 @@ setRightMargin: anInteger
 		ifTrue:[^rightm].
 	
 	anInteger >= 80
-		ifTrue:[^rightm]. 
+		ifTrue:[^rightm].
 
 	par := it paragraph.
 	
@@ -6017,10 +5400,6 @@ setRightMargin: anInteger
 		ifTrue:[^rightm].
 		
 	it paragraph rightMargin: anInteger.
-
-	self isExtended 
-		ifTrue:[
-			self setFrom: selection first to: selection last rightMargin: anInteger].
 	
 	self changed: #margins.
 	
@@ -6064,7 +5443,7 @@ showRightMargin: aBoolean
 	
 	self changed: #margins! !
 
-!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 11/5/2025 15:45:22'!
+!KaeruEditor methodsFor: 'emphasis' stamp: 'DF 10/18/2025 15:13:03'!
 toggleSelectionEmphasisFor: aSymbol
 
 	| it |
@@ -6267,7 +5646,7 @@ mouseEnter: aMouseButtonEvent
 
 	self activeHand newKeyboardFocus: self! !
 
-!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 11/6/2025 08:54:26'!
+!KaeruMasterMorph methodsFor: 'initialization' stamp: 'DF 10/17/2025 22:41:19'!
 initialize
 
 	| editor |
@@ -6304,7 +5683,7 @@ initialize
 	
 	controller at: #edit putController: (KaeruEditorController new viewMaster: self; model: editor; yourself).
 
-	controller at: #help putController: (KaeruHelpController new view: (view at: #help) ; viewMaster: self; yourself).  
+	controller at: #help putController: (KaeruHelpController new viewMaster: self; yourself). 
 
 	controller at: #sleep putController: (KaeruScreenSaverController new viewMaster: self; yourself). 
 
@@ -6330,25 +5709,23 @@ activate: aSymbol
 	view at: active :: show.
 ! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:32:22'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:47'!
 autoSave
 
-	view at:#edit :: isDirty ifFalse:[^self].
+	view at:#edit :: model isDirty ifFalse:[^self].
 	
 	Kaeru mutex critical:[
-		Smalltalk saveImage .
+		Smalltalk saveImage.
 	].
 
-	" control never reaches here, see Kaeru >> didSaveImage "! !
+! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:35:59'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:55:57'!
 clearDirtyFlag
 
-	view at: #edit :: clearDirtyFlag .! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/12/2025 21:56:38'!
-controller
-	^controller! !
+	view at:#edit :: model clearDirtyFlag.
+	
+! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 10:20:33'!
 drawOn: aCanvas
@@ -6359,40 +5736,21 @@ drawOn: aCanvas
 		fillRectangle: self localBounds
 		color: `Color black`.! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:12:08'!
-isTextLibraryEmpty
-
-	^ view at:#edit :: model isEmpty! !
-
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/24/2025 12:45:14'!
 model
 	^ controller model! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 22:14:35'!
-serializeFrom: aReadStream
-
-	view at:#edit :: model serializeFrom: aReadStream
-
-! !
-
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/24/2025 17:33:05'!
-serializeOn: aWriteStream
-
-	view at:#edit :: model serializeOn: aWriteStream
-
-! !
 
 !KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/5/2025 17:11:53'!
 start
 
 	view at: #edit :: renderText; startBlinking.! !
 
-!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/20/2025 10:03:33'!
+!KaeruMasterMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/16/2025 21:04:53'!
 takeFocus
 
 	view at:#edit :: wakeUp.
 	
-	self activeHand hideHardwareCursor ; newKeyboardFocus: self! !
+	self activeHand hideHardwareCursor ; newKeyboardFocus: (view at: active)! !
 
 !KaeruEditorMorph methodsFor: 'drawing' stamp: 'DF 10/5/2025 16:31:19'!
 captureCursorRectangle
@@ -6601,12 +5959,12 @@ renderText
 		
 	self drawRulerOn: aCanvas ; drawTextOn: aCanvas.! !
 
-!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/19/2025 12:17:06'!
+!KaeruEditorMorph methodsFor: 'scrolling' stamp: 'DF 10/18/2025 22:49:33'!
 scrollToCursor
 
-	"Ensure that the window includes the cursor and points to a line in the text "
+	"Ensure that the window includes the cursor "
 	
-	| cit ch bb |
+	| cit ch |
 		
 	cit := editor charIndexToIterator: editor cursor.
 	
@@ -6622,42 +5980,30 @@ scrollToCursor
 			" cursor is within the window, no need to do anything"
 			^self].
 	
-	" If the window is further than numLines from cline move it such that 
+	" If the window is further than numLines from cline move it such that window + numLines = ch.
 	
-	window <= ch < window + printer numHalfLines 
-		
+	window := ch - printer numHalfLines + 2.
+	
+	{ window + printer numHalfLines - 2 = ch }
+	
 	"
-	bb := cit copy.
-	bb prevLine.
-		
-	" move the window back as long as you can maintain ch < window + printer numHalfLines "
-	
-	[ch < (bb height + printer numHalfLines) ]
-		whileTrue:[
-			bb prevLine ].
-
-	" ch < (bb height + printer numHalfLines) and: ch >= (bb prevLine height + printer numHalfLines) "	
-	
-	bb nextLine.
-	
-	window := bb height. " this ensures that window points to a line in the text "
+	window := ch - printer numHalfLines + 2.
 	
 	self redrawNeeded 		
 		! !
 
-!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 11/2/2025 20:43:03'!
+!KaeruEditorMorph methodsFor: 'address calculation' stamp: 'DF 10/18/2025 22:41:42'!
 locateFirstLineInWindow
 
-	" Answers an iterator to the first line that should be displayed in the window.
+	" Answers an iterator to the first line that should be displayed in the window, also adjusts the window
+	slightly if necessary to ensure that it shows a complete line and does not exclude the cursor "
 	
-	We must maintain the invariant that window always points to a half line height of some line in the text.
-	
-	 "
-	
-	| bb cit ch |
+	| bb cit ch gap |
 
 	cit := editor charIndexToIterator: editor cursor.
 
+	cit setAtBeginningOfLine.
+	
 	ch := cit height.
 	
 	self assert: window <= ch.
@@ -6666,21 +6012,49 @@ locateFirstLineInWindow
 	
 	bb := cit copy.
 	
-	bb setAtBeginningOfLine.
-	
 	" We move bb back until it aligns with window. initially bb is bb height - window half lines after window.
 	
 	"	
+	gap := bb height - window.
 	
-	[bb height > window]
+	[gap > 0 and: [window + gap + printer numHalfLines - bb lineHeight > ch ] ]
 		whileTrue:[
-			bb prevLine].
-
-	self assert: bb height = window.
+			bb prevLine.
+			bb isAtLastLineInParagraph and:[bb paragraph isPageBreaking] ::
+				ifTrue:[
+					gap := gap - 2].
+			gap := gap - bb lineHeight ].
+		
+	" gap <= 0 or window + gap + printer numLines - bb lineHeight <= ch
 	
+	gap may be negative which means that the window will not match the line number of the iterator
+	
+	in this case we should change window to match the iterator. 
+	"
+	
+	gap < 0
+		ifTrue:[
+
+			"
+				self assert: bb height <= ch.
+	
+				self assert: ch <= bb height + printer numLines.
+			"
+
+			window := bb height.
+			
+			" Could this invalidate the assertion that the cursor is within the window?
+			
+			it is clear that the cursor cannot move below window (because we decrease it)
+			
+			and the cursor cannot appear after the last line in the window becuase the second
+			conjunct ensures that bb height > cursor height . " 
+			
+		].
+
 	^bb! !
 
-!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/19/2025 21:00:26'!
+!KaeruEditorMorph methodsFor: 'initialization' stamp: 'DF 10/15/2025 20:14:54'!
 initialize
 	
 	super initialize .
@@ -6702,8 +6076,6 @@ initialize
 	ina219 := INA219 new.
 	
 	ina219 open.
-	
-	blinkingRate := 3. "In Hz. 3 Hz when the text is clean, 1 Hz when it is dirty"
 	
 	self addAlarm: #refreshBatteryState after: 1*60*1000. "1 min. in millisec"! !
 
@@ -6736,14 +6108,8 @@ refreshBatteryState
 	
 	self redrawNeeded ! !
 
-!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 11/5/2025 16:12:33'!
+!KaeruEditorMorph methodsFor: 'updating' stamp: 'DF 10/5/2025 16:43:04'!
 update: aSymbol
-	
-	blinkingRate = 1 ifFalse:[
-		
-		blinkingRate := 1.
-		
-		self stopBlinking ; startBlinking ].
 	
 	self scrollToCursor ; renderText ; redrawNeeded ! !
 
@@ -6753,17 +6119,6 @@ wakeUp
 	" reopen the connection to the INA219 battery chrager after restarting the system "
 	
 	ina219 open.! !
-
-!KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'DF 11/5/2025 16:14:50'!
-clearDirtyFlag
-
-	" Sent when the image was just saved, mark the text as clean and set the cursor blink rate to 3 Hz "
-	
-	editor clearDirtyFlag.
-	
-	blinkingRate := 3.
-	
-	self stopBlinking; startBlinking ! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:17'!
 invalidateCursorRectangles
@@ -6784,12 +6139,12 @@ onBlinkCursor
 	
 ! !
 
-!KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'DF 10/19/2025 21:00:57'!
+!KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/23/2025 10:45:53'!
 startBlinking
 	
 	showCursor := true.
 	
-	self startStepping: #onBlinkCursor stepTime: (1000.0 / blinkingRate).
+	self startStepping: #onBlinkCursor stepTime: 1000.
 	! !
 
 !KaeruEditorMorph methodsFor: 'cursor blinking' stamp: 'Df 9/21/2025 20:04:53'!
@@ -6802,11 +6157,6 @@ stopBlinking
 	showCursor ifTrue: [
 		showCursor := false.
 		self invalidateCursorRectangles ]! !
-
-!KaeruEditorMorph methodsFor: 'testing' stamp: 'DF 11/6/2025 18:51:38'!
-isDirty
-	^editor isDirty 
-	! !
 
 !KaeruEditorMorph methodsFor: 'object serialization' stamp: 'DF 10/14/2025 17:53:49'!
 serializeFrom: aReadStream
@@ -7026,40 +6376,39 @@ socketDischargingIcon
  
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:37:09'!
-displayHelpEntryOn: aCanvas
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:04:01'!
+drawOn: aCanvas
 
-	| bb title |
+	super drawOn: aCanvas.
 	
-	title := entries at: helpEntry ifAbsent: [Character newDocument asString, 'NOT A COMMAND'].
+	self drawTextOn: aCanvas.
 	
-	bb := text searchFrom: text begin forwardFor: title.
+	"printer canvas: aCanvas.
 	
-	bb ifNil:[
+	printer clearCanvas.
 	
-		bb :=  text searchFrom: text begin forwardFor: Character newDocument asString, 'NOT WRITTEN YET'].
+	text do:[:each |
+		
+		each isLineSeparator 
+			ifTrue:[
+				printer newLine]
+			ifFalse:[
+				printer putChar: each;  moveRight ] ].
+	"! !
 
-	self assert: bb notNil.
-	
-	self drawDocumentAt: bb on: aCanvas
-	
-	! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:35:00'!
-drawDocumentAt: bb on: aCanvas
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:16:42'!
+drawTextOn: aCanvas
 
 	" draw the help text on aCanvas
 	"
+	
+	| bb ee |
 
-	| ee |
-	
-	self assert: bb char = Character newDocument.
-	
-	bb next.
-	
-	ee := text searchFrom: bb forwardFor: (String with:Character newDocument).
-	
+	bb := text begin next. "skip the start-of-text sentinel "
+		
 	printer canvas: aCanvas ; clearCanvas.
+	
+	ee := text end.
 	
 	[ printer isNotAtEnd and: [bb ~= ee] ] 
 		whileTrue:[ | cc  |
@@ -7101,7 +6450,6 @@ drawDocumentAt: bb on: aCanvas
 						ifFalse:[						
 							cc = Character newDocument
 								ifTrue:[
-									self assert: false.
 									printer newDocument]
 								ifFalse:[ 									
 									printer newLine.
@@ -7112,19 +6460,7 @@ drawDocumentAt: bb on: aCanvas
 	
 ! !
 
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:12:07'!
-drawOn: aCanvas
-
-	[
-		super drawOn: aCanvas.
-	
-		self displayHelpEntryOn: aCanvas.
-
-	]
-	on: AssertionFailure do:[:ex | self drawingFails. self halt.].
-! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:26:48'!
+!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 20:57:41'!
 initialize 
 
 	super initialize.
@@ -7136,30 +6472,10 @@ initialize
 	printer := KaeruPrinter new.
 	
 	printer displayHeight:590; pageSize: 80 "half lines" ; numLines: 25.
-
-	entries := { 
-		$n -> 'Kaeru' .
-		$u -> 'LINE SPACE' .
-		$w -> 'BOLD' .
-		$t -> 'PARAGRAPH STYLE' .
-		$e -> 'CAPS' .
-		$a -> 'COPY' .
-		$- -> 'INDENT' .
-		$= -> 'RIGHT MARGIN' .
-		$` -> 'LEFT MARGIN' 
-	} collect:[:each | each key -> (Character newDocument asString , each value) ] :: asDictionary.
-	
-	helpEntry := $n.
-	
-	self loadHelpFile 
-! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/5/2025 22:04:40'!
-loadHelpFile 
 	
 	text := KLibrary new.
 	
-	Smalltalk imagePath asDirectoryEntry / 'help' // 'help.ktf' readStreamDo: [:stream |
+	'/home/davidf/Projects/Kaeru/parts/Software/parts/help/help.ktf' asFileEntry readStreamDo: [:stream |
 		
 		" skip the header until you get to the part that starts the library text "
 		[stream peek ~= Character newDocument] 
@@ -7168,15 +6484,7 @@ loadHelpFile
 		stream next.
 				
 		text serializeFrom: stream ].
-	
 ! !
-
-!KaeruHelpMorph methodsFor: 'as yet unclassified' stamp: 'DF 11/6/2025 09:01:20'!
-setHelpEntryTo: aCharacter
-
-	helpEntry := aCharacter.
-	
-	self redrawNeeded ! !
 
 !KaeruScreenSaverMorph methodsFor: 'as yet unclassified' stamp: 'Df 9/21/2025 14:52:28'!
 initialize
@@ -7335,119 +6643,14 @@ new
 	^super new
 		image: (Frames at:1).! !
 
-!Kaeru class methodsFor: 'headless' stamp: 'DF 11/15/2025 17:09:11'!
-exportTextLibrary
-
-	UISupervisor ui ifNotNil:[ :world | | app |
-	
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-
-		self assert: app notNil.
-		
-		Smalltalk imagePath asDirectoryEntry // 'text.ktf' forceWriteStreamDo: [ :aWriteStream |
-				app serializeOn: aWriteStream ] ] .
-
-			
-! !
-
-!Kaeru class methodsFor: 'headless' stamp: 'DF 11/15/2025 21:37:25'!
-importTextLibrary
-
-	UISupervisor ui ifNotNil:[ :world | | app |
-	
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-	
-		self assert: app notNil.
-
-		self assert: app isTextLibraryEmpty.
-				
-		Smalltalk imagePath asDirectoryEntry // 'text.ktf' readStreamDo: [ :aReadStream |
-				app serializeFrom: aReadStream ].
-			
-		Smalltalk saveAndQuit ] .
-
-			
-! !
-
-!Kaeru class methodsFor: 'headless' stamp: 'DF 11/10/2025 19:12:05'!
-performHeadlessRequest: request
-	
-	request = 'export' ifTrue:[
-		
-		^ self exportTextLibrary].
-	
-	request = 'import' ifTrue:[
-		
-		self assert: true.
-		
-		^self importTextLibrary ].
-	
-	request = 'status' ifTrue:[
-		
-		^self reportTextEmptyStatus ].
-
-	request = 'version' ifTrue:[ 
-		
-		^self reportKaeruPackageVersion ].
-	
-	self assert: false! !
-
-!Kaeru class methodsFor: 'headless' stamp: 'DF 11/10/2025 19:12:25'!
-reportKaeruPackageVersion
-
-	| feature |
-		
-	feature := CodePackage installedPackages at: 'Kaeru' :: featureSpec provides.
-	
-	Smalltalk imagePath asDirectoryEntry // 'version' forceWriteStreamDo: [ :aWriteStream |
-			aWriteStream nextPutAll: ('{1}.{2}' format: { feature version . feature revision  }) ].
-
-			
-! !
-
-!Kaeru class methodsFor: 'headless' stamp: 'DF 10/25/2025 13:15:54'!
-reportTextEmptyStatus
-
-	UISupervisor ui ifNotNil:[ :world | | app |
-	
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-	
-		self assert: app notNil.
-
-		Smalltalk imagePath asDirectoryEntry // 'status' forceWriteStreamDo: [ :aWriteStream |
-			aWriteStream nextPutAll: ('empty={1}' format: { app isTextLibraryEmpty }) ] ].
-
-			
-! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:20'!
-beep
-
-	SoundPlayer playSound: beep! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 20:57:26'!
-didSaveImage
-	
-	UISupervisor ui ifNotNil:[ :world | | app |
-		
-		app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
-				
-		app ifNotNil:[ app  clearDirtyFlag  ] ].	
-	
-	! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:10:53'!
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:38:52'!
 initialize
 
 	"self initialize"
 	
-	beep := SampledSound fromWaveFileNamed: Smalltalk imagePath asDirectoryEntry / 'audio' // 'beep.wav'.
-
 	mutex := Semaphore forMutualExclusion.
 	
-	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.
-	
-! !
+	AppLauncher appGlobalName: #Kaeru appSelector: #startUp:.! !
 
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:57'!
 installSigTermHandler
@@ -7467,42 +6670,25 @@ installSigTermHandler
 
 ! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:52'!
-lostChangesOnStartUp
-
-	self beep.
-	
-	Transcript show:'some changes may have been lost'; cr .! !
-
 !Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/14/2025 21:13:53'!
 mutex
 	^mutex! !
 
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/8/2025 21:11:59'!
-saveChunkNotFound
+!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 10/18/2025 15:56:41'!
+startUp: aBoolean
 
-	self beep.
+	aBoolean ifFalse:[ 
+				
+		" This is not a real startup, we have just saved the image"
 	
-	Transcript show:'save chunk not found. proceed with caution.'; cr .! !
-
-!Kaeru class methodsFor: 'as yet unclassified' stamp: 'DF 11/10/2025 19:19:26'!
-startUp: args
-
-	Transcript logToStdout: false.
-	
-	Smalltalk isHeadless ifTrue:[
-
-		Transcript logToStdout: true.
-
-		self assert: Smalltalk startUpArguments size > 0.
+		UISupervisor ui ifNotNil:[ :world | | app |
 		
-		self performHeadlessRequest: Smalltalk startUpArguments last.	
-	
-		Smalltalk quit.
-	].
-	
-	SoundPlayer primSoundStop ; shutDown; initialize.
-	
+			app := world submorphs detect:[:each | each isKindOf: KaeruMasterMorph ] ifNone:[nil].
+		
+			app ifNotNil:[ app clearDirtyFlag ] ].
+		
+		^self ].
+
 	self installSigTermHandler.
 
 	UISupervisor ui ifNotNil:[ :world | | app |
@@ -7750,117 +6936,6 @@ testShiftBack
 	dis shiftBack: 5 from: 6.
 
 	self assert: dis invariant.	! !
-
-!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/3/2025 17:27:32'!
-testInsert
-
-	| aTree |
-	
-	aTree := DisjointIntervalTree new.
-	
-	aTree interval: (1 to: 10).
-	
-	self assert: aTree invariant.
-	
-	self assert: (aTree tagsOf: 1) = { #clear } asSet.
-	
-	aTree insertInterval: (3 to: 6) kind: #bold.
-
-	self assert: aTree invariant.
-
-	self assert: (aTree tagsOf: 1) = { #clear } asSet.
-
-	self assert: (aTree tagsOf: 3) = { #clear . #bold } asSet.
-
-	self assert: (aTree tagsOf: 6) = { #clear } asSet.
-
-	aTree insertInterval: (5 to: 8) kind: #italics.
-
-	self assert: aTree invariant.
-
-	self assert: (aTree tagsOf: 1) = { #clear } asSet.
-
-	self assert: (aTree tagsOf: 3) = { #clear . #bold } asSet.
-
-	self assert: (aTree tagsOf: 5) = { #clear . #bold . #italics } asSet.
-	! !
-
-!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 10/31/2025 21:04:03'!
-testTransform
-
-	| aTree aWriteStream anXMLWriter |
-	
-	aTree := DisjointIntervalTree new.
-	
-	aTree interval: (1 to: 10).
-		
-	aTree insertInterval: (3 to: 6) kind: #bold.
-
-	aTree insertInterval: (5 to: 8) kind: #italics.
-
-	self assert: aTree invariant.
-
-	aWriteStream := WriteStream on: ''.
-	
-	anXMLWriter := XMLWriter on: aWriteStream.
-	
-	aTree transform: '1234567890' at: 1  into: anXMLWriter.
-	
-	self assert: aWriteStream contents =  '
-<text:span text:style-name="clear">12
-<text:span text:style-name="bold">34
-<text:span text:style-name="italics">5</text:span></text:span>
-<text:span text:style-name="italics">67</text:span>89</text:span>' .! !
-
-!TestDisjointIntervalTree methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 18:18:57'!
-testTransformKParagraph
-
-	| text par defaultParagraphAttributes aTree anXMLWriter aWriteStream expected |
-	
-	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
-
-	defaultParagraphAttributes := KParagraphAttributes new.
-	
-	defaultParagraphAttributes 
-		leftMargin: 6; 
-		rightMargin: 72;
-		indent: 0;
-		lineHeight: 2; " in half line units "
-		tabStops: (11 to: 72 by:5 :: asArray).
-
-	par := KParagraph new.
-	
-	par attributes: defaultParagraphAttributes.
-	
-	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
-	
-	self assert: par text = text.
-	
-	par emphasize: #bold from: 10 to: 15.
-	
-	par emphasize: #italics from: 335 to: 342.
-	
-	aTree := DisjointIntervalTree new.
-	
-	aTree interval: (1 to: par length).
-	
-	par emphasis at: #bold :: do:[:each |
-		aTree insertInterval: each kind: #bold ].
-
-	par emphasis at: #italics :: do:[:each |
-		aTree insertInterval: each kind: #italics ].
-
-	aWriteStream := WriteStream on: ''.
-	
-	anXMLWriter := XMLWriter on: aWriteStream.
-
-	anXMLWriter canonical:true.
-	
-	aTree transform: par text at: 1 into: anXMLWriter.
-
-	expected := '<text:span text:style-name="clear">In olden <text:span text:style-name="bold">times</text:span>, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, <text:span text:style-name="italics">beneath</text:span> whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play</text:span>'.
-
-	self assert: aWriteStream contents =  expected.! !
 
 !TestKLibrary methodsFor: 'as yet unclassified' stamp: 'DF 10/17/2025 13:44:15'!
 testBoundaryChecks
@@ -8439,25 +7514,14 @@ testErase
 	self assert: par text = ((text copyFrom:1 to: 4) , (text copyFrom: 173 to: text size)).
 	! !
 
-!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 11/2/2025 17:25:04'!
+!TestKParagraph methodsFor: 'as yet unclassified' stamp: 'DF 8/16/2025 21:39:42'!
 testInsert
 
-	| text par defaultParagraphAttributes |
+	| text par |
 	
 	text := 'In olden times, when to wish was to have, there lived a King whose daughters were all beautiful. But the youngest was so fair that the Sun himself, although he saw her often, was enchanted every time she came out into the sunshine. Near the castle of this King was a large and gloomy forest, and in the midst grew an old linden-tree, beneath whose branches splashed a little fountain. When the days were very warm, the King’s youngest daughter ran off to the wood, and sat down by the side of the fountain. When she felt dull, she would often amuse herself by throwing a golden ball up in the air and catching it. This was her favourite form of play.'.
 
-	defaultParagraphAttributes := KParagraphAttributes new.
-	
-	defaultParagraphAttributes 
-		leftMargin: 6; 
-		rightMargin: 72;
-		indent: 0;
-		lineHeight: 2; " in half line units "
-		tabStops: (11 to: 72 by:5 :: asArray).
-
 	par := KParagraph new.
-	
-	par attributes: defaultParagraphAttributes.
 	
 	0 to: text size - 1 do:[:ii | par insert: (text at:ii + 1) after: ii.  ].
 	
@@ -8570,74 +7634,6 @@ testDictionary
 	self assert: (aDictionary at: #z) = 17.
 	
 ! !
-
-!Archive methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:22:10'!
-writeToFileNamed: aFileName notifying: aBlock
-
-	"Catch attempts to overwrite existing zip file"
-	(self canWriteToFileNamed: aFileName)
-		ifFalse: [ ^self error: (aFileName, ' is needed by one or more members in this archive') ].
-	aFileName asFileEntry writeStreamDo: [ :stream |
-		self writeTo: stream notifying: aBlock ]! !
-
-!ZipArchive methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:21:57'!
-writeTo: stream notifying: aBlock
-	stream binary.
-	members do: [ :member |
-		member writeTo: stream notifying: aBlock. 
-		member endRead.
-	].
-	writeCentralDirectoryOffset := stream position.
-	self writeCentralDirectoryTo: stream.
-	! !
-
-!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:49'!
-compressDataTo: aStream notifying: aBlock
-	"Copy my deflated data to the given stream."
-	| encoder startPos endPos |
-
-	encoder := ZipWriteStream on: aStream.
-	startPos := aStream position.
-
-	[ readDataRemaining > 0 ] whileTrue: [ | data |
-		data := self readRawChunk: (4096 min: readDataRemaining).
-		data := data asByteArray.
-		encoder nextPutAll: data.
-		readDataRemaining := readDataRemaining - data size.
-		aBlock value: data size.
-	].
-	encoder finish. "not close!!"
-	endPos := aStream position.
-	compressedSize := endPos - startPos.
-	crc32 := encoder crc.
-! !
-
-!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:53'!
-writeDataTo: aStream notifying: aBlock
-	"Copy my (possibly inflated or deflated) data to the given stream.
-	This might do compression, decompression, or straight copying, depending
-	on the values of compressionMethod and desiredCompressionMethod"
-
-	"Note: Do not shortcut this method if uncompressedSize = 0. Even in this case
-	data may be produced by the compressor (i.e., '' zipped size > 0) and must
-	be stored in the file or else other utilities will treat the zip file as corrupt."
-
-	(compressionMethod = CompressionStored and: [ desiredCompressionMethod = CompressionDeflated ])
-		ifTrue: [ ^self compressDataTo: aStream notifying: aBlock ].
-
-	(compressionMethod = CompressionDeflated and: [ desiredCompressionMethod = CompressionStored ])
-		ifTrue: [ ^self uncompressDataTo: aStream ].
-
-	self copyDataTo: aStream.! !
-
-!ZipArchiveMember methodsFor: '*Kaeru-ODT' stamp: 'DF 10/30/2025 16:17:58'!
-writeTo: aStream notifying: aBlock
-
-	self rewindData.
-	writeLocalHeaderRelativeOffset := aStream position.
-	self writeLocalFileHeaderTo: aStream.
-	self writeDataTo: aStream notifying: aBlock.
-	self refreshLocalFileHeaderTo: aStream.! !
 
 !Array methodsFor: '*Kaeru-printing' stamp: 'DF 10/7/2025 17:20:14'!
 printAsNakedList: aStream
@@ -8794,52 +7790,6 @@ isPageSeparator
 newDocument
 
 	^`Character codePoint: 28` "ASCII File separator"! !
-
-!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/3/2025 16:28:35'!
-putChar: aCharacter
-
-	aCharacter codePoint <= 255 ifTrue:[
-		 ((XMLTranslationMap at: aCharacter codePoint + 1) = 0 )
-			ifTrue:[
-				self stream nextPut: aCharacter] 
-			ifFalse:[
-				aCharacter = Character tab
-					ifTrue:[
-						self stream nextPutAll: '<text:tab/>' ]
-					ifFalse:[
-				
-						self stream nextPutAll: (XMLTranslation at: aCharacter  ) ] ] ]
-		ifFalse:[
-			stream nextPut: aCharacter].
-	! !
-
-!XMLWriter methodsFor: '*Kaeru-writing xml' stamp: 'DF 11/3/2025 17:41:32'!
-putChars: aString from:bb upto: ee
-
-	|ii |
-	
-	ii := bb.
-	
-	[ii ~= ee] whileTrue:[ | spaceCount |
-		
-		spaceCount := 0.
-		
-		[ii ~= ee and: [(aString at:ii) = Character space ] ] whileTrue:[
-			spaceCount := spaceCount + 1.
-			ii := ii + 1].
-		
-		spaceCount <= 1
-			ifTrue:[
-				spaceCount = 0 
-					ifTrue:[
-						self putChar: (aString at:ii).
-						ii := ii + 1]
-					ifFalse:[
-						self putChar: Character space ] ]
-			ifFalse:[
-				self startElement: 'text:s' attributeList: { 'text:c' -> ('{1}' format:{spaceCount}) } asDictionary ; endEmptyTag:'text:s'. ] ].
-
-! !
 KaeruPrinter initialize!
 KaeruEditorMorph initialize!
 FrogAnimation initialize!
